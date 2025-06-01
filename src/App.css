@@ -1,0 +1,11 @@
+@import "tailwindcss";
+
+body.disable-selection * {
+  user-select: none;
+}
+
+body.disable-selection input,
+body.disable-selection textarea,
+body.disable-selection [contentEditable] {
+  user-select: text;
+}
