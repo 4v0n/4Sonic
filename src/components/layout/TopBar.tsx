@@ -1,6 +1,7 @@
 import { useNavigate } from "react-router-dom";
 import { ArrowBackIcon, ArrowForwardIcon, PersonIcon, SettingsIcon } from "../../constants/icons";
 import IconDropdown, { MenuOption } from "../ui/IconDropdown";
+import { IconButton } from "@mui/material";
 
 const TopBar = () => {
   const navigate = useNavigate();
@@ -12,14 +13,14 @@ const TopBar = () => {
   ];
 
   return (
-    <header className="h-16 flex items-center justify-between px-6 sticky top-0 z-30 border-b">
+    <header className="h-16 flex items-center justify-between px-6 sticky top-0 z-30 border-b border-(--surface1) shadow-md">
       <div className="flex items-center space-x-3">
-        <button onClick={() => navigate(-1)} className="p-2 rounded-full transition-colors" aria-label="Go back">
+        <IconButton onClick={() => navigate(-1)} aria-label="Go back">
           <ArrowBackIcon fontSize="small" />
-        </button>
-        <button onClick={() => navigate(1)} className="p-2 rounded-full transition-colors" aria-label="Go forward">
+        </IconButton>
+        <IconButton aria-label="Go back">
           <ArrowForwardIcon fontSize="small" />
-        </button>
+        </IconButton>
       </div>
       <div>
         {/* Empty div */}

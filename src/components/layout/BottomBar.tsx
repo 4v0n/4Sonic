@@ -22,8 +22,9 @@ const BottomBar = () => {
           </IconButton>
           <IconButton
             size="large"
+            className="bg-(--text) hover:bg-(--primary2)"
           >
-            <PlayArrowIcon fontSize="small" />
+            <PlayArrowIcon fontSize="small" className="text-(--text-inverted)" />
           </IconButton>
           <IconButton>
             <SkipNextIcon fontSize="small" />

@@ -1,6 +1,32 @@
 @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
 @import "tailwindcss";
 
+@theme {
+  --primary0: #12e09f;
+  --primary1: #4de4a9;
+  --primary2: #6de8b4;
+  --primary3: #86ecbe;
+  --primary4: #9df0c9;
+  --primary5: #b2f3d4;
+  
+  --surface0: #131419;
+  --surface1: #28292e;
+  --surface2: #3f4044;
+  --surface3: #58585c;
+  --surface4: #717275;
+  --surface5: #8c8c8f;
+  
+  --tonal0: #1a2525;
+  --tonal1: #2f3939;
+  --tonal2: #464f4f;
+  --tonal3: #5e6666;
+  --tonal4: #767e7d;
+  --tonal5: #909696;
+
+  --text: #ffffff;
+  --text-inverted: #000000;
+}
+
 body {
   font-family: "Roboto", sans-serif;
 }

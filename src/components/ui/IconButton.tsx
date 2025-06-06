@@ -1,4 +1,5 @@
 import React from "react";
+import { twMerge } from "tailwind-merge";
 
 interface IconButtonProps extends React.ButtonHTMLAttributes<HTMLButtonElement> {
   children: React.ReactNode;
@@ -12,15 +13,21 @@ const IconButton = ({
   ...props
 }: IconButtonProps) => {
   const sizeClasses = {
-    small: "p-1",
-    medium: "p-2",
-    large: "p-3",
+    small: "w-6 h-6 flex items-center justify-center",
+    medium: "w-8 h-8 flex items-center justify-center",
+    large: "w-10 h-10 flex items-center justify-center",
   };
+
+  const classNames = twMerge(
+    "cursor-pointer rounded-full hover:bg-(--surface1) hover:shadow-md transition-colors",
+    className,
+  );
+
 
   return (
     <button
       {...props}
-      className={`rounded-full ${sizeClasses[size]} ${className}`}
+      className={` ${sizeClasses[size]} ${classNames}`}
     >
       {children}
     </button>

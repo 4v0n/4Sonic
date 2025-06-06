@@ -1,5 +1,3 @@
-import { Routes } from "react-router-dom";
-import "./App.css";
 import LeftSideBar from "./components/layout/LeftSideBar";
 import RightSideBar from "./components/layout/RightSideBar";
 import TopBar from "./components/layout/TopBar";
@@ -7,7 +5,7 @@ import BottomBar from "./components/layout/BottomBar";
 
 function App() {
   return (
-    <div className="flex flex-col h-screen">
+    <div className="flex flex-col h-screen font-sans bg-(--surface0) text-(--text)">
       <TopBar />
       <div className="flex flex-1 overflow-hidden">
         <LeftSideBar />
