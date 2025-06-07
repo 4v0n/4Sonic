@@ -22,17 +22,17 @@ const TopBar = () => {
           <ArrowForwardIcon fontSize="small" />
         </IconButton>
       </div>
-      <div>
-        {/* Empty div */}
-      </div>
       <div className="flex items-center space-x-4">
         <button className="">
           <IconDropdown
             buttonAriaLabel="Account and Settings"
             triggerContent={
-              <PersonIcon />
+              <PersonIcon
+                className="w-8 h-8 rounded-full object-cover"
+              />
             }
             options={profileMenuOptions}
+            dropdownPlacement="bottom-right"
           />
         </button>
       </div>

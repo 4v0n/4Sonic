@@ -95,7 +95,10 @@ const IconDropdown = ({
 
       {isOpen && (
         <div
-          className={`absolute w-56 rounded-md shadow-lg ring-1 ring-black ring-opacity-5 z-50 ${placementClasses} ${dropdownPanelClassName}`}
+          className={`
+            absolute w-56 rounded-md shadow-lg ring-1 ring-opacity-5 z-50 ${placementClasses} ${dropdownPanelClassName}
+            bg-(--surface1) ring-(--surface2)
+          `}
           role="menu"
           aria-orientation="vertical"
           aria-labelledby={buttonAriaLabel}
@@ -106,7 +109,7 @@ const IconDropdown = ({
                 return (
                   <div
                     key={`divider-${index}`}
-                    className="my-1 h-px"
+                    className="my-1 h-px bg-(--surface2)"
                     role="separator"
                   />
                 );
@@ -116,7 +119,7 @@ const IconDropdown = ({
                   <button
                     key={itemOption.label}
                     onClick={() => handleOptionClick(itemOption.onClick)}
-                    className="flex items-center w-full text-left px-4 py-2 text-sm"
+                    className="flex cursor-pointer items-center w-full text-left px-4 py-2 text-sm text-(--text-grey) hover:bg-(--surface2) hover:text-(--text)"
                     role="menuitem"
                   >
                     {itemOption.icon && <span className="mr-3 h-5 w-5">{itemOption.icon}</span>}
