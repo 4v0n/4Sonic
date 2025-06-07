@@ -10,8 +10,17 @@ import AlbumsPage from "./pages/AlbumsPage";
 import ArtistsPage from "./pages/ArtistsPage";
 import SettingsPage from "./pages/SettingsPage";
 import AccountsPage from "./pages/AccountsPage";
+import { useEffect, useRef } from "react";
+import { startup } from "./services/StartupService";
 
 function App() {
+  const startedUp = useRef(false);
+  useEffect(() => {
+    if (startedUp.current) return;
+    startedUp.current = true;
+    startup();
+  }, []);
+
   return (
     <div className="flex flex-col h-screen font-sans bg-(--surface0) text-(--text)">
       <TopBar />
