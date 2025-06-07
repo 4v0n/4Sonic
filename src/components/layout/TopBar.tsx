@@ -9,7 +9,6 @@ const TopBar = () => {
   const profileMenuOptions: MenuOption[] = [
     { label: "Account", onClick: () => navigate("/account"), icon: <PersonIcon fontSize="small" /> },
     { label: "Settings", onClick: () => navigate("/settings"), icon: <SettingsIcon fontSize="small" /> },
-    { isDivider: true },
   ];
 
   return (
