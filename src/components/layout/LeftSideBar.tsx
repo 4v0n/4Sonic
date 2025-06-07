@@ -11,10 +11,12 @@ interface NavItemProps {
 const NavItem = ({ to, icon, label }: NavItemProps) => (
   <NavLink
     to={to}
-    // eslint-disable-next-line @typescript-eslint/no-unused-vars
     className={({ isActive }) => (
       `
       flex items-center space-x-3 px-4 py-2 rounded-md trandistion-colors duration-200 ease-in-out
+      ${isActive ?
+        "bg-(--surface2) text-(--text) shadow-md" :
+        "text-(--text-grey) hover:bg-(--surface1)"}
       `
     )}
   >
@@ -25,13 +27,13 @@ const NavItem = ({ to, icon, label }: NavItemProps) => (
 
 const LeftSideBar = () => {
   return (
-    <aside className="w-64 p-4 space-y-6 flex flex-col border-r">
+    <aside className="w-64 p-4 space-y-6 flex flex-col border-r font-semibold border-(--surface1)">
       <nav className="space-y-2">
-        <NavItem to="/" icon={<HomeIcon />} label="My Library" />
-        <NavItem to="/" icon={<LibraryIcon />} label="Playlists" />
-        <NavItem to="/" icon={<FavoriteFilledIcon />} label="Liked Songs" />
-        <NavItem to="/" icon={<AlbumIcon />} label="Albums" />
-        <NavItem to="/" icon={<PersonIcon />} label="Artists" />
+        <NavItem to="/" icon={<HomeIcon />} label="Library" />
+        <NavItem to="/playlists" icon={<LibraryIcon />} label="Playlists" />
+        <NavItem to="/likes" icon={<FavoriteFilledIcon />} label="Liked Songs" />
+        <NavItem to="/albums" icon={<AlbumIcon />} label="Albums" />
+        <NavItem to="/artists" icon={<PersonIcon />} label="Artists" />
       </nav>
     </aside>
   );
