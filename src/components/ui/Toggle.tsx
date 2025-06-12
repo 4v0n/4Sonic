@@ -14,8 +14,8 @@ const Toggle = ({
       id={id}
       onClick={onToggle}
       type="button"
-      className={`relative inline-flex items-center h-6 rounded-full w-11 transition-colors duration-200 ease-in-out focus:ring-2 focus:ring-offset-2
-    ${toggled ? "bg-green-500" : "bg-red-500"}`}
+      className={`cursor-pointer relative inline-flex items-center h-6 rounded-full w-11 transition-colors duration-200 ease-in-out
+    ${toggled ? "bg-(--success)" : "bg-(--fail)"}`}
       role="switch"
       aria-checked={toggled}
     >

@@ -8,6 +8,15 @@
   --primary3: #86ecbe;
   --primary4: #9df0c9;
   --primary5: #b2f3d4;
+
+  /* red:
+  --primary0: #ff0066;
+  --primary1: #ff4475;
+  --primary2: #ff6385;
+  --primary3: #ff7e95;
+  --primary4: #ff95a6;
+  --primary5: #ffabb7;
+  */
   
   --surface0: #131419;
   --surface1: #28292e;
@@ -26,6 +35,22 @@
   --text: #ffffff;
   --text-grey: #aaaaaa;
   --text-inverted: #000000;
+
+  --success: #4de4a9;
+  --fail: #ff4475;
+}
+
+/* Global Styles */
+
+.input {
+  @apply block w-full px-4 py-2.5 rounded-full 
+    bg-[var(--surface2)] 
+    placeholder:text-[var(--text-grey)] 
+    shadow-lg 
+    focus:outline-none focus:ring-2 
+    focus:ring-[var(--surface3)] 
+    focus:border-transparent 
+    sm:text-sm;
 }
 
 body {
