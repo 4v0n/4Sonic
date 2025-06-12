@@ -12,14 +12,23 @@ import SettingsPage from "./pages/SettingsPage";
 import AccountsPage from "./pages/AccountsPage";
 import { useEffect, useRef } from "react";
 import { startup } from "./services/StartupService";
+import { useApiStore } from "./store/ApiStore";
+import FirstTimeLoginPage from "./pages/FirstTimeLoginPage";
 
-function App() {
+const App = () => {
+
+  const { url } = useApiStore();
+
   const startedUp = useRef(false);
   useEffect(() => {
     if (startedUp.current) return;
     startedUp.current = true;
     startup();
   }, []);
+
+  if (!url) {
+    return <FirstTimeLoginPage />;
+  }
 
   return (
     <div className="flex flex-col h-screen font-sans bg-(--surface0) text-(--text)">
@@ -42,6 +51,6 @@ function App() {
       <BottomBar />
     </div>
   );
-}
+};
 
 export default App;

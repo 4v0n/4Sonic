@@ -7,5 +7,5 @@ interface ExampleState {
 
 export const useExampleStore = create<ExampleState>((set) => ({
   state: false,
-  setState: (newState: boolean) => set({ state: newState }),
+  setState: (newState: boolean) => {set({ state: newState });},
 }));
