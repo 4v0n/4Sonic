@@ -1,6 +1,6 @@
 import React from "react";
 import { NavLink } from "react-router-dom";
-import { AlbumIcon, FavoriteFilledIcon, HomeIcon, LibraryIcon, PersonIcon } from "../../constants/icons";
+import { AlbumIcon, FavoriteFilledIcon, HomeIcon, LibraryIcon, PersonIcon } from "../../constants/Icons";
 
 interface NavItemProps {
   to: string;

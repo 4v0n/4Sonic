@@ -1,5 +1,5 @@
 import { useNavigate } from "react-router-dom";
-import { ArrowBackIcon, ArrowForwardIcon, PersonIcon, SettingsIcon } from "../../constants/icons";
+import { ArrowBackIcon, ArrowForwardIcon, PersonIcon, SettingsIcon } from "../../constants/Icons";
 import IconDropdown, { MenuOption } from "../ui/IconDropdown";
 import IconButton from "../ui/IconButton";
 

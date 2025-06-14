@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { ArrowDropDownIcon } from "../../constants/icons";
+import { ArrowDropDownIcon } from "../../constants/Icons";
 
 interface DropdownProps {
   options: string[];

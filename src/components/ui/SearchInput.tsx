@@ -1,5 +1,5 @@
 import React from "react";
-import { SearchIcon } from "../../constants/icons";
+import { SearchIcon } from "../../constants/Icons";
 
 const SearchInput = ({ ...props }: React.InputHTMLAttributes<HTMLInputElement>) => {
   return (

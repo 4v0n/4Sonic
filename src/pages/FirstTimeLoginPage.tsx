@@ -1,5 +1,6 @@
 import { useState } from "react";
 import Toggle from "../components/ui/Toggle";
+import { login } from "../logic/ApiLogic";
 
 function FirstTimeLoginPage() {
   const [serverUrl, setServerUrl] = useState("");
@@ -8,22 +9,36 @@ function FirstTimeLoginPage() {
   const [stayLoggedIn, setStayLoggedIn] = useState(false);
   const [loginError, setLoginError] = useState("");
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
     if (!serverUrl) {
       alert("Please enter a server URL.");
+      return;
     }
 
     if (!username) {
       alert("Please enter a username.");
+      return;
     }
 
     if (!password) {
       alert("Please enter your password.");
+      return;
     }
 
-    console.log(serverUrl, username, password);
+    try {
+      await login(serverUrl, username, password, stayLoggedIn);
+    }
+    catch (err: unknown) {
+      if (err instanceof Error) {
+        setLoginError(err.message || "Login failed.");
+      }
+      else {
+        setLoginError("Login failed.");
+      }
+      setTimeout(() => setLoginError(""), 5000);
+    }
   };
 
   return (
