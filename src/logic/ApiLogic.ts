@@ -2,6 +2,8 @@ import { endpoints } from "../constants/SubsonicEndpoints";
 import { useApiStore } from "../store/ApiStore";
 import makeRequest from "../utils/MakeRequest";
 import CryptoJS from "crypto-js";
+import { indexLibrary } from "../services/LibraryService";
+import { db } from "../database/SubsonicDb";
 
 export const login = async (url: string, username: string, password: string, stayLoggedIn: boolean) => {
   const { setUrl, setAuthParams } = useApiStore.getState();
@@ -62,5 +64,10 @@ export const login = async (url: string, username: string, password: string, sta
         f: "json",
       }),
     );
+  }
+
+  const artistCount = await db.artists.count();
+  if (artistCount === 0) {
+    await indexLibrary();
   }
 };

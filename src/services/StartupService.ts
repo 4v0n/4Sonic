@@ -1,12 +1,22 @@
-const AutoLogin = () => {
-  const loginInfo = localStorage.getItem("userLogin");
-  if (!loginInfo) return false;
+import { useApiStore } from "../store/ApiStore";
+import { indexLibrary, libraryNeedsUpdate } from "./LibraryService";
 
-  const data = JSON.parse(loginInfo);
+const autoLogin = () => {
+  const url = localStorage.getItem("server_url");
+  const auth = localStorage.getItem("server_auth_params");
+  if (!url || !auth) return false;
 
-  console.log(data);
+  const { setUrl, setAuthParams } = useApiStore.getState();
+  setUrl(url);
+  setAuthParams(JSON.parse(auth));
+  return true;
 };
 
-export const startup = () => {
-  console.log("startup");
+export const startup = async () => {
+  const loggedIn = autoLogin();
+  if (!loggedIn) return;
+
+  if (await libraryNeedsUpdate()) {
+    await indexLibrary();
+  }
 };
