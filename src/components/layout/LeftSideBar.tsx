@@ -1,6 +1,7 @@
 import React from "react";
 import { NavLink } from "react-router-dom";
-import { AlbumIcon, FavoriteFilledIcon, HomeIcon, LibraryIcon, PersonIcon } from "../../constants/icons";
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
+import { AlbumIcon, BuildIcon, FavoriteFilledIcon, HomeIcon, LibraryIcon, PersonIcon } from "../../constants/icons";
 
 interface NavItemProps {
   to: string;
@@ -34,6 +35,7 @@ const LeftSideBar = () => {
         <NavItem to="/artists" icon={<PersonIcon />} label="Artists" />
         <NavItem to="/albums" icon={<AlbumIcon />} label="Albums" />
         <NavItem to="/likes" icon={<FavoriteFilledIcon />} label="Favourites" />
+        <NavItem to="/components" icon={<BuildIcon />} label="Components" />
       </nav>
     </aside>
   );

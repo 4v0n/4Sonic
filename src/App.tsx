@@ -10,6 +10,7 @@ import AlbumsPage from "./pages/AlbumsPage";
 import ArtistsPage from "./pages/ArtistsPage";
 import SettingsPage from "./pages/SettingsPage";
 import AccountsPage from "./pages/AccountsPage";
+import ComponentShowcasePage from "./pages/ComponentShowcasePage";
 
 function App() {
   return (
@@ -26,6 +27,7 @@ function App() {
             <Route path="/artists" element={<ArtistsPage />} />
             <Route path="/settings" element={<SettingsPage />} />
             <Route path="/account" element={<AccountsPage />} />
+            <Route path="/components" element={<ComponentShowcasePage/>} />
           </Routes>
         </main>
         <RightSideBar />
