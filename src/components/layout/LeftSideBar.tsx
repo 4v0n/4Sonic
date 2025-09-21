@@ -30,10 +30,10 @@ const LeftSideBar = () => {
     <aside className="w-64 p-4 space-y-6 flex flex-col border-r font-semibold border-(--surface1)">
       <nav className="space-y-2">
         <NavItem to="/" icon={<HomeIcon />} label="Library" />
-        <NavItem to="/playlists" icon={<LibraryIcon />} label="Playlists" />
-        <NavItem to="/likes" icon={<FavoriteFilledIcon />} label="Liked Songs" />
-        <NavItem to="/albums" icon={<AlbumIcon />} label="Albums" />
+        {/* <NavItem to="/playlists" icon={<LibraryIcon />} label="Playlists" /> */}
         <NavItem to="/artists" icon={<PersonIcon />} label="Artists" />
+        <NavItem to="/albums" icon={<AlbumIcon />} label="Albums" />
+        <NavItem to="/likes" icon={<FavoriteFilledIcon />} label="Favourites" />
       </nav>
     </aside>
   );

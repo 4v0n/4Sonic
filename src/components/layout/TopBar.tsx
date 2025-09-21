@@ -9,7 +9,6 @@ const TopBar = () => {
   const profileMenuOptions: MenuOption[] = [
     { label: "Account", onClick: () => navigate("/account"), icon: <PersonIcon fontSize="small" /> },
     { label: "Settings", onClick: () => navigate("/settings"), icon: <SettingsIcon fontSize="small" /> },
-    { isDivider: true },
   ];
 
   return (
@@ -18,7 +17,7 @@ const TopBar = () => {
         <IconButton onClick={() => navigate(-1)} aria-label="Go back">
           <ArrowBackIcon fontSize="small" />
         </IconButton>
-        <IconButton aria-label="Go back">
+        <IconButton onClick={() => navigate(1)} aria-label="Go back">
           <ArrowForwardIcon fontSize="small" />
         </IconButton>
       </div>

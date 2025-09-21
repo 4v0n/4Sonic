@@ -13,7 +13,7 @@ import AccountsPage from "./pages/AccountsPage";
 
 function App() {
   return (
-    <div className="flex flex-col h-screen font-sans bg-(--surface0) text-(--text)">
+    <div className="flex flex-col h-screen font-sans bg-(--surface0) text-light">
       <TopBar />
       <div className="flex flex-1 overflow-hidden">
         <LeftSideBar />
