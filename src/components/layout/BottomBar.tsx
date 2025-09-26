@@ -1,5 +1,5 @@
 import { PlayArrowIcon, QueueMusicRoundedIcon, RepeatIcon, ShuffleIcon, SkipNextIcon, SkipPreviousIcon, VolumeUpIcon } from "../../constants/icons";
-import IconButton from "../ui/IconButton";
+import Button from "../ui/Button";
 
 const BottomBar = () => {
   return (
@@ -14,24 +14,24 @@ const BottomBar = () => {
 
       <div className="flex flex-col items-center w-1/3">
         <div className="flex items-center space-x-4 mb-2">
-          <IconButton>
+          <Button>
             <ShuffleIcon fontSize="small" />
-          </IconButton>
-          <IconButton>
+          </Button>
+          <Button>
             <SkipPreviousIcon fontSize="small" />
-          </IconButton>
-          <IconButton
+          </Button>
+          <Button
             size="large"
             className="bg-(--text) hover:bg-(--primary2)"
           >
             <PlayArrowIcon fontSize="small" className="text-(--text-inverted)" />
-          </IconButton>
-          <IconButton>
+          </Button>
+          <Button>
             <SkipNextIcon fontSize="small" />
-          </IconButton>
-          <IconButton>
+          </Button>
+          <Button>
             <RepeatIcon fontSize="small" />
-          </IconButton>
+          </Button>
         </div>
         <div className="flex items-center w-full max-w-md space-x-2">
           <span className="text-xs tabular-nums">
@@ -48,12 +48,12 @@ const BottomBar = () => {
       </div>
 
       <div className="flex items-center justify-end space-x-3 w-1/3">
-        <IconButton>
+        <Button>
           <QueueMusicRoundedIcon />
-        </IconButton>
-        <IconButton>
+        </Button>
+        <Button>
           <VolumeUpIcon />
-        </IconButton>
+        </Button>
       </div>
     </footer>
   );

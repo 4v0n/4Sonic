@@ -1,5 +1,5 @@
 import React, { useEffect, useRef, useState } from "react";
-import IconButton from "./IconButton";
+import Button from "./Button";
 
 interface DropdownOption {
   label: string;
@@ -28,7 +28,7 @@ interface IconDropdownProps {
   buttonAriaLabel: string;
   buttonClassName?: string;
   dropdownPanelClassName?: string;
-  dropdownPlacement: DropdownPlacement;
+  dropdownPlacement?: DropdownPlacement;
 };
 
 const IconDropdown = ({
@@ -83,7 +83,7 @@ const IconDropdown = ({
 
   return (
     <div className="relative inline-block text-left" ref={wrapperRef}>
-      <IconButton
+      <Button
         onClick={() => setIsOpen(!isOpen)}
         aria-label={buttonAriaLabel}
         aria-expanded={isOpen}
@@ -91,7 +91,7 @@ const IconDropdown = ({
         className={buttonClassName}
       >
         {triggerContent}
-      </IconButton>
+      </Button>
 
       {isOpen && (
         <div

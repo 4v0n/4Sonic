@@ -14,7 +14,7 @@ import ComponentShowcasePage from "./pages/ComponentShowcasePage";
 
 function App() {
   return (
-    <div className="flex flex-col h-screen font-sans bg-(--surface0) text-light">
+    <div className="flex flex-col h-screen font-sans bg-(--surface0) text-light text-(--text)">
       <TopBar />
       <div className="flex flex-1 overflow-hidden">
         <LeftSideBar />
