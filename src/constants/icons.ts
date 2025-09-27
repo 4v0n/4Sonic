@@ -22,3 +22,4 @@ export { default as VolumeDownIcon } from "@mui/icons-material/VolumeDownRounded
 export { default as VolumeUpIcon } from "@mui/icons-material/VolumeUpRounded";
 export { default as VolumeOffIcon } from "@mui/icons-material/VolumeOffRounded";
 export { default as BuildIcon } from "@mui/icons-material/Build";
+export { default as CheckIcon } from "@mui/icons-material/CheckBox";

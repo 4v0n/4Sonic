@@ -1,5 +1,6 @@
 import { Routes, Route } from "react-router-dom";
 import LeftSideBar from "./components/layout/LeftSideBar";
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
 import RightSideBar from "./components/layout/RightSideBar";
 import TopBar from "./components/layout/TopBar";
 import BottomBar from "./components/layout/BottomBar";
@@ -30,7 +31,7 @@ function App() {
             <Route path="/components" element={<ComponentShowcasePage/>} />
           </Routes>
         </main>
-        <RightSideBar />
+        {/* <RightSideBar /> */}
       </div>
       <BottomBar />
     </div>
