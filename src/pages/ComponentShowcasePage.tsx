@@ -1,5 +1,6 @@
 import { useState } from "react";
 import Checkbox from "../components/ui/Checkbox";
+import { RadioGroup, RadioGroupItem } from "../components/ui/RadioGroup";
 
 const Section: React.FC<{ title: string, children: React.ReactNode }> = ({ title, children }) => (
   <section className="space-y-4">
@@ -11,6 +12,7 @@ const Section: React.FC<{ title: string, children: React.ReactNode }> = ({ title
 const ComponentShowcasePage = () => {
 
   const [isChecked, setIsChecked] = useState(false);
+  const [radioValue, setRadioValue] = useState("option-one");
 
   return (
     <div className="space-y-12 p-4">
@@ -18,17 +20,34 @@ const ComponentShowcasePage = () => {
 
       <Section title="Checkbox">
         <div className="flex items-center space-x-2">
-          <Checkbox id="demo-check" checked={isChecked} onCheckedChange={setIsChecked} />
-          <label htmlFor="demo-check">
+          <Checkbox checked={isChecked} onCheckedChange={setIsChecked} />
+          <label>
             This is an example checkbox
           </label>
         </div>
         <div className="flex items-center space-x-2">
-          <Checkbox id="demo-check" checked={isChecked} onCheckedChange={setIsChecked} disabled />
-          <label htmlFor="demo-check">
+          <Checkbox checked={isChecked} onCheckedChange={setIsChecked} disabled />
+          <label>
             This is an example checkbox
           </label>
         </div>
+      </Section>
+
+      <Section title="Radio Groups">
+        <RadioGroup value={radioValue} onValueChange={setRadioValue}>
+          <div className="flex items-center space-x-2">
+            <RadioGroupItem value="option-one" />
+            <label>Option One</label>
+          </div>
+          <div className="flex items-center space-x-2">
+            <RadioGroupItem value="option-two" />
+            <label>Option Two</label>
+          </div>
+          <div className="flex items-center space-x-2">
+            <RadioGroupItem value="option-three" disabled />
+            <label>Option Three</label>
+          </div>
+        </RadioGroup>
       </Section>
     </div>
   );
