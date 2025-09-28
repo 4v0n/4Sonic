@@ -18,7 +18,7 @@ const toggleVariants = (
 
   const baseClasses =
     `inline-flex items-center justify-center rounded-md text-sm font-medium transition-colors
-    hover:bg-(--surface2) data-[state=on]:bg-(--surface-tonal1) disabled:opacity-50
+    hover:bg-(--surface2) data-[state=on]:bg-(--surface-tonal1) data-[state=on]:hover:bg-(--surface-tonal2) disabled:opacity-50
     cursor-pointer`;
 
   const variants: Record<NonNullable<ToggleProps["variant"]>, string> = {

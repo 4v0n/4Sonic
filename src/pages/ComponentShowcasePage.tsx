@@ -3,6 +3,7 @@ import Checkbox from "../components/ui/Checkbox";
 import { RadioGroup, RadioGroupItem } from "../components/ui/RadioGroup";
 import Toggle from "../components/ui/Toggle";
 import { AlbumIcon } from "../constants/icons";
+import { ToggleGroup, ToggleGroupItem } from "../components/ui/ToggleGroup";
 
 const Section: React.FC<{ title: string, children: React.ReactNode }> = ({ title, children }) => (
   <section className="space-y-4 space-x-2">
@@ -69,6 +70,13 @@ const ComponentShowcasePage = () => {
         >
           <AlbumIcon />
         </Toggle>
+      </Section>
+
+      <Section title="Toggle Group">
+        <ToggleGroup value={radioValue} onValueChange={setRadioValue} type="single">
+          <ToggleGroupItem value="option-one"><AlbumIcon/></ToggleGroupItem>
+          <ToggleGroupItem value="option-two"><AlbumIcon /></ToggleGroupItem>
+        </ToggleGroup>
       </Section>
     </div>
   );
