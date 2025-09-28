@@ -4,6 +4,7 @@ import { RadioGroup, RadioGroupItem } from "../components/ui/RadioGroup";
 import Toggle from "../components/ui/Toggle";
 import { AlbumIcon } from "../constants/icons";
 import { ToggleGroup, ToggleGroupItem } from "../components/ui/ToggleGroup";
+import { KeybindInput } from "../components/ui/KeybindInput";
 
 const Section: React.FC<{ title: string, children: React.ReactNode }> = ({ title, children }) => (
   <section className="space-y-4 space-x-2">
@@ -16,6 +17,7 @@ const ComponentShowcasePage = () => {
 
   const [isChecked, setIsChecked] = useState(false);
   const [radioValue, setRadioValue] = useState("option-one");
+  const [keybind, setKeybind] = useState("⌘ + K");
 
   return (
     <div className="space-y-12 p-4">
@@ -77,6 +79,10 @@ const ComponentShowcasePage = () => {
           <ToggleGroupItem value="option-one"><AlbumIcon/></ToggleGroupItem>
           <ToggleGroupItem value="option-two"><AlbumIcon /></ToggleGroupItem>
         </ToggleGroup>
+      </Section>
+
+      <Section title="KeybindInput">
+        <KeybindInput value={keybind} onValueChange={setKeybind} />
       </Section>
     </div>
   );

@@ -17,7 +17,7 @@ const toggleVariants = (
   const effectiveSize = size ?? "md";
 
   const baseClasses =
-    `inline-flex items-center justify-center rounded-md text-sm font-medium transition-colors
+    `inline-flex items-center justify-center rounded-md text-sm font-medium transition-colors shadow
     hover:bg-(--surface2) data-[state=on]:bg-(--surface-tonal1) data-[state=on]:hover:bg-(--surface-tonal2) disabled:opacity-50
     cursor-pointer`;
 
