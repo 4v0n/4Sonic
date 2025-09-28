@@ -1,31 +1,56 @@
-interface ToggleProps {
-  toggled: boolean;
-  onToggle: () => void;
-  id?: string;
+import React from "react";
+import cn from "../../utils/cn";
+
+export interface ToggleProps extends React.ButtonHTMLAttributes<HTMLButtonElement> {
+  variant?: "default" | "outline";
+  size?: "sm" | "md" | "lg";
+  pressed?: boolean;
+  onPressedChange?: (pressed: boolean) => void;
+}
+
+const toggleVariants = (
+  variant?: ToggleProps["variant"],
+  size?: ToggleProps["size"],
+  className?: string,
+) => {
+  const effectiveVariant = variant ?? "default";
+  const effectiveSize = size ?? "md";
+
+  const baseClasses =
+    `inline-flex items-center justify-center rounded-md text-sm font-medium transition-colors
+    hover:bg-(--surface2) data-[state=on]:bg-(--surface-tonal1) disabled:opacity-50
+    cursor-pointer`;
+
+  const variants: Record<NonNullable<ToggleProps["variant"]>, string> = {
+    default: "bg-(--surface1)",
+    outline: "bg-(--surface1) border border-(--surface4) hover:bg-(--surface2)",
+  };
+
+  const sizes: Record<NonNullable<ToggleProps["size"]>, string> = {
+    sm: "h-9 px-2.5",
+    md: "h-10 px-3",
+    lg: "h-11 px-5",
+  };
+
+  return cn(baseClasses, variants[effectiveVariant], sizes[effectiveSize], className);
 };
 
-const Toggle = ({
-  toggled,
-  onToggle,
-  id,
-}: ToggleProps) => {
-  return (
-    <button
-      id={id}
-      onClick={onToggle}
-      type="button"
-      className={`relative inline-flex items-center h-6 rounded-full w-11 transition-colors duration-200 ease-in-out focus:ring-2 focus:ring-offset-2
-    ${toggled ? "bg-(--success0)" : "bg-(--danger0)"}`}
-      role="switch"
-      aria-checked={toggled}
-    >
-      <span className="sr-only">Toggle</span>
-      <span
-        className={`inline-block w-4 h-4 transform bg-white rounded-full transition-transform duration-200 ease-in-out
-        ${toggled ? "translate-x-6" : "translate-x-1"}`}
+const Toggle = React.forwardRef<HTMLButtonElement, ToggleProps>(
+  ({ className, variant, size, pressed, onPressedChange, ...props }, ref) => {
+    return (
+      <button
+        ref={ref}
+        type="button"
+        role="switch"
+        aria-checked={pressed}
+        data-state={pressed ? "on" : "off"}
+        onClick={() => onPressedChange?.(!pressed)}
+        className={toggleVariants(variant, size, className)}
+        {...props}
       />
-    </button>
-  );
-};
+    );
+  },
+);
+Toggle.displayName = "Toggle";
 
 export default Toggle;

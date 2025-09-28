@@ -1,9 +1,11 @@
 import { useState } from "react";
 import Checkbox from "../components/ui/Checkbox";
 import { RadioGroup, RadioGroupItem } from "../components/ui/RadioGroup";
+import Toggle from "../components/ui/Toggle";
+import { AlbumIcon } from "../constants/icons";
 
 const Section: React.FC<{ title: string, children: React.ReactNode }> = ({ title, children }) => (
-  <section className="space-y-4">
+  <section className="space-y-4 space-x-2">
     <h2 className="text-2xl font-bold border-b border-(--surface2) pb-2">{title}</h2>
     {children}
   </section>
@@ -48,6 +50,25 @@ const ComponentShowcasePage = () => {
             <label>Option Three</label>
           </div>
         </RadioGroup>
+      </Section>
+
+      <Section title="Toggle">
+        <Toggle
+          pressed={isChecked}
+          onPressedChange={setIsChecked}
+          aria-label="Toggle"
+        >
+          <AlbumIcon />
+        </Toggle>
+
+        <Toggle
+          pressed={isChecked}
+          onPressedChange={setIsChecked}
+          aria-label="Toggle"
+          variant="outline"
+        >
+          <AlbumIcon />
+        </Toggle>
       </Section>
     </div>
   );
