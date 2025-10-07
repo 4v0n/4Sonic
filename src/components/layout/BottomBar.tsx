@@ -14,24 +14,15 @@ const BottomBar = () => {
 
       <div className="flex flex-col items-center w-1/3">
         <div className="flex items-center space-x-4 mb-2">
-          <Button>
-            <ShuffleIcon fontSize="small" />
-          </Button>
-          <Button>
-            <SkipPreviousIcon fontSize="small" />
-          </Button>
+          <Button icon={<ShuffleIcon fontSize="small" />} />
+          <Button icon={<SkipPreviousIcon fontSize="small" />} />
           <Button
             size="large"
             className="bg-(--text) hover:bg-(--primary2)"
-          >
-            <PlayArrowIcon fontSize="small" className="text-(--text-inverted)" />
-          </Button>
-          <Button>
-            <SkipNextIcon fontSize="small" />
-          </Button>
-          <Button>
-            <RepeatIcon fontSize="small" />
-          </Button>
+            icon={<PlayArrowIcon fontSize="small" className="text-(--text-inverted)" />}
+          />
+          <Button icon={<SkipNextIcon fontSize="small" />} />
+          <Button icon={<RepeatIcon fontSize="small" />} />
         </div>
         <div className="flex items-center w-full max-w-md space-x-2">
           <span className="text-xs tabular-nums">
@@ -48,12 +39,8 @@ const BottomBar = () => {
       </div>
 
       <div className="flex items-center justify-end space-x-3 w-1/3">
-        <Button>
-          <QueueMusicRoundedIcon />
-        </Button>
-        <Button>
-          <VolumeUpIcon />
-        </Button>
+        <Button icon={<QueueMusicRoundedIcon />} />
+        <Button icon={<VolumeUpIcon />} />
       </div>
     </footer>
   );

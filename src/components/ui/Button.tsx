@@ -1,35 +1,32 @@
 import React from "react";
-import { twMerge } from "tailwind-merge";
+import cn from "../../utils/cn";
 
 interface IconButtonProps extends React.ButtonHTMLAttributes<HTMLButtonElement> {
-  children: React.ReactNode;
+  children?: React.ReactNode;
   icon?: React.ReactNode;
   iconPosition?: "left" | "right";
   size?: "small" | "medium" | "large";
+  variant?: "default" | "primary" | "secondary" | "outline" | "ghost" | "destructive" | "link";
 };
 
 const Button = ({
   children,
   className = "",
   size = "medium",
+  variant = "default",
+  icon,
+  iconPosition = "left",
   ...props
 }: IconButtonProps) => {
-  const childArray = React.Children.toArray(children);
-  const hasText = childArray.some(
-    (c) =>
-      typeof c === "string"
-        ? c.trim().length > 0
-        : typeof c === "number",
-  );
-  const iconOnly = !hasText;
+  const hasIcon = !!icon;
+  const iconOnly = hasIcon && !children;
 
-  const base = `cursor-pointer rounded-full bg-(--surface0) hover:bg-(--surface1)
-    hover:shadow-md transition-colors flex items-center justify-center gap-2`;
+  const base = "cursor-pointer rounded-full transition-colors flex items-center justify-center gap-2 hover:shadow-md";
 
   const sizeClasses = {
     small: iconOnly ? "w-6 h-6" : "h-6 px-2 text-sm gap-1",
     medium: iconOnly ? "w-8 h-8" : "h-8 px-2 text-base gap-1",
-    large: iconOnly ? "w-10 h-10" : "h-10 px-2 text-lg gap-1",
+    large: iconOnly ? "w-10 h-10" : "h-10 px-3 text-lg gap-1",
   };
 
   const iconScale = {
@@ -38,15 +35,33 @@ const Button = ({
     large: "[&>svg]:w-6 [&>svg]:h-6 [&>img]:w-6 [&>img]:h-6",
   };
 
-  const classNames = twMerge(base, sizeClasses[size], iconScale[size], className, props.disabled ? "opacity-50 cursor-not-allowed" : "");
+  const variantClasses = {
+    default: "bg-(--surface0) hover:bg-(--surface1)",
+    primary: "bg-(--primary0) hover:bg-(--primary1)",
+    secondary: "bg-(--surface-tonal0) hover:bg-(--surface-tonal1)",
+    outline: "bg-transparent border border-(--text-grey) hover:bg-(--surface1)",
+    ghost: "bg-transparent hover:bg-(--surface1)",
+    destructive: "bg-(--danger0) hover:bg-(--danger1)",
+    link: "bg-transparent underline underline-offset-4 text-(--link) hover:text-(--link-hover) px-0 h-auto shadow-none hover:shadow-none",
+  } as const;
 
+  const classNames = cn(
+    base,
+    sizeClasses[size],
+    iconScale[size],
+    variantClasses[variant],
+    className,
+    props.disabled ? "opacity-50 cursor-not-allowed" : "",
+  );
 
   return (
     <button
       {...props}
       className={`${classNames}`}
     >
-      {children}
+      {icon && iconPosition === "left" ? icon : null}
+      {children ? children : null}
+      {icon && iconPosition === "right" ? icon : null}
     </button>
   );
 };

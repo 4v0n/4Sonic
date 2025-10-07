@@ -5,6 +5,7 @@ import Toggle from "../components/ui/Toggle";
 import { AlbumIcon } from "../constants/icons";
 import { ToggleGroup, ToggleGroupItem } from "../components/ui/ToggleGroup";
 import { KeybindInput } from "../components/ui/KeybindInput";
+import Button from "../components/ui/Button";
 
 const Section: React.FC<{ title: string, children: React.ReactNode }> = ({ title, children }) => (
   <section className="space-y-4 space-x-2">
@@ -83,6 +84,16 @@ const ComponentShowcasePage = () => {
 
       <Section title="KeybindInput">
         <KeybindInput value={keybind} onValueChange={setKeybind} />
+      </Section>
+
+      <Section title="Buttons">
+        <Button>Default</Button>
+        <Button icon={<AlbumIcon/>} variant="primary">Primary</Button>
+        <Button variant="secondary">Secondary</Button>
+        <Button variant="outline">Outline</Button>
+        <Button variant="ghost">Ghost</Button>
+        <Button variant="destructive">Destructive</Button>
+        <Button variant="link">Link</Button>
       </Section>
     </div>
   );
