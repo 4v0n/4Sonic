@@ -14,15 +14,15 @@ const BottomBar = () => {
 
       <div className="flex flex-col items-center w-1/3">
         <div className="flex items-center space-x-4 mb-2">
-          <Button icon={<ShuffleIcon fontSize="small" />} />
-          <Button icon={<SkipPreviousIcon fontSize="small" />} />
+          <Button icon={<ShuffleIcon fontSize="small" />} className="shadow-none" />
+          <Button icon={<SkipPreviousIcon fontSize="small" />} className="shadow-none" />
           <Button
             size="large"
-            className="bg-(--text) hover:bg-(--primary2)"
+            className="bg-(--text) hover:bg-(--primary2) shadow-none"
             icon={<PlayArrowIcon fontSize="small" className="text-(--text-inverted)" />}
           />
-          <Button icon={<SkipNextIcon fontSize="small" />} />
-          <Button icon={<RepeatIcon fontSize="small" />} />
+          <Button icon={<SkipNextIcon fontSize="small" />} className="shadow-none" />
+          <Button icon={<RepeatIcon fontSize="small" />} className="shadow-none" />
         </div>
         <div className="flex items-center w-full max-w-md space-x-2">
           <span className="text-xs tabular-nums">
@@ -39,8 +39,8 @@ const BottomBar = () => {
       </div>
 
       <div className="flex items-center justify-end space-x-3 w-1/3">
-        <Button icon={<QueueMusicRoundedIcon />} />
-        <Button icon={<VolumeUpIcon />} />
+        <Button icon={<QueueMusicRoundedIcon />} className="shadow-none" />
+        <Button icon={<VolumeUpIcon />} className="shadow-none" />
       </div>
     </footer>
   );

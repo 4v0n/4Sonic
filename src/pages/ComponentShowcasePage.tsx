@@ -5,6 +5,7 @@ import Toggle from "../components/ui/Toggle";
 import { AlbumIcon } from "../constants/icons";
 import { ToggleGroup, ToggleGroupItem } from "../components/ui/ToggleGroup";
 import { KeybindInput } from "../components/ui/KeybindInput";
+import { Dialog, DialogClose, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "../components/ui/Dialog";
 import Button from "../components/ui/Button";
 
 const Section: React.FC<{ title: string, children: React.ReactNode }> = ({ title, children }) => (
@@ -94,6 +95,26 @@ const ComponentShowcasePage = () => {
         <Button variant="ghost">Ghost</Button>
         <Button variant="destructive">Destructive</Button>
         <Button variant="link">Link</Button>
+      </Section>
+
+      <Section title="Dialog">
+        <Dialog>
+          <DialogTrigger asChild>
+            <Button variant="outline">Open Dialog</Button>
+          </DialogTrigger>
+          <DialogContent>
+            <DialogHeader>
+              <DialogTitle>Are you sure?</DialogTitle>
+              <DialogDescription>
+                        This action cannot be undone. This will permanently delete the item.
+              </DialogDescription>
+            </DialogHeader>
+            <DialogFooter>
+              <DialogClose asChild><Button variant="secondary">Cancel</Button></DialogClose>
+              <DialogClose asChild><Button variant="destructive">Delete</Button></DialogClose>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
       </Section>
     </div>
   );
