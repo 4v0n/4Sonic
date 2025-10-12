@@ -151,3 +151,5 @@ body.disable-selection textarea,
 body.disable-selection [contentEditable] {
   user-select: text;
 }
+
+html, body, #root { height: 100%; overflow: hidden; }

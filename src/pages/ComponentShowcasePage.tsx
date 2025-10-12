@@ -7,6 +7,8 @@ import { ToggleGroup, ToggleGroupItem } from "../components/ui/ToggleGroup";
 import { KeybindInput } from "../components/ui/KeybindInput";
 import { Dialog, DialogClose, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "../components/ui/Dialog";
 import Button from "../components/ui/Button";
+import { toast } from "../components/ui/Sonner";
+import Spinner from "../components/ui/Spinner";
 
 const Section: React.FC<{ title: string, children: React.ReactNode }> = ({ title, children }) => (
   <section className="space-y-4 space-x-2">
@@ -115,6 +117,14 @@ const ComponentShowcasePage = () => {
             </DialogFooter>
           </DialogContent>
         </Dialog>
+      </Section>
+
+      <Section title="Spinners">
+        <Spinner size="sm" />
+        <Spinner size="md" />
+        <Spinner size="lg" />
+        <Spinner size="xl" />
+        <Spinner showLabel label="Loading data..."/>
       </Section>
     </div>
   );
