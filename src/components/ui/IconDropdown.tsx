@@ -119,7 +119,7 @@ const IconDropdown = ({
                   <button
                     key={itemOption.label}
                     onClick={() => handleOptionClick(itemOption.onClick)}
-                    className="flex cursor-pointer items-center w-full text-left px-4 py-2 text-sm text-(--text-grey) hover:bg-(--surface2) hover:text-(--text)"
+                    className="flex cursor-pointer transition-colors items-center w-full text-left px-4 py-2 text-sm text-(--text-grey) hover:bg-(--surface2) hover:text-(--text)"
                     role="menuitem"
                   >
                     {itemOption.icon && <span className="mr-3 h-5 w-5">{itemOption.icon}</span>}

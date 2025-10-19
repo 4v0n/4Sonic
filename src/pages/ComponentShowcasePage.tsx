@@ -2,13 +2,13 @@ import { useState } from "react";
 import Checkbox from "../components/ui/Checkbox";
 import { RadioGroup, RadioGroupItem } from "../components/ui/RadioGroup";
 import Toggle from "../components/ui/Toggle";
-import { AlbumIcon } from "../constants/icons";
+import { AlbumIcon, SettingsIcon } from "../constants/icons";
 import { ToggleGroup, ToggleGroupItem } from "../components/ui/ToggleGroup";
 import { KeybindInput } from "../components/ui/KeybindInput";
 import { Dialog, DialogClose, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "../components/ui/Dialog";
 import Button from "../components/ui/Button";
-import { toast } from "../components/ui/Sonner";
 import Spinner from "../components/ui/Spinner";
+import { ContextMenu, ContextMenuContent, ContextMenuItem, ContextMenuSeparator, ContextMenuSub, ContextMenuSubContent, ContextMenuSubTrigger, ContextMenuTrigger } from "../components/ui/ContextMenu";
 
 const Section: React.FC<{ title: string, children: React.ReactNode }> = ({ title, children }) => (
   <section className="space-y-4 space-x-2">
@@ -125,6 +125,35 @@ const ComponentShowcasePage = () => {
         <Spinner size="lg" />
         <Spinner size="xl" />
         <Spinner showLabel label="Loading data..."/>
+      </Section>
+
+      <Section title="Context Menu">
+        <ContextMenu>
+          <ContextMenuTrigger>
+            <div className="flex h-48 w-full items-center justify-center rounded-md border border-dashed border-surface-3 text-sm text-text-grey">
+                        Right Click Here
+            </div>
+          </ContextMenuTrigger>
+          <ContextMenuContent>
+            <ContextMenuItem onSelect={() => alert("Profile selected")}>Profile</ContextMenuItem>
+            <ContextMenuItem onSelect={() => alert("Billing selected")}>Billing</ContextMenuItem>
+            <ContextMenuItem onSelect={() => alert("Team selected")}>Team</ContextMenuItem>
+            <ContextMenuSub>
+              <ContextMenuSubTrigger>Share</ContextMenuSubTrigger>
+              <ContextMenuSubContent>
+                <ContextMenuItem onSelect={() => alert("Email shared")}>Email</ContextMenuItem>
+                <ContextMenuItem onSelect={() => alert("Messages shared")}>Messages</ContextMenuItem>
+                <ContextMenuSeparator />
+                <ContextMenuItem onSelect={() => alert("More options...")}>More...</ContextMenuItem>
+              </ContextMenuSubContent>
+            </ContextMenuSub>
+            <ContextMenuSeparator />
+            <ContextMenuItem onSelect={() => alert("Logout")}>
+              <SettingsIcon />
+              <span>Logout</span>
+            </ContextMenuItem>
+          </ContextMenuContent>
+        </ContextMenu>
       </Section>
     </div>
   );
