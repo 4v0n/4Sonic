@@ -1,4 +1,146 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
 @import "tailwindcss";
+
+@layer base {
+  :root {
+    --dark: #000000;
+    --light: #ffffff;
+
+    --text: #3b3b3b;
+    --text-grey: #aaaaaa;
+    --text-inverted: #ffffff;
+
+    --primary0: #12e09f;
+    --primary1: #1cc48c;
+    --primary2: #21aa79;
+    --primary3: #228f67;
+    --primary4: #227656;
+    --primary5: #1f5e45;
+
+    --surface0: #f3f3f3;
+    --surface1: #e6e6e6;
+    --surface2: #d8d8d8;
+    --surface3: #cbcbcb;
+    --surface4: #bebebe;
+    --surface5: #b1b1b1;
+
+    --surface-tonal0: #e4f2ea;
+    --surface-tonal1: #d8e5de;
+    --surface-tonal2: #cdd8d1;
+    --surface-tonal3: #c2cbc5;
+    --surface-tonal4: #b6beb9;
+    --surface-tonal5: #abb1ae;
+
+    --success0: #1b7f5c;
+    --success1: #28be8a;
+    --success2: #58dbad;
+
+    --warning0: #b8871f;
+    --warning1: #dfae44;
+    --warning2: #ebca85;
+
+    --danger0: #b13535;
+    --danger1: #d06262;
+    --danger2: #e29d9d;
+
+    --info0: #1e56a3;
+    --info1: #347ada;
+    --info2: #74a4e6;
+  }
+
+  .dark {
+    --text: #ffffff;
+    --text-grey: #aaaaaa;
+    --text-inverted: #000000;
+
+    --primary0: #12e09f;
+    --primary1: #4de4a9;
+    --primary2: #6de8b4;
+    --primary3: #86ecbe;
+    --primary4: #9df0c9;
+    --primary5: #b2f3d4;
+
+    --surface0: #131419;
+    --surface1: #28292e;
+    --surface2: #3f4044;
+    --surface3: #58585c;
+    --surface4: #717275;
+    --surface5: #8c8c8f;
+
+    --surface-tonal0: #1a2525;
+    --surface-tonal1: #2f3939;
+    --surface-tonal2: #464f4f;
+    --surface-tonal3: #5e6666;
+    --surface-tonal4: #767e7d;
+    --surface-tonal5: #909696;
+
+    --success0: #22946e;
+    --success1: #47d5a6;
+    --success2: #9ae8ce;
+
+    --warning0: #a87a2a;
+    --warning1: #d7ac61;
+    --warning2: #ecd7b2;
+
+    --danger0: #9c2121;
+    --danger1: #d94a4a;
+    --danger2: #eb9e9e;
+
+    --info0: #21498a;
+    --info1: #4077d1;
+    --info2: #92b2e5;
+  }
+}
+
+@theme {
+  --dark: var(--dark);
+  --light: var(--light);
+
+  --text: var(--text);
+  --text: var(--text-grey);
+  --text-inverted: var(--text-inverted);
+
+  --primary0: var(--primary0);
+  --primary1: var(--primary1);
+  --primary2: var(--primary2);
+  --primary3: var(--primary3);
+  --primary4: var(--primary4);
+  --primary5: var(--primary5);
+
+  --surface0: var(--surface0);
+  --surface1: var(--surface1);
+  --surface2: var(--surface2);
+  --surface3: var(--surface3);
+  --surface4: var(--surface4);
+  --surface5: var(--surface5);
+
+  --surface-tonal0: var(--surface-tonal0);
+  --surface-tonal1: var(--surface-tonal1);
+  --surface-tonal2: var(--surface-tonal2);
+  --surface-tonal3: var(--surface-tonal3);
+  --surface-tonal4: var(--surface-tonal4);
+  --surface-tonal5: var(--surface-tonal5);
+
+  --success0: var(--success0);
+  --success1: var(--success1);
+  --success2: var(--success2);
+
+  --warning0: var(--warning0);
+  --warning1: var(--warning1);
+  --warning2: var(--warning2);
+
+  --danger0: var(--danger0);
+  --danger1: var(--danger1);
+  --danger2: var(--danger2);
+
+  --info0: var(--info);
+  --info1: var(--info1);
+  --info2: var(--info2);
+}
+
+body {
+  font-family: "Roboto", sans-serif;
+}
 
 body.disable-selection * {
   user-select: none;
@@ -9,3 +151,5 @@ body.disable-selection textarea,
 body.disable-selection [contentEditable] {
   user-select: text;
 }
+
+html, body, #root { height: 100%; overflow: hidden; }

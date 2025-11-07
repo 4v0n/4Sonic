@@ -12,7 +12,7 @@ export default [
     "react/jsx-uses-vars": "error",
     "react/require-render-return": 2,
     "arrow-spacing": ["warn", { "before": true, "after": true }],
-    "brace-style": ["error", "stroustrup", { "allowSingleLine": true }],
+    "brace-style": ["error", "1tbs", { allowSingleLine: true }],
     "comma-dangle": ["error", "always-multiline"],
     "comma-spacing": "error",
     "comma-style": "error",
