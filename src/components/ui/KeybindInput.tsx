@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { Kbd } from "./kbd";
+import { Kbd } from "./Kbd";
 import cn from "../../utils/cn";
 
 const formatKeybind = (e: KeyboardEvent): string => {
