@@ -3,7 +3,7 @@ import Button from "../ui/Button";
 
 const BottomBar = () => {
   return (
-    <footer className="h-24 p-4 flex items-center justify-between border-t">
+    <footer className="sticky bottom-0 z-30 h-24 p-4 flex items-center justify-between border-t border-(--surface1) bg-(--surface0) shadow">
       <div className="flex items-center w-1/3">
         Cover
         <div className="ml-3">
