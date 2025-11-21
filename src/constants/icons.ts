@@ -25,3 +25,5 @@ export { default as BuildIcon } from "@mui/icons-material/Build";
 export { default as CheckIcon } from "@mui/icons-material/CheckBox";
 export { default as CloseIcon } from "@mui/icons-material/CloseRounded";
 export { default as LogoutIcon } from "@mui/icons-material/LogoutRounded";
+export { default as DarkModeIcon } from "@mui/icons-material/DarkModeRounded";
+export { default as LightModeIcon } from "@mui/icons-material/LightModeRounded";

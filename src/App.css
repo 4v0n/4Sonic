@@ -31,21 +31,21 @@
     --surface-tonal4: #b6beb9;
     --surface-tonal5: #abb1ae;
 
-    --success0: #1b7f5c;
+    --success0: #58dbad;
     --success1: #28be8a;
-    --success2: #58dbad;
+    --success2: #1b7f5c;
 
-    --warning0: #b8871f;
+    --warning0: #ebca85;
     --warning1: #dfae44;
-    --warning2: #ebca85;
+    --warning2: #b8871f;
 
-    --danger0: #b13535;
+    --danger0: #e29d9d;
     --danger1: #d06262;
-    --danger2: #e29d9d;
+    --danger2: #b13535;
 
-    --info0: #1e56a3;
+    --info0: #74a4e6;
     --info1: #347ada;
-    --info2: #74a4e6;
+    --info2: #1e56a3;
   }
 
   .dark {
@@ -74,21 +74,21 @@
     --surface-tonal4: #767e7d;
     --surface-tonal5: #909696;
 
-    --success0: #22946e;
+    --success2: #22946e;
     --success1: #47d5a6;
-    --success2: #9ae8ce;
+    --success0: #9ae8ce;
 
-    --warning0: #a87a2a;
+    --warning2: #a87a2a;
     --warning1: #d7ac61;
-    --warning2: #ecd7b2;
+    --warning0: #ecd7b2;
 
-    --danger0: #9c2121;
+    --danger2: #9c2121;
     --danger1: #d94a4a;
-    --danger2: #eb9e9e;
+    --danger0: #eb9e9e;
 
-    --info0: #21498a;
+    --info2: #21498a;
     --info1: #4077d1;
-    --info2: #92b2e5;
+    --info0: #92b2e5;
   }
 }
 
