@@ -1,11 +1,10 @@
-import React from "react";
+import type { ReactNode } from "react";
 import { NavLink } from "react-router-dom";
-// eslint-disable-next-line @typescript-eslint/no-unused-vars
-import { AlbumIcon, BuildIcon, FavoriteFilledIcon, HomeIcon, LibraryIcon, PersonIcon } from "../../constants/icons";
+import { AlbumIcon, BuildIcon, FavoriteFilledIcon, HomeIcon, PersonIcon } from "../../constants/icons";
 
 interface NavItemProps {
   to: string;
-  icon: React.ReactNode;
+  icon: ReactNode;
   label: string;
 };
 

@@ -1,9 +1,5 @@
-import { Routes, Route } from "react-router-dom";
-import LeftSideBar from "./components/layout/LeftSideBar";
-// eslint-disable-next-line @typescript-eslint/no-unused-vars
-import RightSideBar from "./components/layout/RightSideBar";
-import TopBar from "./components/layout/TopBar";
-import BottomBar from "./components/layout/BottomBar";
+import { useEffect } from "react";
+import { Navigate, Route, Routes } from "react-router-dom";
 import LibraryPage from "./pages/LibraryPage";
 import PlaylistsPage from "./pages/PlaylistsPage";
 import LikedSongsPage from "./pages/LikedSongsPage";
@@ -12,29 +8,46 @@ import ArtistsPage from "./pages/ArtistsPage";
 import SettingsPage from "./pages/SettingsPage";
 import AccountsPage from "./pages/AccountsPage";
 import ComponentShowcasePage from "./pages/ComponentShowcasePage";
+import LoginPage from "./pages/LoginPage";
+import AppShell from "./components/layout/AppShell";
+import RequireAuth from "./components/layout/RequireAuth";
+import LoadingScreen from "./components/layout/LoadingScreen";
+import { useAuthStore } from "./store/authStore";
 
 function App() {
+  const hydrate = useAuthStore((state) => state.hydrateFromStorage);
+  const isHydrated = useAuthStore((state) => state.isHydrated);
+  const session = useAuthStore((state) => state.session);
+
+  useEffect(() => {
+    if (!isHydrated) {
+      void hydrate();
+    }
+  }, [hydrate, isHydrated]);
+
+  if (!isHydrated) {
+    return <LoadingScreen message="Loading Four Sonic..." />;
+  }
+
   return (
-    <div className="flex flex-col h-screen font-sans bg-(--surface0) text-light text-(--text)">
-      <TopBar />
-      <div className="flex flex-1 overflow-hidden">
-        <LeftSideBar />
-        <main className="flex-1 overflow-y-auto p-6">
-          <Routes>
-            <Route path="/" element={<LibraryPage />} />
-            <Route path="/playlists" element={<PlaylistsPage />} />
-            <Route path="/likes" element={<LikedSongsPage />} />
-            <Route path="/albums" element={<AlbumsPage />} />
-            <Route path="/artists" element={<ArtistsPage />} />
-            <Route path="/settings" element={<SettingsPage />} />
-            <Route path="/account" element={<AccountsPage />} />
-            <Route path="/components" element={<ComponentShowcasePage/>} />
-          </Routes>
-        </main>
-        {/* <RightSideBar /> */}
-      </div>
-      <BottomBar />
-    </div>
+    <Routes>
+      <Route path="/login" element={session ? <Navigate to="/" replace /> : <LoginPage />} />
+
+      <Route element={<RequireAuth />}>
+        <Route element={<AppShell />}>
+          <Route path="/" element={<LibraryPage />} />
+          <Route path="/playlists" element={<PlaylistsPage />} />
+          <Route path="/likes" element={<LikedSongsPage />} />
+          <Route path="/albums" element={<AlbumsPage />} />
+          <Route path="/artists" element={<ArtistsPage />} />
+          <Route path="/settings" element={<SettingsPage />} />
+          <Route path="/account" element={<AccountsPage />} />
+          <Route path="/components" element={<ComponentShowcasePage />} />
+        </Route>
+      </Route>
+
+      <Route path="*" element={<Navigate to="/" replace />} />
+    </Routes>
   );
 }
 
