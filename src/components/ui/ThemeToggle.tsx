@@ -9,7 +9,7 @@ type ThemeToggleProps = {
 
 const ThemeToggle = ({ showLabel = true, className }: ThemeToggleProps) => {
   const { theme, setTheme, themes } = useThemeContext();
-  const label = themes.find((option) => option.id === theme)?.label ?? theme;
+  const activeLabel = themes.find((option) => option.id === theme)?.label ?? theme;
 
   return (
     <div className={`flex items-center gap-2 ${className ?? ""}`}>
@@ -22,7 +22,7 @@ const ThemeToggle = ({ showLabel = true, className }: ThemeToggleProps) => {
         onChange={(event) => setTheme(event.target.value as ThemeName)}
         options={themes.map(({ id, label }) => ({ label, value: id }))}
       />
-      {showLabel ? <span className="text-xs text-(--text-grey)">Now: {label}</span> : null}
+      {showLabel ? <span className="text-xs text-(--text-grey)">Now: {activeLabel}</span> : null}
     </div>
   );
 };

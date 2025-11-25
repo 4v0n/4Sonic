@@ -32,5 +32,5 @@ export const useTheme = () => {
     });
   };
 
-  return {theme, setTheme, cycleTheme, themes: THEME_OPTIONS};
+  return { theme, setTheme, cycleTheme, themes: THEME_OPTIONS };
 };

@@ -1,0 +1,17 @@
+#!/bin/sh
+
+# Prevent commits when ESLint fails. Skips if no package.json or node_modules present.
+if [ ! -f package.json ]; then
+  exit 0
+fi
+
+echo "Running ESLint before commit..."
+npm run lint --silent
+status=$?
+
+if [ $status -ne 0 ]; then
+  echo "ESLint failed. Commit aborted."
+  exit $status
+fi
+
+exit 0

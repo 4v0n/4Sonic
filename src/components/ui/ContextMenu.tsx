@@ -49,8 +49,11 @@ export const ContextMenuTrigger = forwardRef<
 
   const handleRef = (node: HTMLElement | null) => {
     (triggerRef as React.MutableRefObject<HTMLElement | null>).current = node;
-    if (typeof ref === "function") ref(node);
-    else if (ref) (ref as any).current = node;
+    if (typeof ref === "function") {
+      ref(node);
+    } else if (ref && "current" in ref) {
+      (ref as React.MutableRefObject<HTMLElement | null>).current = node;
+    }
   };
 
   const handleContextMenu = (e: React.MouseEvent<HTMLElement>) => {
@@ -62,17 +65,20 @@ export const ContextMenuTrigger = forwardRef<
   };
 
   if (asChild && isValidElement(children)) {
-    const childProps = (children as React.ReactElement).props as Record<string, any>;
-    return cloneElement(children as React.ReactElement, {
+    const childElement = children as React.ReactElement<Record<string, unknown>>;
+    const childProps = childElement.props;
+    return cloneElement(childElement, {
       ...props,
       ...childProps,
       ref: handleRef,
       onContextMenu: (e: React.MouseEvent<HTMLElement>) => {
         handleContextMenu(e);
-        childProps.onContextMenu?.(e);
+        if (typeof childProps.onContextMenu === "function") {
+          childProps.onContextMenu(e);
+        }
       },
       "data-new-context-menu-trigger": "true",
-    } as any);
+    });
   }
 
   return (
@@ -147,8 +153,11 @@ export const ContextMenuContent = forwardRef<HTMLDivElement, React.HTMLAttribute
         <div
           ref={(node) => {
             (contentRef as React.MutableRefObject<HTMLDivElement | null>).current = node;
-            if (typeof ref === "function") ref(node);
-            else if (ref) (ref as any).current = node;
+            if (typeof ref === "function") {
+              ref(node);
+            } else if (ref && "current" in ref) {
+              (ref as React.MutableRefObject<HTMLDivElement | null>).current = node;
+            }
           }}
           className={cn(
             "fixed z-50 w-56 rounded-md shadow-lg",
@@ -268,8 +277,11 @@ export const ContextMenuSubTrigger = forwardRef<
     <div
       ref={(node) => {
         (triggerRef as React.MutableRefObject<HTMLDivElement | null>).current = node;
-        if (typeof ref === "function") ref(node);
-        else if (ref) (ref as any).current = node;
+        if (typeof ref === "function") {
+          ref(node);
+        } else if (ref && "current" in ref) {
+          (ref as React.MutableRefObject<HTMLDivElement | null>).current = node;
+        }
       }}
       onMouseEnter={open}
       onMouseLeave={close}
@@ -320,8 +332,11 @@ export const ContextMenuSubContent = forwardRef<HTMLDivElement, React.HTMLAttrib
         <div
           ref={(node) => {
             (subContentRef as React.MutableRefObject<HTMLDivElement | null>).current = node;
-            if (typeof ref === "function") ref(node);
-            else if (ref) (ref as any).current = node;
+            if (typeof ref === "function") {
+              ref(node);
+            } else if (ref && "current" in ref) {
+              (ref as React.MutableRefObject<HTMLDivElement | null>).current = node;
+            }
           }}
           onMouseEnter={open}
           onMouseLeave={close}

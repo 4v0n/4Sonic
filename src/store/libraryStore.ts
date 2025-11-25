@@ -90,7 +90,6 @@ const processWithConcurrency = async <T>(
     while (cursor < items.length) {
       const currentIndex = cursor;
       cursor += 1;
-      // eslint-disable-next-line no-await-in-loop
       await worker(items[currentIndex]);
     }
   });
