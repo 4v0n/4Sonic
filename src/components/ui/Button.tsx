@@ -33,7 +33,7 @@ const Button = React.forwardRef<HTMLButtonElement, IconButtonProps>(
     const iconOnly = hasIcon && !children;
 
     const base =
-      "cursor-pointer rounded-full transition-colors flex items-center justify-center gap-2 shadow hover:shadow-md";
+      "cursor-pointer rounded-full transition-colors flex items-center justify-center gap-2 shadow hover:shadow-md align-middle";
 
     const sizeClasses = {
       small: iconOnly ? "w-6 h-6" : "h-6 px-2 text-sm gap-1",
@@ -51,10 +51,10 @@ const Button = React.forwardRef<HTMLButtonElement, IconButtonProps>(
       default: "bg-(--surface0) hover:bg-(--surface1)",
       primary: "bg-(--primary0) hover:bg-(--primary1)",
       secondary: "bg-(--surface-tonal0) hover:bg-(--surface-tonal1)",
-      outline: "bg-transparent border border-(--text-grey) hover:bg-(--surface1)",
-      ghost: "bg-transparent hover:bg-(--surface1)",
+      outline: "bg-transparent border border-(--text-grey) hover:bg-(--surface1) shadow-none",
+      ghost: "bg-transparent hover:bg-(--surface1) shadow-none",
       destructive: "bg-(--danger0) hover:bg-(--danger1)",
-      link: "bg-transparent underline underline-offset-4 text-(--link) hover:text-(--link-hover) px-0 h-auto shadow-none hover:shadow-none",
+      link: "bg-transparent underline underline-offset-4 text-(--text) hover:text-(--text) px-0 h-auto shadow-none hover:shadow-none rounded-none",
     } as const;
 
     const classNames = cn(
@@ -63,14 +63,15 @@ const Button = React.forwardRef<HTMLButtonElement, IconButtonProps>(
       iconScale[size],
       variantClasses[variant],
       className,
-      props.disabled ? "opacity-50 cursor-not-allowed" : "",
+      iconOnly ? "rounded-full" : "",
+      props.disabled ? "opacity-50 cursor-not-allowed shadow-none" : "",
     );
 
     return (
-      <button ref={ref} {...props} className={classNames}>
-        {icon && iconPosition === "left" ? icon : null}
-        {children ? children : null}
-        {icon && iconPosition === "right" ? icon : null}
+      <button ref={ref} {...props} className={classNames} data-icon-only={iconOnly || undefined}>
+        {icon && iconPosition === "left" ? <span className="flex items-center">{icon}</span> : null}
+        {children ? <span className="flex items-center">{children}</span> : null}
+        {icon && iconPosition === "right" ? <span className="flex items-center">{icon}</span> : null}
       </button>
     );
   },

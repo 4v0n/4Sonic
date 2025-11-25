@@ -185,7 +185,7 @@ export const ContextMenuItem = forwardRef<
           ref={ref}
           onClick={handleSelect}
           className={cn(
-            "flex cursor-pointer transition-colors items-center w-full text-left px-4 py-2 text-sm",
+            "flex cursor-pointer transition-colors items-center gap-3 w-full text-left px-4 py-2 text-sm",
             "text-(--text-grey) hover:bg-(--surface2) hover:text-(--text)",
             "disabled:pointer-events-none disabled:opacity-50",
             inset && "pl-8",
@@ -194,7 +194,11 @@ export const ContextMenuItem = forwardRef<
           role="menuitem"
           {...props}
         >
-          {icon && <span className="mr-3 h-5 w-5">{icon}</span>}
+          {icon && (
+            <span className="flex h-5 w-5 shrink-0 items-center justify-center text-(--text-grey) [&>svg]:h-5 [&>svg]:w-5">
+              {icon}
+            </span>
+          )}
           {children}
         </button>
       );
