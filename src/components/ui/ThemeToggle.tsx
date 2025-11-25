@@ -1,6 +1,6 @@
-import Button from "./Button";
-import { DarkModeIcon, LightModeIcon } from "../../constants/icons";
 import { useThemeContext } from "../../context/ThemeContext";
+import Select from "./Select";
+import { ThemeName } from "../../constants/themes";
 
 type ThemeToggleProps = {
   showLabel?: boolean;
@@ -8,21 +8,22 @@ type ThemeToggleProps = {
 };
 
 const ThemeToggle = ({ showLabel = true, className }: ThemeToggleProps) => {
-  const { theme, toggleTheme } = useThemeContext();
-  const isDark = theme === "dark";
+  const { theme, setTheme, themes } = useThemeContext();
+  const label = themes.find((option) => option.id === theme)?.label ?? theme;
 
   return (
-    <Button
-      variant="ghost"
-      size="medium"
-      className={className}
-      aria-label="Toggle color theme"
-      aria-pressed={isDark}
-      icon={isDark ? <LightModeIcon /> : <DarkModeIcon />}
-      onClick={toggleTheme}
-    >
-      {showLabel ? (isDark ? "Light mode" : "Dark mode") : null}
-    </Button>
+    <div className={`flex items-center gap-2 ${className ?? ""}`}>
+      {showLabel ? <span className="text-sm font-medium text-(--text)">Theme</span> : null}
+      <Select
+        aria-label="Select color theme"
+        fullWidth={false}
+        size="small"
+        value={theme}
+        onChange={(event) => setTheme(event.target.value as ThemeName)}
+        options={themes.map(({ id, label }) => ({ label, value: id }))}
+      />
+      {showLabel ? <span className="text-xs text-(--text-grey)">Now: {label}</span> : null}
+    </div>
   );
 };
 

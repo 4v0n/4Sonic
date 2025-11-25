@@ -1,11 +1,12 @@
 import { createContext, useContext, type ReactNode } from "react";
 import { useTheme } from "../hooks/useTheme";
-
-type ThemeMode = "light" | "dark";
+import { ThemeName, THEME_OPTIONS } from "../constants/themes";
 
 type ThemeContextValue = {
-  theme: ThemeMode;
-  toggleTheme: () => void;
+  theme: ThemeName;
+  themes: typeof THEME_OPTIONS;
+  setTheme: (theme: ThemeName) => void;
+  cycleTheme: () => void;
 };
 
 const ThemeContext = createContext<ThemeContextValue | undefined>(undefined);

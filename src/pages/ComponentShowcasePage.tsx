@@ -34,10 +34,14 @@ const ColorSwatch = ({ token, label }: { token: string; label?: string }) => (
 
 const ComponentShowcasePage = () => {
 
-  const { theme } = useThemeContext();
+  const { theme, themes } = useThemeContext();
   const [isChecked, setIsChecked] = useState(false);
   const [radioValue, setRadioValue] = useState("option-one");
   const [keybind, setKeybind] = useState("⌘ + K");
+  const activeThemeLabel = useMemo(
+    () => themes.find((option) => option.id === theme)?.label ?? theme,
+    [theme, themes],
+  );
   const paletteSections = useMemo(() => ([
     {
       title: "Primary ramp",
@@ -68,7 +72,7 @@ const ComponentShowcasePage = () => {
       <Section title="Theme & Palette">
         <div className="flex flex-wrap items-center gap-3">
           <ThemeToggle />
-          <span className="text-sm text-(--text-grey)">Currently using the {theme} theme.</span>
+          <span className="text-sm text-(--text-grey)">Currently using the {activeThemeLabel} theme.</span>
         </div>
 
         <div className="space-y-8">
