@@ -1,7 +1,10 @@
 import { PlayArrowIcon, QueueMusicRoundedIcon, RepeatIcon, ShuffleIcon, SkipNextIcon, SkipPreviousIcon, VolumeUpIcon } from "../../constants/icons";
 import Button from "../ui/Button";
+import { useRightSidebarStore } from "../../store/rightSidebarStore";
 
 const BottomBar = () => {
+  const toggleQueue = useRightSidebarStore((state) => state.toggle);
+
   return (
     <footer className="sticky bottom-0 z-30 h-24 p-4 flex items-center justify-between border-t border-(--surface1) bg-(--surface0) shadow">
       <div className="flex items-center w-1/3">
@@ -39,7 +42,12 @@ const BottomBar = () => {
       </div>
 
       <div className="flex items-center justify-end space-x-3 w-1/3">
-        <Button icon={<QueueMusicRoundedIcon />} className="shadow-none" />
+        <Button
+          icon={<QueueMusicRoundedIcon />}
+          className="shadow-none"
+          onClick={() => toggleQueue("queue")}
+          aria-label="Toggle queue sidebar"
+        />
         <Button icon={<VolumeUpIcon />} className="shadow-none" />
       </div>
     </footer>

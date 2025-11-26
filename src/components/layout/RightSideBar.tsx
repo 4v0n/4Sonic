@@ -1,7 +1,63 @@
-const RightSideBar = () => {
+import type { MouseEvent } from "react";
+import { CloseIcon, QueueMusicRoundedIcon } from "../../constants/icons";
+import Button from "../ui/Button";
+import type { RightSidebarView } from "../../store/rightSidebarStore";
+
+interface RightSideBarProps {
+  width: number;
+  view: RightSidebarView;
+  isOpen: boolean;
+  isResizing: boolean;
+  onResizeStart: (event: MouseEvent<HTMLDivElement>) => void;
+  onClose: () => void;
+}
+
+const RightSideBar = ({ width, view, isOpen, isResizing, onResizeStart, onClose }: RightSideBarProps) => {
   return (
-    <aside className="w-80 p-4 flex flex-col border-l overflow-y-auto">
-      <h2 className="text-xl font-semibold mb-4 sticky top-0 bg-inherit py-2 z-10">Queue</h2>
+    <aside
+      className={`
+        relative flex-shrink-0 flex flex-col border-l border-(--surface1) bg-(--surface0) overflow-hidden
+        ${isResizing ? "transition-none" : "transition-[width,opacity] duration-200 ease-in-out"}
+        ${isOpen ? "opacity-100" : "opacity-0 pointer-events-none"}
+      `}
+      style={{ width }}
+      aria-hidden={!isOpen}
+    >
+      <div
+        className={`
+          absolute top-0 left-0 h-full w-1 cursor-col-resize
+          ${isResizing ? "bg-(--surface2)" : "bg-transparent hover:bg-(--surface2)"}
+        `}
+        onMouseDown={onResizeStart}
+        role="separator"
+        aria-label="Resize right sidebar"
+      />
+
+      <div className="flex items-center justify-between px-4 py-3 sticky top-0 bg-(--surface0) z-10 border-b border-(--surface1)">
+        <div className="flex items-center gap-2 text-lg font-semibold">
+          {view === "queue" && <QueueMusicRoundedIcon fontSize="small" />}
+          <span className="truncate capitalize">{view}</span>
+        </div>
+        <Button
+          icon={<CloseIcon fontSize="small" />}
+          variant="ghost"
+          size="small"
+          aria-label="Close right sidebar"
+          onClick={onClose}
+        />
+      </div>
+
+      <div className="p-4 overflow-y-auto flex-1">
+        {view === "queue" && (
+          <div className="space-y-3">
+            <div className="text-sm text-(--text-grey)">Up Next</div>
+            {/* Queue content can be plugged in here */}
+            <div className="rounded-lg border border-(--surface1) p-4 text-(--text-grey)">
+              Queue items will appear here.
+            </div>
+          </div>
+        )}
+      </div>
     </aside>
   );
 };
