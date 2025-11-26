@@ -5,6 +5,7 @@ import { clearLibrarySnapshot } from "../db/libraryDb";
 import { useLibraryStore } from "./libraryStore";
 
 const AUTH_STORAGE_KEY = "four-sonic.auth";
+const DEFAULT_SERVER_URL = (import.meta.env.VITE_DEFAULT_SERVER_URL ?? "").trim();
 
 export interface LoginPayload {
   serverUrl: string;
@@ -107,7 +108,14 @@ export const useAuthStore = create<AuthState>((set, get) => ({
   login: async ({ serverUrl, username, password, stayLoggedIn }) => {
     set({ status: "authenticating", error: undefined });
 
-    const normalizedServer = normalizeServerUrl(serverUrl);
+    const resolvedServerUrl = serverUrl.trim() || DEFAULT_SERVER_URL;
+    if (!resolvedServerUrl) {
+      const message = "Server URL is required";
+      set({ status: "error", error: message });
+      throw new Error(message);
+    }
+
+    const normalizedServer = normalizeServerUrl(resolvedServerUrl);
     const salt = createSalt();
     const token = createTokenFromPassword(password, salt);
     const credentials: PersistedCredentials = {
@@ -149,4 +157,3 @@ export const useAuthStore = create<AuthState>((set, get) => ({
     });
   },
 }));
-
