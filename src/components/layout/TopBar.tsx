@@ -1,6 +1,6 @@
 import { useNavigate } from "react-router-dom";
 import { ArrowBackIcon, ArrowForwardIcon, LogoutIcon, PersonIcon, SettingsIcon } from "../../constants/icons";
-import IconDropdown, { MenuOption } from "../ui/IconDropdown";
+import Dropdown, { MenuOption } from "../ui/Dropdown";
 import Button from "../ui/Button";
 import { useAuthStore } from "../../store/authStore";
 
@@ -32,18 +32,17 @@ const TopBar = () => {
         </Button>
       </div>
       <div className="flex items-center space-x-4">
-        <button className="">
-          <IconDropdown
-            buttonAriaLabel="Account and Settings"
-            triggerContent={
-              <PersonIcon
-                className="w-8 h-8 rounded-full object-cover"
-              />
-            }
-            options={profileMenuOptions}
-            dropdownPlacement="bottom-right"
-          />
-        </button>
+        <Dropdown
+          buttonAriaLabel="Account and Settings"
+          triggerContent={
+            <PersonIcon
+              className="w-8 h-8 rounded-full object-cover"
+            />
+          }
+          options={profileMenuOptions}
+          dropdownPlacement="bottom-right"
+          buttonClassName="shadow-none"
+        />
       </div>
     </header>
   );
