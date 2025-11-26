@@ -9,6 +9,9 @@ interface LocationState {
   from?: string;
 }
 
+const DEFAULT_SERVER_URL = (import.meta.env.VITE_DEFAULT_SERVER_URL ?? "").trim();
+const HAS_DEFAULT_SERVER_URL = Boolean(DEFAULT_SERVER_URL);
+
 const LoginPage = () => {
   const navigate = useNavigate();
   const location = useLocation();
@@ -17,7 +20,7 @@ const LoginPage = () => {
   const storeError = useAuthStore((state) => state.error);
 
   const [formState, setFormState] = useState<LoginPayload>({
-    serverUrl: "",
+    serverUrl: DEFAULT_SERVER_URL,
     username: "",
     password: "",
     stayLoggedIn: true,
@@ -52,22 +55,24 @@ const LoginPage = () => {
         <p className="mt-2 text-sm text-(--text-grey)">Connect your Navidrome/Subsonic server to get started.</p>
 
         <form className="mt-8 space-y-6" onSubmit={handleSubmit}>
-          <div>
-            <label htmlFor="serverUrl" className="text-sm font-medium text-(--text)">
-              Server URL
-            </label>
-            <input
-              id="serverUrl"
-              name="serverUrl"
-              type="url"
-              required
-              placeholder="https://my-navidrome.example.com"
-              value={formState.serverUrl}
-              onChange={handleChange}
-              className="mt-2 w-full rounded-2xl border border-(--surface2) bg-(--surface1) px-4 py-3 text-(--text) outline-none focus:border-(--primary0)"
-              autoComplete="url"
-            />
-          </div>
+          {!HAS_DEFAULT_SERVER_URL && (
+            <div>
+              <label htmlFor="serverUrl" className="text-sm font-medium text-(--text)">
+                Server URL
+              </label>
+              <input
+                id="serverUrl"
+                name="serverUrl"
+                type="url"
+                required
+                placeholder="https://my-navidrome.example.com"
+                value={formState.serverUrl}
+                onChange={handleChange}
+                className="mt-2 w-full rounded-2xl border border-(--surface2) bg-(--surface1) px-4 py-3 text-(--text) outline-none focus:border-(--primary0)"
+                autoComplete="url"
+              />
+            </div>
+          )}
 
           <div>
             <label htmlFor="username" className="text-sm font-medium text-(--text)">
