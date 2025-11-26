@@ -29,9 +29,7 @@ const Button = React.forwardRef<HTMLButtonElement, IconButtonProps>(
     ref,
   ) => {
     const isSlot = asChild && React.isValidElement(children);
-    const childArray = React.Children.toArray(children).filter(
-      (child) => child !== null && child !== undefined && child !== false,
-    );
+    const childArray = React.Children.toArray(children);
     const hasTextLikeChild = childArray.some(
       (child) => {
         if (typeof child === "string" || typeof child === "number") return true;

@@ -18,11 +18,10 @@ export const ContextMenuPortal = ContextMenuPrimitive.Portal;
 export const ContextMenuContent = React.forwardRef<
   React.ElementRef<typeof ContextMenuPrimitive.Content>,
   React.ComponentPropsWithoutRef<typeof ContextMenuPrimitive.Content>
->(({ className, sideOffset = 4, ...props }, ref) => (
+>(({ className, ...props }, ref) => (
   <ContextMenuPortal>
     <ContextMenuPrimitive.Content
       ref={ref}
-      sideOffset={sideOffset}
       className={cn(
         "min-w-[12rem] rounded-md shadow-lg border border-(--surface2)",
         "bg-(--surface1) py-1 text-(--text-grey)",
