@@ -1,32 +1,34 @@
 import React from "react";
+import * as CheckboxPrimitive from "@radix-ui/react-checkbox";
 import { CheckIcon } from "../../constants/icons";
 import cn from "../../utils/cn";
 
-export interface CheckboxProps extends Omit<React.ButtonHTMLAttributes<HTMLButtonElement>, "onChange"> {
+export interface CheckboxProps
+  extends Omit<React.ComponentPropsWithoutRef<typeof CheckboxPrimitive.Root>, "checked" | "onCheckedChange"> {
   checked: boolean;
   onCheckedChange: (checked: boolean) => void;
 }
 
-const Checkbox = React.forwardRef<HTMLButtonElement, CheckboxProps>(
+const Checkbox = React.forwardRef<React.ElementRef<typeof CheckboxPrimitive.Root>, CheckboxProps>(
   ({ className, checked, onCheckedChange, ...props }, ref) => {
     return (
-      <button
+      <CheckboxPrimitive.Root
         ref={ref}
-        type="button"
-        role="checkbox"
-        aria-checked={checked}
-        data-state={checked ? "checked" : "unchecked"}
-        onClick={() => onCheckedChange(!checked)}
+        checked={checked}
+        onCheckedChange={(value) => onCheckedChange(value === true)}
         className={cn(
           "peer h-4 w-4 shrink-0 rounded-sm border border-(--text) cursor-pointer disabled:cursor-not-allowed disabled:opacity-50 text-(--success1)",
           className,
         )}
         {...props}
       >
-        <div className={cn("flex items-center justify-center h-full w-full", checked ? "opacity-100" : "opacity-0")}>
+        <CheckboxPrimitive.Indicator
+          forceMount
+          className="flex items-center justify-center h-full w-full opacity-100 data-[state=unchecked]:opacity-0 transition-opacity"
+        >
           <CheckIcon className="h-4 w-4 rounded-sm" />
-        </div>
-      </button>
+        </CheckboxPrimitive.Indicator>
+      </CheckboxPrimitive.Root>
     );
   },
 );
