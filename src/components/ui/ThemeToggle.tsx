@@ -19,7 +19,7 @@ const ThemeToggle = ({ showLabel = true, className }: ThemeToggleProps) => {
         fullWidth={false}
         size="small"
         value={theme}
-        onChange={(event) => setTheme(event.target.value as ThemeName)}
+        onValueChange={(value) => setTheme(value as ThemeName)}
         options={themes.map(({ id, label }) => ({ label, value: id }))}
       />
       {showLabel ? <span className="text-xs text-(--text-grey)">Now: {activeLabel}</span> : null}

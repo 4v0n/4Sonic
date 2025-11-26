@@ -1,18 +1,13 @@
 import React from "react";
+import * as TogglePrimitive from "@radix-ui/react-toggle";
 import cn from "../../utils/cn";
 
-export interface ToggleProps extends React.ButtonHTMLAttributes<HTMLButtonElement> {
+export interface ToggleProps extends React.ComponentPropsWithoutRef<typeof TogglePrimitive.Root> {
   variant?: "default" | "outline";
   size?: "sm" | "md" | "lg";
-  pressed?: boolean;
-  onPressedChange?: (pressed: boolean) => void;
 }
 
-const toggleVariants = (
-  variant?: ToggleProps["variant"],
-  size?: ToggleProps["size"],
-  className?: string,
-) => {
+const toggleVariants = (variant: ToggleProps["variant"], size: ToggleProps["size"], className?: string) => {
   const effectiveVariant = variant ?? "default";
   const effectiveSize = size ?? "md";
 
@@ -35,22 +30,17 @@ const toggleVariants = (
   return cn(baseClasses, variants[effectiveVariant], sizes[effectiveSize], className);
 };
 
-const Toggle = React.forwardRef<HTMLButtonElement, ToggleProps>(
-  ({ className, variant, size, pressed, onPressedChange, ...props }, ref) => {
+const Toggle = React.forwardRef<React.ElementRef<typeof TogglePrimitive.Root>, ToggleProps>(
+  ({ className, variant, size, ...props }, ref) => {
     return (
-      <button
+      <TogglePrimitive.Root
         ref={ref}
-        type="button"
-        role="switch"
-        aria-checked={pressed}
-        data-state={pressed ? "on" : "off"}
-        onClick={() => onPressedChange?.(!pressed)}
         className={toggleVariants(variant, size, className)}
         {...props}
       />
     );
   },
 );
-Toggle.displayName = "Toggle";
+Toggle.displayName = TogglePrimitive.Root.displayName;
 
 export default Toggle;
