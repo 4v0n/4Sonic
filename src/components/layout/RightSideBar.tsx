@@ -39,12 +39,13 @@ const RightSideBar = ({ width, view, isOpen, isResizing, onResizeStart, onClose 
           <span className="truncate capitalize">{view}</span>
         </div>
         <Button
-          icon={<CloseIcon fontSize="small" />}
           variant="ghost"
           size="small"
           aria-label="Close right sidebar"
           onClick={onClose}
-        />
+        >
+          <CloseIcon fontSize="small" />
+        </Button>
       </div>
 
       <div className="p-4 overflow-y-auto flex-1">

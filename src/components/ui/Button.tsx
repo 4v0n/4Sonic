@@ -1,10 +1,10 @@
 import React from "react";
+import { Slot } from "@radix-ui/react-slot";
 import cn from "../../utils/cn";
 
 interface IconButtonProps extends React.ButtonHTMLAttributes<HTMLButtonElement> {
+  asChild?: boolean;
   children?: React.ReactNode;
-  icon?: React.ReactNode;
-  iconPosition?: "left" | "right";
   size?: "small" | "medium" | "large";
   variant?:
     | "default"
@@ -23,14 +23,28 @@ const Button = React.forwardRef<HTMLButtonElement, IconButtonProps>(
       className = "",
       size = "medium",
       variant = "default",
-      icon,
-      iconPosition = "left",
+      asChild = false,
       ...props
     },
     ref,
   ) => {
-    const hasIcon = !!icon;
-    const iconOnly = hasIcon && !children;
+    const isSlot = asChild && React.isValidElement(children);
+    const childArray = React.Children.toArray(children).filter(
+      (child) => child !== null && child !== undefined && child !== false,
+    );
+    const hasTextLikeChild = childArray.some(
+      (child) => {
+        if (typeof child === "string" || typeof child === "number") return true;
+        if (React.isValidElement(child)) {
+          const grandChildren = React.Children.toArray(child.props?.children);
+          return grandChildren.some((grandChild) => typeof grandChild === "string" || typeof grandChild === "number");
+        }
+        return false;
+      },
+    );
+    const iconOnly = childArray.length === 1 && !hasTextLikeChild;
+
+    const Comp = isSlot ? Slot : "button";
 
     const base =
       "cursor-pointer rounded-full transition-colors flex items-center justify-center gap-2 shadow hover:shadow-md align-middle";
@@ -67,12 +81,21 @@ const Button = React.forwardRef<HTMLButtonElement, IconButtonProps>(
       props.disabled ? "opacity-50 cursor-not-allowed shadow-none" : "",
     );
 
+    const normalizedChildren = childArray.map((child, index) => {
+      if (typeof child === "string" || typeof child === "number") {
+        return (
+          <span key={`btn-child-${index}`} className="flex items-center">
+            {child}
+          </span>
+        );
+      }
+      return child;
+    });
+
     return (
-      <button ref={ref} {...props} className={classNames} data-icon-only={iconOnly || undefined}>
-        {icon && iconPosition === "left" ? <span className="flex items-center">{icon}</span> : null}
-        {children ? <span className="flex items-center">{children}</span> : null}
-        {icon && iconPosition === "right" ? <span className="flex items-center">{icon}</span> : null}
-      </button>
+      <Comp ref={ref} {...props} className={classNames} data-icon-only={iconOnly || undefined}>
+        {normalizedChildren}
+      </Comp>
     );
   },
 );

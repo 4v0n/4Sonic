@@ -156,7 +156,7 @@ const ComponentShowcasePage = () => {
 
       <Section title="Buttons">
         <Button>Default</Button>
-        <Button icon={<AlbumIcon/>} variant="primary">Primary</Button>
+        <Button variant="primary"><AlbumIcon />Primary</Button>
         <Button variant="secondary">Secondary</Button>
         <Button variant="outline">Outline</Button>
         <Button variant="ghost">Ghost</Button>

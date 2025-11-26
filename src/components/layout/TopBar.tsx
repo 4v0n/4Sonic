@@ -24,8 +24,12 @@ const TopBar = () => {
   return (
     <header className="h-16 flex items-center justify-between px-6 sticky top-0 z-30 border-b border-(--surface1) shadow">
       <div className="flex items-center space-x-3">
-        <Button onClick={() => navigate(-1)} aria-label="Go back" icon={<ArrowBackIcon fontSize="small" />} className="shadow-none" />
-        <Button onClick={() => navigate(1)} aria-label="Go back" icon={<ArrowForwardIcon fontSize="small" />} className="shadow-none" />
+        <Button onClick={() => navigate(-1)} aria-label="Go back" className="shadow-none">
+          <ArrowBackIcon fontSize="small" />
+        </Button>
+        <Button onClick={() => navigate(1)} aria-label="Go back" className="shadow-none">
+          <ArrowForwardIcon fontSize="small" />
+        </Button>
       </div>
       <div className="flex items-center space-x-4">
         <button className="">

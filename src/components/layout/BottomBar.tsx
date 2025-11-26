@@ -17,15 +17,24 @@ const BottomBar = () => {
 
       <div className="flex flex-col items-center w-1/3">
         <div className="flex items-center space-x-4 mb-2">
-          <Button icon={<ShuffleIcon fontSize="small" />} className="shadow-none" />
-          <Button icon={<SkipPreviousIcon fontSize="small" />} className="shadow-none" />
+          <Button className="shadow-none">
+            <ShuffleIcon fontSize="small" />
+          </Button>
+          <Button className="shadow-none">
+            <SkipPreviousIcon fontSize="small" />
+          </Button>
           <Button
             size="large"
             className="bg-(--text) hover:bg-(--primary2) shadow-none"
-            icon={<PlayArrowIcon fontSize="small" className="text-(--text-inverted)" />}
-          />
-          <Button icon={<SkipNextIcon fontSize="small" />} className="shadow-none" />
-          <Button icon={<RepeatIcon fontSize="small" />} className="shadow-none" />
+          >
+            <PlayArrowIcon fontSize="small" className="text-(--text-inverted)" />
+          </Button>
+          <Button className="shadow-none">
+            <SkipNextIcon fontSize="small" />
+          </Button>
+          <Button className="shadow-none">
+            <RepeatIcon fontSize="small" />
+          </Button>
         </div>
         <div className="flex items-center w-full max-w-md space-x-2">
           <span className="text-xs tabular-nums">
@@ -43,12 +52,15 @@ const BottomBar = () => {
 
       <div className="flex items-center justify-end space-x-3 w-1/3">
         <Button
-          icon={<QueueMusicRoundedIcon />}
           className="shadow-none"
           onClick={() => toggleQueue("queue")}
           aria-label="Toggle queue sidebar"
-        />
-        <Button icon={<VolumeUpIcon />} className="shadow-none" />
+        >
+          <QueueMusicRoundedIcon />
+        </Button>
+        <Button className="shadow-none">
+          <VolumeUpIcon />
+        </Button>
       </div>
     </footer>
   );

@@ -164,8 +164,9 @@ export const DialogContent = forwardRef<HTMLDivElement, React.HTMLAttributes<HTM
             <Button
               className="absolute right-4 top-4 rounded-full opacity-70 ring-offset-(--surface0) transition-opacity shadow-none
                 hover:opacity-100 disabled:pointer-events-none data-[state=open]:bg-(--primary2) data-[state=open]:text-(--text-grey)"
-              icon={<CloseIcon className="h-4 w-4" />}
-            />
+            >
+              <CloseIcon className="h-4 w-4" />
+            </Button>
           </DialogClose>
         </div>
       </DialogPortal>
