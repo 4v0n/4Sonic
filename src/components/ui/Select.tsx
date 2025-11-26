@@ -14,7 +14,7 @@ function toObjectOption(opt: AnyOption): ObjectOption {
 }
 
 export interface SelectProps
-  extends React.SelectHTMLAttributes<HTMLSelectElement> {
+  extends Omit<React.SelectHTMLAttributes<HTMLSelectElement>, "size"> {
   /** Options can be strings/numbers or {label, value, disabled} objects */
   options: AnyOption[];
   /** Optional placeholder shown when no value is selected */

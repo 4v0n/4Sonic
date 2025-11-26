@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import Checkbox from "../components/ui/Checkbox";
 import { RadioGroup, RadioGroupItem } from "../components/ui/RadioGroup";
 import Toggle from "../components/ui/Toggle";
@@ -9,6 +9,8 @@ import { Dialog, DialogClose, DialogContent, DialogDescription, DialogFooter, Di
 import Button from "../components/ui/Button";
 import Spinner from "../components/ui/Spinner";
 import { ContextMenu, ContextMenuContent, ContextMenuItem, ContextMenuSeparator, ContextMenuSub, ContextMenuSubContent, ContextMenuSubTrigger, ContextMenuTrigger } from "../components/ui/ContextMenu";
+import ThemeToggle from "../components/ui/ThemeToggle";
+import { useThemeContext } from "../context/ThemeContext";
 
 const Section: React.FC<{ title: string, children: React.ReactNode }> = ({ title, children }) => (
   <section className="space-y-4 space-x-2">
@@ -17,15 +19,78 @@ const Section: React.FC<{ title: string, children: React.ReactNode }> = ({ title
   </section>
 );
 
+const ColorSwatch = ({ token, label }: { token: string; label?: string }) => (
+  <div className="flex flex-col gap-2 rounded-xl border border-(--surface2) bg-(--surface0) p-3">
+    <div
+      className="h-12 rounded-lg border border-(--surface2)"
+      style={{ backgroundColor: `var(--${token})` }}
+    />
+    <div className="flex items-center justify-between text-xs text-(--text-grey)">
+      <span className="font-mono text-[11px] text-(--text)">{`--${token}`}</span>
+      {label ? <span>{label}</span> : null}
+    </div>
+  </div>
+);
+
 const ComponentShowcasePage = () => {
 
+  const { theme, themes } = useThemeContext();
   const [isChecked, setIsChecked] = useState(false);
   const [radioValue, setRadioValue] = useState("option-one");
   const [keybind, setKeybind] = useState("⌘ + K");
+  const activeThemeLabel = useMemo(
+    () => themes.find((option) => option.id === theme)?.label ?? theme,
+    [theme, themes],
+  );
+  const paletteSections = useMemo(() => ([
+    {
+      title: "Primary ramp",
+      description: "Brand greens used for emphasis and key actions.",
+      tokens: ["primary0", "primary1", "primary2", "primary3", "primary4", "primary5"],
+    },
+    {
+      title: "Surface ramp",
+      description: "Layered backgrounds for panels, cards, and separators.",
+      tokens: ["surface0", "surface1", "surface2", "surface3", "surface4", "surface5"],
+    },
+    {
+      title: "Tonal ramp",
+      description: "Subtle, desaturated surfaces for neutral emphasis blocks.",
+      tokens: ["surface-tonal0", "surface-tonal1", "surface-tonal2", "surface-tonal3", "surface-tonal4", "surface-tonal5"],
+    },
+    {
+      title: "Semantic ramp",
+      description: "Feedback colors for success, warning, danger, and info.",
+      tokens: ["success0", "success1", "success2", "warning0", "warning1", "warning2", "danger0", "danger1", "danger2", "info0", "info1", "info2"],
+    },
+  ]), []);
 
   return (
     <div className="space-y-12 p-4">
       <h1 className="text-2xl font-extrabold ">Component Showcase</h1>
+
+      <Section title="Theme & Palette">
+        <div className="flex flex-wrap items-center gap-3">
+          <ThemeToggle />
+          <span className="text-sm text-(--text-grey)">Currently using the {activeThemeLabel} theme.</span>
+        </div>
+
+        <div className="space-y-8">
+          {paletteSections.map((section) => (
+            <div key={section.title} className="space-y-3">
+              <div className="flex items-center justify-between gap-2">
+                <h3 className="text-lg font-semibold text-(--text)">{section.title}</h3>
+                <p className="text-sm text-(--text-grey)">{section.description}</p>
+              </div>
+              <div className="grid grid-cols-2 gap-3 md:grid-cols-3 lg:grid-cols-6">
+                {section.tokens.map((token) => (
+                  <ColorSwatch key={token} token={token} />
+                ))}
+              </div>
+            </div>
+          ))}
+        </div>
+      </Section>
 
       <Section title="Checkbox">
         <div className="flex items-center space-x-2">

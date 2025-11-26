@@ -3,6 +3,58 @@
 
 @layer base {
   :root {
+    color-scheme: dark;
+  }
+
+  :root,
+  [data-theme="dark"] {
+    --dark: #000000;
+    --light: #ffffff;
+
+    --text: #ffffff;
+    --text-grey: #aaaaaa;
+    --text-inverted: #000000;
+
+    --primary0: #12e09f;
+    --primary1: #4de4a9;
+    --primary2: #6de8b4;
+    --primary3: #86ecbe;
+    --primary4: #9df0c9;
+    --primary5: #b2f3d4;
+
+    --surface0: #131419;
+    --surface1: #28292e;
+    --surface2: #3f4044;
+    --surface3: #58585c;
+    --surface4: #717275;
+    --surface5: #8c8c8f;
+
+    --surface-tonal0: #1a2525;
+    --surface-tonal1: #2f3939;
+    --surface-tonal2: #464f4f;
+    --surface-tonal3: #5e6666;
+    --surface-tonal4: #767e7d;
+    --surface-tonal5: #909696;
+
+    --success2: #22946e;
+    --success1: #47d5a6;
+    --success0: #9ae8ce;
+
+    --warning2: #a87a2a;
+    --warning1: #d7ac61;
+    --warning0: #ecd7b2;
+
+    --danger2: #9c2121;
+    --danger1: #d94a4a;
+    --danger0: #eb9e9e;
+
+    --info2: #21498a;
+    --info1: #4077d1;
+    --info0: #92b2e5;
+  }
+
+  [data-theme="light"] {
+    color-scheme: light;
     --dark: #000000;
     --light: #ffffff;
 
@@ -31,64 +83,162 @@
     --surface-tonal4: #b6beb9;
     --surface-tonal5: #abb1ae;
 
-    --success0: #1b7f5c;
+    --success0: #58dbad;
     --success1: #28be8a;
-    --success2: #58dbad;
+    --success2: #1b7f5c;
 
-    --warning0: #b8871f;
+    --warning0: #ebca85;
     --warning1: #dfae44;
-    --warning2: #ebca85;
+    --warning2: #b8871f;
 
-    --danger0: #b13535;
+    --danger0: #e29d9d;
     --danger1: #d06262;
-    --danger2: #e29d9d;
+    --danger2: #b13535;
 
-    --info0: #1e56a3;
+    --info0: #74a4e6;
     --info1: #347ada;
-    --info2: #74a4e6;
+    --info2: #1e56a3;
   }
 
-  .dark {
-    --text: #ffffff;
-    --text-grey: #aaaaaa;
-    --text-inverted: #000000;
+  [data-theme="nord"] {
+    color-scheme: dark;
+    --dark: #000000;
+    --light: #ffffff;
 
-    --primary0: #12e09f;
-    --primary1: #4de4a9;
-    --primary2: #6de8b4;
-    --primary3: #86ecbe;
-    --primary4: #9df0c9;
-    --primary5: #b2f3d4;
+    --text: #eceff4;
+    --text-grey: #d8dee9;
+    --text-inverted: #2e3440;
 
-    --surface0: #131419;
-    --surface1: #28292e;
-    --surface2: #3f4044;
-    --surface3: #58585c;
-    --surface4: #717275;
-    --surface5: #8c8c8f;
+    --primary0: #88c0d0;
+    --primary1: #8fbcbb;
+    --primary2: #81a1c1;
+    --primary3: #5e81ac;
+    --primary4: #b48ead;
+    --primary5: #a3be8c;
 
-    --surface-tonal0: #1a2525;
-    --surface-tonal1: #2f3939;
-    --surface-tonal2: #464f4f;
-    --surface-tonal3: #5e6666;
-    --surface-tonal4: #767e7d;
-    --surface-tonal5: #909696;
+    --surface0: #2e3440;
+    --surface1: #3b4252;
+    --surface2: #434c5e;
+    --surface3: #4c566a;
+    --surface4: #d8dee9;
+    --surface5: #e5e9f0;
 
-    --success0: #22946e;
-    --success1: #47d5a6;
-    --success2: #9ae8ce;
+    --surface-tonal0: #323946;
+    --surface-tonal1: #363d4a;
+    --surface-tonal2: #3d4554;
+    --surface-tonal3: #454e5f;
+    --surface-tonal4: #50596a;
+    --surface-tonal5: #5a6375;
 
-    --warning0: #a87a2a;
-    --warning1: #d7ac61;
-    --warning2: #ecd7b2;
+    --success0: #cde0b9;
+    --success1: #a3be8c;
+    --success2: #6f8a5f;
 
-    --danger0: #9c2121;
-    --danger1: #d94a4a;
-    --danger2: #eb9e9e;
+    --warning0: #f3deb6;
+    --warning1: #ebcb8b;
+    --warning2: #c8a664;
 
-    --info0: #21498a;
-    --info1: #4077d1;
-    --info2: #92b2e5;
+    --danger0: #e7a0a7;
+    --danger1: #bf616a;
+    --danger2: #8f4550;
+
+    --info0: #a3b8d1;
+    --info1: #81a1c1;
+    --info2: #5e81ac;
+  }
+
+  [data-theme="sakura"] {
+    color-scheme: light;
+    --dark: #000000;
+    --light: #ffffff;
+
+    --text: #5c4b51;
+    --text-grey: #8c7b80;
+    --text-inverted: #ffffff;
+
+    --primary0: #ffb7c5;
+    --primary1: #ffc2cf;
+    --primary2: #ffccd8;
+    --primary3: #ffd8e2;
+    --primary4: #ffe3eb;
+    --primary5: #ffeef5;
+
+    --surface0: #fffbf7;
+    --surface1: #ffffff;
+    --surface2: #f5f2f0;
+    --surface3: #ebe8e6;
+    --surface4: #e1dedc;
+    --surface5: #d7d4d2;
+
+    --surface-tonal0: #fff0f3;
+    --surface-tonal1: #feebf0;
+    --surface-tonal2: #fde5ec;
+    --surface-tonal3: #fcdfe8;
+    --surface-tonal4: #fcdbe5;
+    --surface-tonal5: #fbd4e1;
+
+    --success0: #cfe9d6;
+    --success1: #a3d6b5;
+    --success2: #769f84;
+
+    --warning0: #f8deb0;
+    --warning1: #f2c08f;
+    --warning2: #d68c76;
+
+    --danger0: #f3b1bf;
+    --danger1: #e87a90;
+    --danger2: #b75c70;
+
+    --info0: #c6d3e7;
+    --info1: #9fb4d3;
+    --info2: #788fb1;
+  }
+
+  [data-theme="ocean"] {
+    color-scheme: light;
+    --dark: #000000;
+    --light: #ffffff;
+
+    --text: #003b46;
+    --text-grey: #5a848c;
+    --text-inverted: #ffffff;
+
+    --primary0: #4edad8;
+    --primary1: #64dfdd;
+    --primary2: #7ae4e2;
+    --primary3: #90e9e7;
+    --primary4: #a6eeee;
+    --primary5: #bcf3f2;
+
+    --surface0: #fdf8f0;
+    --surface1: #ffffff;
+    --surface2: #f4efe7;
+    --surface3: #ebe6dd;
+    --surface4: #e2ddcf;
+    --surface5: #d8d4c8;
+
+    --surface-tonal0: #e6fafa;
+    --surface-tonal1: #ddf6f5;
+    --surface-tonal2: #d4f1f0;
+    --surface-tonal3: #ccedec;
+    --surface-tonal4: #c3e8e7;
+    --surface-tonal5: #bbe4e2;
+
+    --success0: #b5e0c9;
+    --success1: #7fc6a4;
+    --success2: #5c9a7c;
+
+    --warning0: #f8deb0;
+    --warning1: #f2c572;
+    --warning2: #cfa45b;
+
+    --danger0: #f6b4b4;
+    --danger1: #f08a8a;
+    --danger2: #c86d6d;
+
+    --info0: #88c3e0;
+    --info1: #4fa3d1;
+    --info2: #2c7ea9;
   }
 }
 
@@ -97,7 +247,7 @@
   --light: var(--light);
 
   --text: var(--text);
-  --text: var(--text-grey);
+  --text-grey: var(--text-grey);
   --text-inverted: var(--text-inverted);
 
   --primary0: var(--primary0);
@@ -133,7 +283,7 @@
   --danger1: var(--danger1);
   --danger2: var(--danger2);
 
-  --info0: var(--info);
+  --info0: var(--info0);
   --info1: var(--info1);
   --info2: var(--info2);
 }

@@ -49,8 +49,11 @@ export const ContextMenuTrigger = forwardRef<
 
   const handleRef = (node: HTMLElement | null) => {
     (triggerRef as React.MutableRefObject<HTMLElement | null>).current = node;
-    if (typeof ref === "function") ref(node);
-    else if (ref) (ref as any).current = node;
+    if (typeof ref === "function") {
+      ref(node);
+    } else if (ref && "current" in ref) {
+      (ref as React.MutableRefObject<HTMLElement | null>).current = node;
+    }
   };
 
   const handleContextMenu = (e: React.MouseEvent<HTMLElement>) => {
@@ -62,17 +65,20 @@ export const ContextMenuTrigger = forwardRef<
   };
 
   if (asChild && isValidElement(children)) {
-    const childProps = (children as React.ReactElement).props as Record<string, any>;
-    return cloneElement(children as React.ReactElement, {
+    const childElement = children as React.ReactElement<Record<string, unknown>>;
+    const childProps = childElement.props;
+    return cloneElement(childElement, {
       ...props,
       ...childProps,
       ref: handleRef,
       onContextMenu: (e: React.MouseEvent<HTMLElement>) => {
         handleContextMenu(e);
-        childProps.onContextMenu?.(e);
+        if (typeof childProps.onContextMenu === "function") {
+          childProps.onContextMenu(e);
+        }
       },
       "data-new-context-menu-trigger": "true",
-    } as any);
+    });
   }
 
   return (
@@ -147,8 +153,11 @@ export const ContextMenuContent = forwardRef<HTMLDivElement, React.HTMLAttribute
         <div
           ref={(node) => {
             (contentRef as React.MutableRefObject<HTMLDivElement | null>).current = node;
-            if (typeof ref === "function") ref(node);
-            else if (ref) (ref as any).current = node;
+            if (typeof ref === "function") {
+              ref(node);
+            } else if (ref && "current" in ref) {
+              (ref as React.MutableRefObject<HTMLDivElement | null>).current = node;
+            }
           }}
           className={cn(
             "fixed z-50 w-56 rounded-md shadow-lg",
@@ -185,7 +194,7 @@ export const ContextMenuItem = forwardRef<
           ref={ref}
           onClick={handleSelect}
           className={cn(
-            "flex cursor-pointer transition-colors items-center w-full text-left px-4 py-2 text-sm",
+            "flex cursor-pointer transition-colors items-center gap-3 w-full text-left px-4 py-2 text-sm",
             "text-(--text-grey) hover:bg-(--surface2) hover:text-(--text)",
             "disabled:pointer-events-none disabled:opacity-50",
             inset && "pl-8",
@@ -194,7 +203,11 @@ export const ContextMenuItem = forwardRef<
           role="menuitem"
           {...props}
         >
-          {icon && <span className="mr-3 h-5 w-5">{icon}</span>}
+          {icon && (
+            <span className="flex h-5 w-5 shrink-0 items-center justify-center text-(--text-grey) [&>svg]:h-5 [&>svg]:w-5">
+              {icon}
+            </span>
+          )}
           {children}
         </button>
       );
@@ -264,8 +277,11 @@ export const ContextMenuSubTrigger = forwardRef<
     <div
       ref={(node) => {
         (triggerRef as React.MutableRefObject<HTMLDivElement | null>).current = node;
-        if (typeof ref === "function") ref(node);
-        else if (ref) (ref as any).current = node;
+        if (typeof ref === "function") {
+          ref(node);
+        } else if (ref && "current" in ref) {
+          (ref as React.MutableRefObject<HTMLDivElement | null>).current = node;
+        }
       }}
       onMouseEnter={open}
       onMouseLeave={close}
@@ -316,8 +332,11 @@ export const ContextMenuSubContent = forwardRef<HTMLDivElement, React.HTMLAttrib
         <div
           ref={(node) => {
             (subContentRef as React.MutableRefObject<HTMLDivElement | null>).current = node;
-            if (typeof ref === "function") ref(node);
-            else if (ref) (ref as any).current = node;
+            if (typeof ref === "function") {
+              ref(node);
+            } else if (ref && "current" in ref) {
+              (ref as React.MutableRefObject<HTMLDivElement | null>).current = node;
+            }
           }}
           onMouseEnter={open}
           onMouseLeave={close}
