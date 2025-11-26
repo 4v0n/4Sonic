@@ -1,4 +1,5 @@
 import { create } from "zustand";
+import { persist } from "zustand/middleware";
 
 export type RightSidebarView = "queue";
 
@@ -14,24 +15,32 @@ interface RightSidebarState {
   setWidth: (width: number | ((prev: number) => number)) => void;
 }
 
-export const useRightSidebarStore = create<RightSidebarState>((set) => ({
-  isOpen: false,
-  view: "queue",
-  width: RIGHT_SIDEBAR_DEFAULT_WIDTH,
-  open: (view = "queue") => set({ isOpen: true, view }),
-  close: () => set({ isOpen: false }),
-  toggle: (view = "queue") =>
-    set((state) => {
-      if (state.isOpen && state.view === view) {
-        return { isOpen: false };
-      }
-      return { isOpen: true, view };
+export const useRightSidebarStore = create<RightSidebarState>()(
+  persist(
+    (set) => ({
+      isOpen: false,
+      view: "queue",
+      width: RIGHT_SIDEBAR_DEFAULT_WIDTH,
+      open: (view = "queue") => set({ isOpen: true, view }),
+      close: () => set({ isOpen: false }),
+      toggle: (view = "queue") =>
+        set((state) => {
+          if (state.isOpen && state.view === view) {
+            return { isOpen: false };
+          }
+          return { isOpen: true, view };
+        }),
+      setWidth: (width) =>
+        set((state) => ({
+          width: typeof width === "function" ? width(state.width) : width,
+        })),
     }),
-  setWidth: (width) =>
-    set((state) => ({
-      width: typeof width === "function" ? width(state.width) : width,
-    })),
-}));
+    {
+      name: "right-sidebar",
+      partialize: (state) => ({ width: state.width, isOpen: state.isOpen, view: state.view }),
+    },
+  ),
+);
 
 export const openQueueSidebar = (): void => {
   useRightSidebarStore.getState().open("queue");

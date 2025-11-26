@@ -15,14 +15,22 @@ const MAX_WIDTH_RATIO = 0.45;
 const RIGHT_DEFAULT_WIDTH = 320;
 const RIGHT_MIN_WIDTH = 240;
 const RIGHT_MAX_WIDTH_RATIO = 0.4;
+const LEFT_WIDTH_STORAGE_KEY = "layout:left-sidebar-width";
+
+const getStoredLeftWidth = () => {
+  if (typeof window === "undefined") return DEFAULT_WIDTH;
+  const stored = window.localStorage.getItem(LEFT_WIDTH_STORAGE_KEY);
+  const parsed = stored ? Number(stored) : NaN;
+  return Number.isFinite(parsed) ? parsed : DEFAULT_WIDTH;
+};
 
 const AppShell = () => {
   useLibraryBootstrap();
 
-  const [sidebarWidth, setSidebarWidth] = useState(DEFAULT_WIDTH);
+  const [sidebarWidth, setSidebarWidth] = useState(getStoredLeftWidth);
   const [isResizing, setIsResizing] = useState(false);
   const startXRef = useRef(0);
-  const startWidthRef = useRef(DEFAULT_WIDTH);
+  const startWidthRef = useRef(sidebarWidth);
   const rafRef = useRef<number | null>(null);
   const nextSidebarXRef = useRef<number | null>(null);
   const [isRightResizing, setIsRightResizing] = useState(false);
@@ -68,6 +76,11 @@ const AppShell = () => {
   useEffect(() => {
     setSidebarWidth((current) => clampWidth(current));
   }, [clampWidth]);
+
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    window.localStorage.setItem(LEFT_WIDTH_STORAGE_KEY, String(sidebarWidth));
+  }, [sidebarWidth]);
 
   const handleResizeStart = (event: React.MouseEvent<HTMLDivElement>) => {
     setIsResizing(true);
@@ -171,6 +184,10 @@ const AppShell = () => {
       setRightWidth((current) => clampRightWidth(current));
     }
   }, [clampRightWidth, isRightOpen, setRightWidth]);
+
+  useEffect(() => {
+    setRightWidth((current) => clampRightWidth(current));
+  }, [clampRightWidth, setRightWidth]);
 
   const isIconOnly = sidebarWidth <= ICON_SNAP_THRESHOLD;
   const rightSidebarWidth = isRightOpen ? rightWidth : 0;
