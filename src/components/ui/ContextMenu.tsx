@@ -44,7 +44,7 @@ export const ContextMenuItem = React.forwardRef<
     className={cn(
       "flex cursor-pointer transition-colors items-center gap-3 w-full text-left px-4 py-2 text-sm",
       "text-(--text-grey) hover:bg-(--surface2) hover:text-(--text)",
-      "focus-visible:outline-none focus:bg-(--surface2)",
+      "focus:bg-(--surface2) outline-none focus:outline-none",
       "disabled:pointer-events-none disabled:opacity-50",
       inset && "pl-8",
       className,
@@ -84,6 +84,7 @@ export const ContextMenuSubTrigger = React.forwardRef<
     className={cn(
       "relative flex cursor-pointer select-none items-center rounded-sm px-4 py-2 text-sm text-(--text-grey)",
       "transition-colors hover:bg-(--surface2) focus:bg-(--surface2) hover:text-(--text) focus:text-(--text)",
+      "outline-none focus:outline-none",
       inset && "pl-8",
       className,
     )}

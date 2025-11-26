@@ -54,7 +54,7 @@ const Select = ({
         <SelectPrimitive.Trigger
           className={cn(
             "inline-flex items-center justify-between rounded-full border border-transparent bg-(--surface0) shadow-sm",
-            "hover:bg-(--surface1) transition-colors outline-none focus-visible:ring-2 focus-visible:ring-offset-2",
+            "hover:bg-(--surface1) transition-colors outline-none",
             "cursor-pointer disabled:cursor-not-allowed disabled:opacity-50",
             triggerSizes[size],
             fullWidth ? "w-full" : "w-auto",

@@ -89,7 +89,7 @@ const Dropdown = ({
                 className={cn(
                   "group flex cursor-pointer transition-colors items-center gap-3 w-full text-left px-4 py-2 text-sm",
                   "text-(--text-grey) hover:bg-(--surface2) hover:text-(--text)",
-                  "focus-visible:outline-none focus:bg-(--surface2)",
+                  "focus:bg-(--surface2) outline-none focus:outline-none",
                   "disabled:pointer-events-none disabled:opacity-50",
                 )}
               >
