@@ -2,7 +2,7 @@ import { useMemo, useState } from "react";
 import Checkbox from "../components/ui/Checkbox";
 import { RadioGroup, RadioGroupItem } from "../components/ui/RadioGroup";
 import Toggle from "../components/ui/Toggle";
-import { AlbumIcon, SettingsIcon, PersonIcon, LogoutIcon } from "../constants/icons";
+import { AlbumIcon, SettingsIcon, PersonIcon, LogoutIcon, SearchIcon } from "../constants/icons";
 import { ToggleGroup, ToggleGroupItem } from "../components/ui/ToggleGroup";
 import { KeybindInput } from "../components/ui/KeybindInput";
 import { Dialog, DialogClose, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "../components/ui/Dialog";
@@ -11,6 +11,7 @@ import Spinner from "../components/ui/Spinner";
 import { ContextMenu, ContextMenuContent, ContextMenuItem, ContextMenuSeparator, ContextMenuSub, ContextMenuSubContent, ContextMenuSubTrigger, ContextMenuTrigger } from "../components/ui/ContextMenu";
 import Dropdown, { MenuOption } from "../components/ui/Dropdown";
 import ThemeToggle from "../components/ui/ThemeToggle";
+import TextInput from "../components/ui/TextInput";
 import { useThemeContext } from "../context/ThemeContext";
 
 const Section: React.FC<{ title: string; description?: string; children: React.ReactNode }> = ({ title, description, children }) => (
@@ -44,6 +45,7 @@ const ComponentShowcasePage = () => {
   const [isChecked, setIsChecked] = useState(false);
   const [radioValue, setRadioValue] = useState("option-one");
   const [keybind, setKeybind] = useState("⌘ + K");
+  const [textValue, setTextValue] = useState("Navidrome server");
   const activeThemeLabel = useMemo(
     () => themes.find((option) => option.id === theme)?.label ?? theme,
     [theme, themes],
@@ -112,7 +114,24 @@ const ComponentShowcasePage = () => {
             </div>
           </Section>
 
-          <Section title="Inputs & Toggles" description="Checkbox, radio, toggle, grouped toggles and keybind input.">
+          <Section title="Inputs & Toggles" description="Text input, checkbox, radio, toggle, grouped toggles and keybind input.">
+            <div className="grid gap-4 md:grid-cols-2">
+              <div className="space-y-2">
+                <p className="text-sm text-(--text-grey)">Text input</p>
+                <TextInput
+                  value={textValue}
+                  onChange={(event) => setTextValue(event.target.value)}
+                  placeholder="Enter any text"
+                />
+                <p className="text-xs text-(--text-grey)">Current value: {textValue || "Empty"}</p>
+              </div>
+              <div className="space-y-2">
+                <p className="text-sm text-(--text-grey)">With leading icon</p>
+                <TextInput startIcon={<SearchIcon />} placeholder="Search library" />
+                <TextInput placeholder="Disabled state" disabled value="Input disabled" />
+              </div>
+            </div>
+
             <div className="grid gap-4 md:grid-cols-2">
               <div className="space-y-2">
                 <div className="flex items-center gap-2">

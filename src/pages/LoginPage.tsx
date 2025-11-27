@@ -3,6 +3,7 @@ import { useLocation, useNavigate } from "react-router-dom";
 import Button from "../components/ui/Button";
 import Checkbox from "../components/ui/Checkbox";
 import Spinner from "../components/ui/Spinner";
+import TextInput from "../components/ui/TextInput";
 import { LoginPayload, useAuthStore } from "../store/authStore";
 
 interface LocationState {
@@ -60,7 +61,7 @@ const LoginPage = () => {
               <label htmlFor="serverUrl" className="text-sm font-medium text-(--text)">
                 Server URL
               </label>
-              <input
+              <TextInput
                 id="serverUrl"
                 name="serverUrl"
                 type="url"
@@ -68,7 +69,7 @@ const LoginPage = () => {
                 placeholder="https://my-navidrome.example.com"
                 value={formState.serverUrl}
                 onChange={handleChange}
-                className="mt-2 w-full rounded-2xl border border-(--surface2) bg-(--surface1) px-4 py-3 text-(--text) outline-none focus:border-(--primary0)"
+                className="mt-2"
                 autoComplete="url"
               />
             </div>
@@ -78,7 +79,7 @@ const LoginPage = () => {
             <label htmlFor="username" className="text-sm font-medium text-(--text)">
               Username
             </label>
-            <input
+            <TextInput
               id="username"
               name="username"
               type="text"
@@ -86,7 +87,7 @@ const LoginPage = () => {
               placeholder="user"
               value={formState.username}
               onChange={handleChange}
-              className="mt-2 w-full rounded-2xl border border-(--surface2) bg-(--surface1) px-4 py-3 text-(--text) outline-none focus:border-(--primary0)"
+              className="mt-2"
               autoComplete="username"
             />
           </div>
@@ -95,7 +96,7 @@ const LoginPage = () => {
             <label htmlFor="password" className="text-sm font-medium text-(--text)">
               Password
             </label>
-            <input
+            <TextInput
               id="password"
               name="password"
               type="password"
@@ -103,7 +104,7 @@ const LoginPage = () => {
               placeholder="••••••••"
               value={formState.password}
               onChange={handleChange}
-              className="mt-2 w-full rounded-2xl border border-(--surface2) bg-(--surface1) px-4 py-3 text-(--text) outline-none focus:border-(--primary0)"
+              className="mt-2"
               autoComplete="current-password"
             />
           </div>
