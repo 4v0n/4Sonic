@@ -14,6 +14,7 @@ import ThemeToggle from "../components/ui/ThemeToggle";
 import TextInput from "../components/ui/TextInput";
 import { Popover, PopoverContent, PopoverTrigger } from "../components/ui/Popover";
 import Select from "../components/ui/Select";
+import Switch from "../components/ui/Switch";
 import { useThemeContext } from "../context/ThemeContext";
 
 const Section: React.FC<{ title: string; description?: string; children: React.ReactNode }> = ({ title, description, children }) => (
@@ -47,6 +48,7 @@ const ComponentShowcasePage = () => {
   const [isChecked, setIsChecked] = useState(false);
   const [radioValue, setRadioValue] = useState("option-one");
   const [selectValue, setSelectValue] = useState("light");
+  const [switchOn, setSwitchOn] = useState(true);
   const [keybind, setKeybind] = useState("⌘ + K");
   const [textValue, setTextValue] = useState("Navidrome server");
   const activeThemeLabel = useMemo(
@@ -186,6 +188,25 @@ const ComponentShowcasePage = () => {
             <div className="space-y-2">
               <p className="text-sm text-(--text-grey)">Keybind input</p>
               <KeybindInput value={keybind} onValueChange={setKeybind} />
+            </div>
+
+            <div className="space-y-2">
+              <p className="text-sm text-(--text-grey)">Switch</p>
+              <div className="flex flex-wrap items-center gap-4">
+                <label className="flex items-center gap-2 text-sm">
+                  <Switch checked={switchOn} onCheckedChange={setSwitchOn} aria-label="Enable downloads" />
+                  <span className="text-(--text)">Enable downloads</span>
+                </label>
+                <label className="flex items-center gap-2 text-sm">
+                  <Switch size="lg" aria-label="Large switch" />
+                  <span className="text-(--text)">Large size</span>
+                </label>
+                <label className="flex items-center gap-2 text-sm text-(--text-grey)">
+                  <Switch disabled aria-label="Disabled switch" />
+                  <span>Disabled</span>
+                </label>
+              </div>
+              <p className="text-xs text-(--text-grey)">Switch is {switchOn ? "on" : "off"}.</p>
             </div>
 
             <div className="space-y-2">
