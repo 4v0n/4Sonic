@@ -51,7 +51,7 @@ const Switch = React.forwardRef<React.ElementRef<typeof SwitchPrimitive.Root>, S
       >
         <SwitchPrimitive.Thumb
           className={cn(
-            "pointer-events-none absolute top-1/2 -translate-y-1/2 rounded-full bg-(--text) shadow-[0_1px_4px_rgba(0,0,0,0.18)] transition-all duration-200",
+            "pointer-events-none absolute top-1/2 -translate-y-1/2 rounded-full bg-(--light) shadow-[0_1px_4px_rgba(0,0,0,0.18)] transition-all duration-200",
             styles.thumb,
             styles.start,
             styles.checked,

@@ -1,4 +1,5 @@
 import { useMemo, useState } from "react";
+import { toast, type ToasterProps } from "sonner";
 import Checkbox from "../components/ui/Checkbox";
 import { RadioGroup, RadioGroupItem } from "../components/ui/RadioGroup";
 import Toggle from "../components/ui/Toggle";
@@ -16,6 +17,7 @@ import { Popover, PopoverContent, PopoverTrigger } from "../components/ui/Popove
 import Select from "../components/ui/Select";
 import Switch from "../components/ui/Switch";
 import { useThemeContext } from "../context/ThemeContext";
+import { useUiPreferencesStore } from "../store/uiPreferencesStore";
 
 const Section: React.FC<{ title: string; description?: string; children: React.ReactNode }> = ({ title, description, children }) => (
   <section className="rounded-2xl border border-(--surface2) bg-(--surface0) p-5 shadow-sm space-y-4">
@@ -42,6 +44,8 @@ const ColorSwatch = ({ token, label }: { token: string; label?: string }) => (
   </div>
 );
 
+type ToastPosition = ToasterProps["position"];
+
 const ComponentShowcasePage = () => {
 
   const { theme, themes } = useThemeContext();
@@ -51,9 +55,22 @@ const ComponentShowcasePage = () => {
   const [switchOn, setSwitchOn] = useState(true);
   const [keybind, setKeybind] = useState("⌘ + K");
   const [textValue, setTextValue] = useState("Navidrome server");
+  const toastPosition = useUiPreferencesStore((state) => state.toastPosition);
+  const setToastPosition = useUiPreferencesStore((state) => state.setToastPosition);
   const activeThemeLabel = useMemo(
     () => themes.find((option) => option.id === theme)?.label ?? theme,
     [theme, themes],
+  );
+  const toastPositionOptions = useMemo(
+    () => ([
+      { label: "Top left", value: "top-left" as ToastPosition },
+      { label: "Top center", value: "top-center" as ToastPosition },
+      { label: "Top right", value: "top-right" as ToastPosition },
+      { label: "Bottom left", value: "bottom-left" as ToastPosition },
+      { label: "Bottom center", value: "bottom-center" as ToastPosition },
+      { label: "Bottom right", value: "bottom-right" as ToastPosition },
+    ]),
+    [],
   );
   const paletteSections = useMemo(() => ([
     {
@@ -302,6 +319,26 @@ const ComponentShowcasePage = () => {
         </div>
 
         <div className="xl:col-span-5 space-y-6">
+          <Section title="Toasts" description="Sonner-powered notifications that follow the current theme.">
+            <div className="space-y-4">
+              <div className="flex flex-wrap gap-3">
+                <Button onClick={() => toast("Playback started", { description: "You can move or mute this later." })}>Show toast</Button>
+                <Button variant="primary" onClick={() => toast.success("Playlist synced", { description: "All tracks are ready to go." })}>Success</Button>
+                <Button variant="destructive" onClick={() => toast.error("Connection lost", { description: "We will retry shortly." })}>Error</Button>
+              </div>
+              <div className="space-y-2">
+                <p className="text-sm text-(--text-grey)">Toast position (persisted for future settings)</p>
+                <Select
+                  size="small"
+                  value={toastPosition}
+                  onValueChange={(value) => setToastPosition(value as ToastPosition)}
+                  options={toastPositionOptions}
+                  fullWidth
+                />
+              </div>
+            </div>
+          </Section>
+
           <Section title="Spinners" description="Loading indicators at different sizes.">
             <div className="flex flex-wrap items-center gap-4">
               <Spinner size="sm" />

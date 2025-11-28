@@ -6,6 +6,7 @@ import BottomBar from "./BottomBar";
 import RightSideBar from "./RightSideBar";
 import { useLibraryBootstrap } from "../../hooks/useLibrary";
 import { useRightSidebarStore } from "../../store/rightSidebarStore";
+import Sonner from "../ui/Sonner";
 
 const DEFAULT_WIDTH = 256;
 const ICON_ONLY_WIDTH = 72;
@@ -205,6 +206,7 @@ const AppShell = () => {
   return (
     <div className="flex flex-col h-screen font-sans bg-(--surface0) text-(--text)">
       <TopBar />
+      <Sonner />
       <div className="flex flex-1 overflow-hidden">
         <LeftSideBar
           width={sidebarWidth}
