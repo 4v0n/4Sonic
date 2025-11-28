@@ -13,7 +13,7 @@ import { ContextMenu, ContextMenuContent, ContextMenuItem, ContextMenuSeparator,
 import Dropdown, { MenuOption } from "../components/ui/Dropdown";
 import ThemeToggle from "../components/ui/ThemeToggle";
 import TextInput from "../components/ui/TextInput";
-import { Popover, PopoverContent, PopoverTrigger } from "../components/ui/Popover";
+import { Popover, PopoverClose, PopoverContent, PopoverTrigger } from "../components/ui/Popover";
 import Select from "../components/ui/Select";
 import Switch from "../components/ui/Switch";
 import { useThemeContext } from "../context/ThemeContext";
@@ -290,8 +290,12 @@ const ComponentShowcasePage = () => {
                       Use this for quick tips or ancillary actions anchored to a trigger.
                     </p>
                     <div className="flex gap-2">
-                      <Button size="small" variant="primary">Confirm</Button>
-                      <Button size="small" variant="ghost">Dismiss</Button>
+                      <PopoverClose asChild>
+                        <Button size="small" variant="primary">Confirm</Button>
+                      </PopoverClose>
+                      <PopoverClose asChild>
+                        <Button size="small" variant="ghost">Dismiss</Button>
+                      </PopoverClose>
                     </div>
                   </div>
                 </PopoverContent>
