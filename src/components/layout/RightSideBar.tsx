@@ -12,6 +12,22 @@ interface RightSideBarProps {
   onClose: () => void;
 }
 
+export const RightSidebarContent = ({ view }: { view: RightSidebarView }) => {
+  if (view === "queue") {
+    return (
+      <div className="space-y-3">
+        <div className="text-sm text-(--text-grey)">Up Next</div>
+        {/* Queue content can be plugged in here */}
+        <div className="rounded-lg border border-(--surface1) p-4 text-(--text-grey)">
+          Queue items will appear here.
+        </div>
+      </div>
+    );
+  }
+
+  return null;
+};
+
 const RightSideBar = ({ width, view, isOpen, isResizing, onResizeStart, onClose }: RightSideBarProps) => {
   return (
     <aside
@@ -49,15 +65,7 @@ const RightSideBar = ({ width, view, isOpen, isResizing, onResizeStart, onClose 
       </div>
 
       <div className="p-4 overflow-y-auto flex-1">
-        {view === "queue" && (
-          <div className="space-y-3">
-            <div className="text-sm text-(--text-grey)">Up Next</div>
-            {/* Queue content can be plugged in here */}
-            <div className="rounded-lg border border-(--surface1) p-4 text-(--text-grey)">
-              Queue items will appear here.
-            </div>
-          </div>
-        )}
+        <RightSidebarContent view={view} />
       </div>
     </aside>
   );
