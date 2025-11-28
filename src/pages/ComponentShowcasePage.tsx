@@ -12,6 +12,7 @@ import { ContextMenu, ContextMenuContent, ContextMenuItem, ContextMenuSeparator,
 import Dropdown, { MenuOption } from "../components/ui/Dropdown";
 import ThemeToggle from "../components/ui/ThemeToggle";
 import TextInput from "../components/ui/TextInput";
+import Select from "../components/ui/Select";
 import { useThemeContext } from "../context/ThemeContext";
 
 const Section: React.FC<{ title: string; description?: string; children: React.ReactNode }> = ({ title, description, children }) => (
@@ -44,6 +45,7 @@ const ComponentShowcasePage = () => {
   const { theme, themes } = useThemeContext();
   const [isChecked, setIsChecked] = useState(false);
   const [radioValue, setRadioValue] = useState("option-one");
+  const [selectValue, setSelectValue] = useState("light");
   const [keybind, setKeybind] = useState("⌘ + K");
   const [textValue, setTextValue] = useState("Navidrome server");
   const activeThemeLabel = useMemo(
@@ -78,6 +80,12 @@ const ComponentShowcasePage = () => {
     { label: "Settings", onClick: () => alert("Settings"), icon: <SettingsIcon fontSize="small" /> },
     { isDivider: true },
     { label: "Logout", onClick: () => alert("Logout"), icon: <LogoutIcon fontSize="small" /> },
+  ];
+
+  const selectOptions = [
+    { label: "Light", value: "light" },
+    { label: "Dimmed (long label example)", value: "dimmed" },
+    { label: "Dark", value: "dark" },
   ];
 
   return (
@@ -177,6 +185,35 @@ const ComponentShowcasePage = () => {
             <div className="space-y-2">
               <p className="text-sm text-(--text-grey)">Keybind input</p>
               <KeybindInput value={keybind} onValueChange={setKeybind} />
+            </div>
+
+            <div className="space-y-2">
+              <p className="text-sm text-(--text-grey)">Select</p>
+              <div className="flex flex-wrap gap-3">
+                <Select
+                  size="small"
+                  value={selectValue}
+                  onValueChange={setSelectValue}
+                  options={selectOptions}
+                />
+                <Select
+                  size="small"
+                  value={selectValue}
+                  onValueChange={setSelectValue}
+                  options={selectOptions}
+                  leftIcon={<SearchIcon />}
+                  placeholder="Search theme"
+                />
+                <Select
+                  size="small"
+                  value={selectValue}
+                  onValueChange={setSelectValue}
+                  options={selectOptions}
+                  disabled
+                  icon={<SettingsIcon fontSize="small" />}
+                />
+              </div>
+              <p className="text-xs text-(--text-grey)">Current value: {selectValue}</p>
             </div>
           </Section>
 
