@@ -6,6 +6,18 @@
     color-scheme: dark;
   }
 
+  .theme-transition,
+  .theme-transition * {
+    transition: background-color 320ms ease-in-out, color 320ms ease-in-out, border-color 320ms ease-in-out, box-shadow 320ms ease-in-out, fill 320ms ease-in-out, stroke 320ms ease-in-out, filter 320ms ease-in-out;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .theme-transition,
+    .theme-transition * {
+      transition: none !important;
+    }
+  }
+
   :root,
   [data-theme="dark"] {
     --dark: #000000;
