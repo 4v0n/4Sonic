@@ -1,5 +1,5 @@
 import { useMemo, useState } from "react";
-import { toast, type ToasterProps } from "sonner";
+import { toast } from "sonner";
 import Checkbox from "../components/ui/Checkbox";
 import { RadioGroup, RadioGroupItem } from "../components/ui/RadioGroup";
 import Toggle from "../components/ui/Toggle";
@@ -17,7 +17,7 @@ import { Popover, PopoverClose, PopoverContent, PopoverTrigger } from "../compon
 import Select from "../components/ui/Select";
 import Switch from "../components/ui/Switch";
 import { useThemeContext } from "../context/ThemeContext";
-import { useUiPreferencesStore } from "../store/uiPreferencesStore";
+import { ToastPosition, useUiPreferencesStore } from "../store/uiPreferencesStore";
 
 const Section: React.FC<{ title: string; description?: string; children: React.ReactNode }> = ({ title, description, children }) => (
   <section className="rounded-2xl border border-(--surface2) bg-(--surface0) p-5 shadow-sm space-y-4">
@@ -43,8 +43,6 @@ const ColorSwatch = ({ token, label }: { token: string; label?: string }) => (
     </div>
   </div>
 );
-
-type ToastPosition = ToasterProps["position"];
 
 const ComponentShowcasePage = () => {
 

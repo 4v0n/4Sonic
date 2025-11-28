@@ -2,11 +2,13 @@ import { create } from "zustand";
 import { persist } from "zustand/middleware";
 import type { ToasterProps } from "sonner";
 
-const DEFAULT_TOAST_POSITION: ToasterProps["position"] = "top-right";
+export type ToastPosition = NonNullable<ToasterProps["position"]>;
+
+const DEFAULT_TOAST_POSITION: ToastPosition = "top-right";
 
 type UiPreferencesState = {
-  toastPosition: ToasterProps["position"];
-  setToastPosition: (position: ToasterProps["position"]) => void;
+  toastPosition: ToastPosition;
+  setToastPosition: (position: ToastPosition) => void;
 };
 
 export const useUiPreferencesStore = create<UiPreferencesState>()(
