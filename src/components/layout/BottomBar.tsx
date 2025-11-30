@@ -1,10 +1,227 @@
-import { CloseIcon, PlayArrowIcon, QueueMusicRoundedIcon, RepeatIcon, ShuffleIcon, SkipNextIcon, SkipPreviousIcon, VolumeUpIcon } from "../../constants/icons";
+import { useEffect, useRef, useState } from "react";
+import { CloseIcon, PauseIcon, PlayArrowIcon, QueueMusicRoundedIcon, RepeatIcon, ShuffleIcon, SkipNextIcon, SkipPreviousIcon, VolumeDownIcon, VolumeMuteIcon, VolumeOffIcon, VolumeUpIcon } from "../../constants/icons";
 import Button from "../ui/Button";
 import { Popover, PopoverContent, PopoverTrigger } from "../ui/Popover";
 import { useRightSidebarStore } from "../../store/rightSidebarStore";
 import { RightSidebarContent } from "./RightSideBar";
+import { usePlaybackStore } from "../../store/playbackStore";
 
 type BottomBarProps = { isRightCompact?: boolean };
+
+const formatTime = (seconds: number): string => {
+  if (!Number.isFinite(seconds) || seconds < 0) return "0:00";
+  const mins = Math.floor(seconds / 60);
+  const secs = Math.floor(seconds % 60);
+  return `${mins}:${secs.toString().padStart(2, "0")}`;
+};
+
+interface ProgressSliderProps {
+  position: number;
+  duration: number;
+  disabled?: boolean;
+  onScrubStart: () => void;
+  onScrub: (time: number) => void;
+  onScrubEnd: (time: number) => void;
+}
+
+const ProgressSlider = ({ position, duration, disabled, onScrubStart, onScrub, onScrubEnd }: ProgressSliderProps) => {
+  const barRef = useRef<HTMLDivElement>(null);
+  const [isDragging, setIsDragging] = useState(false);
+
+  const getTimeFromClientX = (clientX: number): number => {
+    if (!barRef.current || duration <= 0) return 0;
+    const rect = barRef.current.getBoundingClientRect();
+    const ratio = Math.min(Math.max((clientX - rect.left) / rect.width, 0), 1);
+    return ratio * duration;
+  };
+
+  const handlePointerDown = (event: React.PointerEvent<HTMLDivElement>) => {
+    if (disabled || event.button === 2) return;
+    const nextTime = getTimeFromClientX(event.clientX);
+    setIsDragging(true);
+    onScrubStart();
+    onScrub(nextTime);
+    event.currentTarget.setPointerCapture(event.pointerId);
+  };
+
+  useEffect(() => {
+    if (!isDragging) return;
+    const handleMove = (event: PointerEvent) => {
+      const nextTime = getTimeFromClientX(event.clientX);
+      onScrub(nextTime);
+    };
+    const handleUp = (event: PointerEvent) => {
+      const nextTime = getTimeFromClientX(event.clientX);
+      onScrubEnd(nextTime);
+      setIsDragging(false);
+    };
+    window.addEventListener("pointermove", handleMove);
+    window.addEventListener("pointerup", handleUp);
+    return () => {
+      window.removeEventListener("pointermove", handleMove);
+      window.removeEventListener("pointerup", handleUp);
+    };
+  }, [isDragging, onScrub, onScrubEnd, duration]);
+
+  const progressRatio = duration > 0 ? Math.min(position, duration) / duration : 0;
+
+  return (
+    <div className="flex items-center w-full max-w-md space-x-2">
+      <span className="text-xs tabular-nums text-(--text-grey)">
+        {formatTime(position)}
+      </span>
+      <div
+        ref={barRef}
+        className={`relative flex-grow h-2 rounded-full cursor-pointer bg-(--surface2) transition ${disabled ? "opacity-50 cursor-not-allowed" : "hover:bg-(--surface3)"}`}
+        onPointerDown={handlePointerDown}
+        role="slider"
+        aria-valuemin={0}
+        aria-valuemax={duration || 0}
+        aria-valuenow={position}
+      >
+        <div
+          className="absolute left-0 top-0 h-full rounded-full bg-(--primary0)"
+          style={{ width: `${progressRatio * 100}%` }}
+        />
+        <div
+          className="absolute top-1/2 h-3 w-3 -translate-y-1/2 translate-x-[-6px] rounded-full bg-white shadow transition"
+          style={{ left: `${progressRatio * 100}%`, opacity: disabled ? 0 : 1 }}
+        />
+      </div>
+      <span className="text-xs tabular-nums text-(--text-grey)">{formatTime(duration)}</span>
+    </div>
+  );
+};
+
+interface VolumeControlProps {
+  volume: number;
+  isMuted: boolean;
+  onChange: (value: number) => void;
+  onToggleMute: () => void;
+  onScroll: (delta: number) => void;
+}
+
+const VolumeControl = ({ volume, isMuted, onChange, onToggleMute, onScroll }: VolumeControlProps) => {
+  const sliderRef = useRef<HTMLDivElement>(null);
+  const [isHovering, setIsHovering] = useState(false);
+  const [isDragging, setIsDragging] = useState(false);
+  const [isOverPopup, setIsOverPopup] = useState(false);
+  const hideTimeoutRef = useRef<number | null>(null);
+  const effectiveVolume = isMuted ? 0 : volume;
+
+  const selectIcon = () => {
+    if (effectiveVolume === 0 || isMuted) return <VolumeOffIcon />;
+    if (effectiveVolume < 0.33) return <VolumeMuteIcon />;
+    if (effectiveVolume < 0.66) return <VolumeDownIcon />;
+    return <VolumeUpIcon />;
+  };
+
+  const getVolumeFromY = (clientY: number): number => {
+    if (!sliderRef.current) return effectiveVolume;
+    const rect = sliderRef.current.getBoundingClientRect();
+    const ratio = 1 - Math.min(Math.max((clientY - rect.top) / rect.height, 0), 1);
+    return ratio;
+  };
+
+  const clearHideTimeout = () => {
+    if (hideTimeoutRef.current !== null) {
+      window.clearTimeout(hideTimeoutRef.current);
+      hideTimeoutRef.current = null;
+    }
+  };
+
+  const requestHide = () => {
+    clearHideTimeout();
+    hideTimeoutRef.current = window.setTimeout(() => {
+      if (!isDragging && !isOverPopup) {
+        setIsHovering(false);
+      }
+    }, 200);
+  };
+
+  const handlePointerDown = (event: React.PointerEvent<HTMLDivElement>) => {
+    setIsDragging(true);
+    const next = getVolumeFromY(event.clientY);
+    onChange(next);
+    event.preventDefault();
+    event.stopPropagation();
+  };
+
+  useEffect(() => {
+    if (!isDragging) return;
+    const handleMove = (event: PointerEvent) => {
+      const next = getVolumeFromY(event.clientY);
+      onChange(next);
+    };
+    const handleUp = () => {
+      setIsDragging(false);
+      setIsOverPopup(false);
+      setIsHovering(false);
+    };
+    window.addEventListener("pointermove", handleMove);
+    window.addEventListener("pointerup", handleUp);
+    return () => {
+      window.removeEventListener("pointermove", handleMove);
+      window.removeEventListener("pointerup", handleUp);
+    };
+  }, [isDragging, onChange, getVolumeFromY]);
+
+  useEffect(() => () => clearHideTimeout(), []);
+
+  return (
+    <div
+      className="relative flex items-center"
+      onMouseEnter={() => {
+        clearHideTimeout();
+        setIsHovering(true);
+      }}
+      onMouseLeave={() => {
+        setIsOverPopup(false);
+        requestHide();
+      }}
+      onWheel={(event) => {
+        event.preventDefault();
+        const step = event.deltaY < 0 ? 0.05 : -0.05;
+        onScroll(step);
+      }}
+    >
+      <Button className="shadow-none" aria-label="Toggle mute" onClick={onToggleMute}>
+        {selectIcon()}
+      </Button>
+      <div
+        className={`absolute bottom-12 right-0 origin-bottom transition-all duration-150 ${
+          isHovering || isDragging || isOverPopup ? "opacity-100 translate-y-0" : "pointer-events-none opacity-0 translate-y-2"
+        }`}
+        onMouseEnter={() => {
+          clearHideTimeout();
+          setIsOverPopup(true);
+          setIsHovering(true);
+        }}
+        onMouseLeave={() => {
+          setIsOverPopup(false);
+          requestHide();
+        }}
+      >
+        <div className="flex h-28 w-10 items-center justify-center rounded-lg border border-(--surface2) bg-(--surface1) p-2 shadow-lg">
+          <div
+            ref={sliderRef}
+            className="relative h-full w-2 cursor-pointer rounded-full bg-(--surface2)"
+            onPointerDown={handlePointerDown}
+          >
+            <div
+              className="absolute bottom-0 left-0 right-0 rounded-full bg-(--primary0)"
+              style={{ height: `${effectiveVolume * 100}%` }}
+            />
+            <div
+              className="absolute left-1/2 h-3 w-3 -translate-x-1/2 rounded-full border border-(--surface3) bg-white shadow"
+              style={{ bottom: `${effectiveVolume * 100}%` }}
+            />
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+};
 
 const BottomBar = ({ isRightCompact = false }: BottomBarProps) => {
   const toggleQueue = useRightSidebarStore((state) => state.toggle);
@@ -13,9 +230,31 @@ const BottomBar = ({ isRightCompact = false }: BottomBarProps) => {
   const isQueueOpen = useRightSidebarStore((state) => state.isOpen);
   const rightView = useRightSidebarStore((state) => state.view);
 
+  const currentSong = usePlaybackStore((state) => state.currentSong);
+  const coverArtUrl = usePlaybackStore((state) => state.coverArtUrl);
+  const isPlaying = usePlaybackStore((state) => state.isPlaying);
+  const isLoading = usePlaybackStore((state) => state.isLoading);
+  const position = usePlaybackStore((state) => state.position);
+  const duration = usePlaybackStore((state) => state.duration);
+  const shuffle = usePlaybackStore((state) => state.shuffle);
+  const repeat = usePlaybackStore((state) => state.repeat);
+  const isScrubbing = usePlaybackStore((state) => state.isScrubbing);
+  const volume = usePlaybackStore((state) => state.volume);
+  const isMuted = usePlaybackStore((state) => state.isMuted);
+
+  const togglePlayPause = usePlaybackStore((state) => state.togglePlayPause);
+  const seek = usePlaybackStore((state) => state.seek);
+  const beginScrub = usePlaybackStore((state) => state.beginScrub);
+  const endScrub = usePlaybackStore((state) => state.endScrub);
+  const toggleShuffle = usePlaybackStore((state) => state.toggleShuffle);
+  const cycleRepeat = usePlaybackStore((state) => state.cycleRepeat);
+  const setVolume = usePlaybackStore((state) => state.setVolume);
+  const changeVolumeBy = usePlaybackStore((state) => state.changeVolumeBy);
+  const toggleMute = usePlaybackStore((state) => state.toggleMute);
+
   const queueButton = (
     <Button
-      className="shadow-none"
+      className={`shadow-none ${isQueueOpen ? "bg-(--surface2)" : ""}`}
       onClick={isRightCompact ? undefined : () => toggleQueue("queue")}
       aria-label="Toggle queue sidebar"
     >
@@ -23,49 +262,81 @@ const BottomBar = ({ isRightCompact = false }: BottomBarProps) => {
     </Button>
   );
 
+  const disabled = !currentSong || duration <= 0;
+  const handleRestart = () => {
+    if (disabled) return;
+    seek(0);
+  };
+  const handleSkipToEnd = () => {
+    if (disabled) return;
+    const target = Math.max(duration - 0.1, 0);
+    seek(target);
+  };
+
   return (
     <footer className="sticky bottom-0 z-30 h-24 p-4 flex items-center justify-between border-t border-(--surface1) bg-(--surface0) shadow">
-      <div className="flex items-center w-1/3">
-        Cover
-        <div className="ml-3">
-          <p className="text-sm font-medium truncate">SongTitle</p>
-          <p className="text-sm truncate">SongArtist</p>
+      <div className="flex items-center w-1/3 min-w-0 gap-3">
+        <div className="h-14 w-14 overflow-hidden rounded-lg border border-(--surface2) bg-(--surface1)">
+          {coverArtUrl ? (
+            <img src={coverArtUrl} alt={currentSong?.title ?? "Cover"} className="h-full w-full object-cover" />
+          ) : (
+            <div className="h-full w-full bg-(--surface2)" />
+          )}
+        </div>
+        <div className="min-w-0">
+          <p className="text-sm font-semibold truncate">{currentSong?.title ?? "Nothing playing"}</p>
+          <p className="text-xs text-(--text-grey) truncate">
+            {currentSong?.artist ?? "Select a song to start"}
+          </p>
         </div>
       </div>
 
       <div className="flex flex-col items-center w-1/3">
-        <div className="flex items-center space-x-4 mb-2">
-          <Button className="shadow-none">
+        <div className="flex items-center space-x-3 mb-2">
+          <Button
+            className={`shadow-none ${shuffle ? "bg-(--surface2)" : ""}`}
+            aria-label="Toggle shuffle"
+            onClick={() => toggleShuffle()}
+            disabled={!currentSong}
+          >
             <ShuffleIcon fontSize="small" />
           </Button>
-          <Button className="shadow-none">
+          <Button className="shadow-none" disabled={disabled} onClick={handleRestart}>
             <SkipPreviousIcon fontSize="small" />
           </Button>
           <Button
             size="large"
             className="bg-(--text) hover:bg-(--primary2) shadow-none"
+            aria-label={isPlaying ? "Pause" : "Play"}
+            onClick={() => void togglePlayPause()}
+            disabled={!currentSong || isLoading}
           >
-            <PlayArrowIcon fontSize="small" className="text-(--text-inverted)" />
+            {isPlaying && !isScrubbing ? (
+              <PauseIcon fontSize="small" className="text-(--text-inverted)" />
+            ) : (
+              <PlayArrowIcon fontSize="small" className="text-(--text-inverted)" />
+            )}
           </Button>
-          <Button className="shadow-none">
+          <Button className="shadow-none" disabled={disabled} onClick={handleSkipToEnd}>
             <SkipNextIcon fontSize="small" />
           </Button>
-          <Button className="shadow-none">
+          <Button
+            className={`shadow-none ${repeat === "one" ? "bg-(--surface2)" : ""}`}
+            aria-label="Toggle repeat"
+            onClick={() => cycleRepeat()}
+            disabled={!currentSong}
+          >
             <RepeatIcon fontSize="small" />
           </Button>
         </div>
-        <div className="flex items-center w-full max-w-md space-x-2">
-          <span className="text-xs tabular-nums">
-            7:27
-          </span>
-          <div className="flex-grow h-1 rounded-full cursor-pointer group">
-            <div
-              className="h-1 rounded-full bg-black transition-colors"
-              style={{ width: 100 }}
-            />
-          </div>
-          <span className="text-xs tabular-nums">7:27</span>
-        </div>
+        <ProgressSlider
+          position={position}
+          duration={duration}
+          disabled={disabled}
+          onScrubStart={() => beginScrub()}
+          onScrub={(time) => seek(time)}
+          onScrubEnd={(time) => endScrub(time)}
+        />
       </div>
 
       <div className="flex items-center justify-end space-x-3 w-1/3">
@@ -104,9 +375,13 @@ const BottomBar = ({ isRightCompact = false }: BottomBarProps) => {
         ) : (
           queueButton
         )}
-        <Button className="shadow-none">
-          <VolumeUpIcon />
-        </Button>
+        <VolumeControl
+          volume={volume}
+          isMuted={isMuted}
+          onChange={(value) => setVolume(value)}
+          onToggleMute={toggleMute}
+          onScroll={(delta) => changeVolumeBy(delta)}
+        />
       </div>
     </footer>
   );

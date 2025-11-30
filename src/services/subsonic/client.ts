@@ -73,6 +73,31 @@ export class SubsonicClient {
     return this.request<SubsonicSongResponse>("getSong", { id });
   }
 
+  public getStreamUrl(id: string, options?: { maxBitRate?: number; format?: string; estimateContentLength?: boolean }): string {
+    const url = new URL(`${this.serverUrl}/rest/stream.view`);
+    const params = new URLSearchParams({
+      u: this.username,
+      t: this.token,
+      s: this.salt,
+      v: this.apiVersion,
+      c: this.clientName,
+      id,
+    });
+
+    if (typeof options?.maxBitRate === "number") {
+      params.set("maxBitRate", String(options.maxBitRate));
+    }
+    if (options?.format) {
+      params.set("format", options.format);
+    }
+    if (options?.estimateContentLength) {
+      params.set("estimateContentLength", "true");
+    }
+
+    url.search = params.toString();
+    return url.toString();
+  }
+
   public getCoverArtUrl(id?: string, options?: { size?: number }): string | undefined {
     if (!id) {
       return undefined;

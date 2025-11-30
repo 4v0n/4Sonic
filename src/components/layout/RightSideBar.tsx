@@ -2,6 +2,7 @@ import type { MouseEvent } from "react";
 import { CloseIcon, QueueMusicRoundedIcon } from "../../constants/icons";
 import Button from "../ui/Button";
 import type { RightSidebarView } from "../../store/rightSidebarStore";
+import { usePlaybackStore } from "../../store/playbackStore";
 
 interface RightSideBarProps {
   width: number;
@@ -13,11 +14,45 @@ interface RightSideBarProps {
 }
 
 export const RightSidebarContent = ({ view }: { view: RightSidebarView }) => {
+  const currentSong = usePlaybackStore((state) => state.currentSong);
+  const coverArtUrl = usePlaybackStore((state) => state.coverArtUrl);
+  const position = usePlaybackStore((state) => state.position);
+  const duration = usePlaybackStore((state) => state.duration);
+
+  const formatTime = (value: number) => {
+    if (!Number.isFinite(value) || value < 0) return "0:00";
+    const mins = Math.floor(value / 60);
+    const secs = Math.floor(value % 60);
+    return `${mins}:${secs.toString().padStart(2, "0")}`;
+  };
+
+  const nowPlaying = (
+    <div className="space-y-2">
+      <div className="text-sm text-(--text-grey)">Now Playing</div>
+      <div className="flex gap-3 rounded-xl border border-(--surface2) bg-(--surface1) p-3">
+        <div className="h-14 w-14 flex-shrink-0 overflow-hidden rounded-lg border border-(--surface2) bg-(--surface2)">
+          {coverArtUrl ? (
+            <img src={coverArtUrl} alt={currentSong?.title ?? "Cover"} className="h-full w-full object-cover" />
+          ) : (
+            <div className="h-full w-full bg-(--surface2)" />
+          )}
+        </div>
+        <div className="min-w-0 flex-1">
+          <p className="text-sm font-semibold truncate">{currentSong?.title ?? "Nothing playing"}</p>
+          <p className="text-xs text-(--text-grey) truncate">{currentSong?.artist ?? "Start a song to see details"}</p>
+          <p className="text-[11px] text-(--text-grey)">
+            {formatTime(position)} / {formatTime(duration)}
+          </p>
+        </div>
+      </div>
+    </div>
+  );
+
   if (view === "queue") {
     return (
       <div className="space-y-3">
+        {nowPlaying}
         <div className="text-sm text-(--text-grey)">Up Next</div>
-        {/* Queue content can be plugged in here */}
         <div className="rounded-lg border border-(--surface1) p-4 text-(--text-grey)">
           Queue items will appear here.
         </div>
@@ -25,7 +60,7 @@ export const RightSidebarContent = ({ view }: { view: RightSidebarView }) => {
     );
   }
 
-  return null;
+  return nowPlaying;
 };
 
 const RightSideBar = ({ width, view, isOpen, isResizing, onResizeStart, onClose }: RightSideBarProps) => {

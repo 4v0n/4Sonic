@@ -21,6 +21,7 @@ import { ToastPosition, useUiPreferencesStore } from "../store/uiPreferencesStor
 import MediaCard from "../components/ui/MediaCard";
 import { useAuthStore } from "../store/authStore";
 import { SubsonicAlbumDetail, SubsonicArtistDetail, SubsonicSong } from "../types/subsonic";
+import { playSong } from "../store/playbackStore";
 
 const Section: React.FC<{ title: string; description?: string; children: React.ReactNode }> = ({ title, description, children }) => (
   <section className="rounded-2xl border border-(--surface2) bg-(--surface0) p-5 shadow-sm space-y-4">
@@ -47,9 +48,9 @@ const ColorSwatch = ({ token, label }: { token: string; label?: string }) => (
   </div>
 );
 
-const ARTIST_ID = "7wFTRm8e9oyqR01et3oHjr";
-const ALBUM_ID = "03f3vk3U4DSC1gWsliTr9V";
-const SONG_ID = "HLdizuPnr7u4Tojmn9mNOM";
+const ARTIST_ID = "6JCzuakmXaoYTFOLHxW95K";
+const ALBUM_ID = "6wjcr9S3g1Vq76fvyQQJY3";
+const SONG_ID = "2g86dzL72duiY56gZETV2w";
 
 interface MediaSamplesState {
   artist?: SubsonicArtistDetail;
@@ -195,6 +196,20 @@ const ComponentShowcasePage = () => {
     [client, mediaSamples.album?.coverArt, mediaSamples.song?.coverArt],
   );
 
+  const handlePlaySampleSong = async () => {
+    if (!mediaSamples.song?.id) {
+      toast.error("Song not loaded yet");
+      return;
+    }
+    try {
+      await playSong(mediaSamples.song.id);
+      toast.success(`Playing ${mediaSamples.song.title}`);
+    } catch (error) {
+      const description = error instanceof Error ? error.message : undefined;
+      toast.error("Unable to play song", description ? { description } : undefined);
+    }
+  };
+
   const dropdownOptions: MenuOption[] = [
     { label: "Profile", onClick: () => alert("Profile"), icon: <PersonIcon fontSize="small" /> },
     { label: "Settings", onClick: () => alert("Settings"), icon: <SettingsIcon fontSize="small" /> },
@@ -253,7 +268,7 @@ const ComponentShowcasePage = () => {
                 meta={mediaSamples.song?.album ?? mediaSamples.album?.name}
                 coverUrl={songCover}
                 isLoading={mediaSamples.loading && !mediaSamples.song}
-                onPlay={() => toast.success(`Play song: ${mediaSamples.song?.title ?? "Song"}`)}
+                onPlay={handlePlaySampleSong}
                 className="w-full max-w-none"
               />
             </div>
@@ -277,7 +292,7 @@ const ComponentShowcasePage = () => {
                 meta={songMeta}
                 coverUrl={songCover}
                 isLoading={mediaSamples.loading && !mediaSamples.song}
-                onPlay={() => toast.success(`Play song: ${mediaSamples.song?.title ?? "Song"}`)}
+                onPlay={handlePlaySampleSong}
                 className="w-full"
               />
             </div>
