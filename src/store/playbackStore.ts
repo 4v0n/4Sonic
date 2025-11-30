@@ -2,7 +2,8 @@ import { create } from "zustand";
 import { persist } from "zustand/middleware";
 import { SubsonicSong } from "../types/subsonic";
 import { useAuthStore } from "./authStore";
-import { HiResAudioPlayer, ParametricEqBand } from "../services/audio/hiresPlayer";
+import { HiResAudioPlayer, ParametricEqBand } from "../services/audio/player";
+import { audioCache } from "../services/audio/audioCache";
 
 type RepeatMode = "off" | "one";
 
@@ -19,6 +20,8 @@ interface PlaybackState {
   isMuted: boolean;
   isScrubbing: boolean;
   error?: string;
+  getFrequencyData: () => Uint8Array | null;
+  getSampleRate: () => number | null;
   playSong: (songId: string) => Promise<void>;
   togglePlayPause: () => Promise<void>;
   pause: () => void;
@@ -39,6 +42,7 @@ player.setVolume(DEFAULT_VOLUME);
 
 let activeRequestToken: symbol | null = null;
 let scrubWasPlaying = false;
+let releaseCurrentSource: (() => void) | null = null;
 
 export const usePlaybackStore = create<PlaybackState>()(
   persist(
@@ -85,6 +89,8 @@ export const usePlaybackStore = create<PlaybackState>()(
         isMuted: false,
         isScrubbing: false,
         error: undefined,
+        getFrequencyData: () => player.getFrequencyData(),
+        getSampleRate: () => player.getSampleRate(),
 
         playSong: async (songId: string) => {
           const session = useAuthStore.getState().session;
@@ -115,8 +121,23 @@ export const usePlaybackStore = create<PlaybackState>()(
               estimateContentLength: true,
             });
 
+            audioCache.cancelOtherPrefetches(song.id);
+            const playableSource = await audioCache.getPlayableSource({
+              id: song.id,
+              url: streamUrl,
+              duration: song.duration,
+            });
+
+            if (activeRequestToken !== requestToken) {
+              playableSource.cleanup?.();
+              return;
+            }
+
             player.stop();
-            player.setSource({ id: song.id, url: streamUrl, duration: song.duration });
+            releaseCurrentSource?.();
+            releaseCurrentSource = playableSource.cleanup ?? null;
+            player.setSource({ id: song.id, url: playableSource.url, duration: song.duration });
+            playableSource.cachePromise?.catch(() => undefined);
 
             if (activeRequestToken !== requestToken) {
               return;
@@ -139,6 +160,8 @@ export const usePlaybackStore = create<PlaybackState>()(
             activeRequestToken = null;
           } catch (error) {
             if (activeRequestToken === requestToken) {
+              releaseCurrentSource?.();
+              releaseCurrentSource = null;
               set({
                 isLoading: false,
                 isPlaying: false,

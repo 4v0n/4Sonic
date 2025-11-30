@@ -5,6 +5,9 @@ import { Popover, PopoverContent, PopoverTrigger } from "../ui/Popover";
 import { useRightSidebarStore } from "../../store/rightSidebarStore";
 import { RightSidebarContent } from "./RightSideBar";
 import { usePlaybackStore } from "../../store/playbackStore";
+import { useUiPreferencesStore } from "../../store/uiPreferencesStore";
+import BackgroundAreaVisualizer from "../visualizer/BackgroundAreaVisualizer";
+import useAudioVisualizerData from "../../hooks/useAudioVisualizerData";
 
 type BottomBarProps = { isRightCompact?: boolean };
 
@@ -241,6 +244,11 @@ const BottomBar = ({ isRightCompact = false }: BottomBarProps) => {
   const isScrubbing = usePlaybackStore((state) => state.isScrubbing);
   const volume = usePlaybackStore((state) => state.volume);
   const isMuted = usePlaybackStore((state) => state.isMuted);
+  const visualizerColor = useUiPreferencesStore((state) => state.visualizerColor);
+  const visualizerOpacity = useUiPreferencesStore((state) => state.visualizerOpacity);
+  const visualizerBlur = useUiPreferencesStore((state) => state.visualizerBlur);
+  const visualizerHeight = useUiPreferencesStore((state) => state.visualizerHeight);
+  const visualizerData = useAudioVisualizerData();
 
   const togglePlayPause = usePlaybackStore((state) => state.togglePlayPause);
   const seek = usePlaybackStore((state) => state.seek);
@@ -273,115 +281,126 @@ const BottomBar = ({ isRightCompact = false }: BottomBarProps) => {
     seek(target);
   };
 
+  const effectiveVolume = isMuted ? 0 : volume;
+  const visualizerHeightPercent = Math.min(1, Math.max(0, visualizerHeight * effectiveVolume));
+
   return (
-    <footer className="sticky bottom-0 z-30 h-24 p-4 flex items-center justify-between border-t border-(--surface1) bg-(--surface0) shadow">
-      <div className="flex items-center w-1/3 min-w-0 gap-3">
-        <div className="h-14 w-14 overflow-hidden rounded-lg border border-(--surface2) bg-(--surface1)">
-          {coverArtUrl ? (
-            <img src={coverArtUrl} alt={currentSong?.title ?? "Cover"} className="h-full w-full object-cover" />
-          ) : (
-            <div className="h-full w-full bg-(--surface2)" />
-          )}
-        </div>
-        <div className="min-w-0">
-          <p className="text-sm font-semibold truncate">{currentSong?.title ?? "Nothing playing"}</p>
-          <p className="text-xs text-(--text-grey) truncate">
-            {currentSong?.artist ?? "Select a song to start"}
-          </p>
-        </div>
+    <footer className="sticky bottom-0 z-30 h-24 p-4 border-t border-(--surface1) bg-(--surface0) shadow relative">
+      <div
+        className="pointer-events-none absolute left-0 right-0 bottom-0 z-0 overflow-hidden"
+        style={{ height: `${visualizerHeightPercent * 100}%` }}
+      >
+        <BackgroundAreaVisualizer frequencyData={visualizerData} color={visualizerColor} opacity={visualizerOpacity} blur={visualizerBlur} />
       </div>
-
-      <div className="flex flex-col items-center w-1/3">
-        <div className="flex items-center space-x-3 mb-2">
-          <Button
-            className={`shadow-none ${shuffle ? "bg-(--surface2)" : ""}`}
-            aria-label="Toggle shuffle"
-            onClick={() => toggleShuffle()}
-            disabled={!currentSong}
-          >
-            <ShuffleIcon fontSize="small" />
-          </Button>
-          <Button className="shadow-none" disabled={disabled} onClick={handleRestart}>
-            <SkipPreviousIcon fontSize="small" />
-          </Button>
-          <Button
-            size="large"
-            className="bg-(--text) hover:bg-(--primary2) shadow-none"
-            aria-label={isPlaying ? "Pause" : "Play"}
-            onClick={() => void togglePlayPause()}
-            disabled={!currentSong || isLoading}
-          >
-            {isPlaying && !isScrubbing ? (
-              <PauseIcon fontSize="small" className="text-(--text-inverted)" />
+      <div className="relative z-10 flex h-full w-full items-center justify-between">
+        <div className="flex items-center w-1/3 min-w-0 gap-3">
+          <div className="h-14 w-14 overflow-hidden rounded-lg border border-(--surface2) bg-(--surface1)">
+            {coverArtUrl ? (
+              <img src={coverArtUrl} alt={currentSong?.title ?? "Cover"} className="h-full w-full object-cover" />
             ) : (
-              <PlayArrowIcon fontSize="small" className="text-(--text-inverted)" />
+              <div className="h-full w-full bg-(--surface2)" />
             )}
-          </Button>
-          <Button className="shadow-none" disabled={disabled} onClick={handleSkipToEnd}>
-            <SkipNextIcon fontSize="small" />
-          </Button>
-          <Button
-            className={`shadow-none ${repeat === "one" ? "bg-(--surface2)" : ""}`}
-            aria-label="Toggle repeat"
-            onClick={() => cycleRepeat()}
-            disabled={!currentSong}
-          >
-            <RepeatIcon fontSize="small" />
-          </Button>
+          </div>
+          <div className="min-w-0">
+            <p className="text-sm font-semibold truncate">{currentSong?.title ?? "Nothing playing"}</p>
+            <p className="text-xs text-(--text-grey) truncate">
+              {currentSong?.artist ?? "Select a song to start"}
+            </p>
+          </div>
         </div>
-        <ProgressSlider
-          position={position}
-          duration={duration}
-          disabled={disabled}
-          onScrubStart={() => beginScrub()}
-          onScrub={(time) => seek(time)}
-          onScrubEnd={(time) => endScrub(time)}
-        />
-      </div>
 
-      <div className="flex items-center justify-end space-x-3 w-1/3">
-        {isRightCompact ? (
-          <Popover
-            open={isQueueOpen}
-            onOpenChange={(open) => {
-              if (open) {
-                openQueue("queue");
-              } else {
-                closeQueue();
-              }
-            }}
-          >
-            <PopoverTrigger asChild>{queueButton}</PopoverTrigger>
-            <PopoverContent
-              side="top"
-              align="end"
-              sideOffset={12}
-              className="w-[340px] max-h-[70vh] overflow-auto"
+        <div className="flex flex-col items-center w-1/3">
+          <div className="flex items-center space-x-3 mb-2">
+            <Button
+              className={`shadow-none ${shuffle ? "bg-(--surface2)" : ""}`}
+              aria-label="Toggle shuffle"
+              onClick={() => toggleShuffle()}
+              disabled={!currentSong}
             >
-              <div className="flex items-center justify-between gap-2 pb-2 border-b border-(--surface2) mb-3">
-                <div className="flex items-center gap-2 text-base font-semibold">
-                  <QueueMusicRoundedIcon fontSize="small" />
-                  <span className="capitalize">{rightView}</span>
+              <ShuffleIcon fontSize="small" />
+            </Button>
+            <Button className="shadow-none" disabled={disabled} onClick={handleRestart}>
+              <SkipPreviousIcon fontSize="small" />
+            </Button>
+            <Button
+              size="large"
+              className="bg-(--text) hover:bg-(--primary2) shadow-none"
+              aria-label={isPlaying ? "Pause" : "Play"}
+              onClick={() => void togglePlayPause()}
+              disabled={!currentSong || isLoading}
+            >
+              {isPlaying && !isScrubbing ? (
+                <PauseIcon fontSize="small" className="text-(--text-inverted)" />
+              ) : (
+                <PlayArrowIcon fontSize="small" className="text-(--text-inverted)" />
+              )}
+            </Button>
+            <Button className="shadow-none" disabled={disabled} onClick={handleSkipToEnd}>
+              <SkipNextIcon fontSize="small" />
+            </Button>
+            <Button
+              className={`shadow-none ${repeat === "one" ? "bg-(--surface2)" : ""}`}
+              aria-label="Toggle repeat"
+              onClick={() => cycleRepeat()}
+              disabled={!currentSong}
+            >
+              <RepeatIcon fontSize="small" />
+            </Button>
+          </div>
+          <ProgressSlider
+            position={position}
+            duration={duration}
+            disabled={disabled}
+            onScrubStart={() => beginScrub()}
+            onScrub={(time) => seek(time)}
+            onScrubEnd={(time) => endScrub(time)}
+          />
+        </div>
+
+        <div className="flex items-center justify-end space-x-3 w-1/3">
+          {isRightCompact ? (
+            <Popover
+              open={isQueueOpen}
+              onOpenChange={(open) => {
+                if (open) {
+                  openQueue("queue");
+                } else {
+                  closeQueue();
+                }
+              }}
+            >
+              <PopoverTrigger asChild>{queueButton}</PopoverTrigger>
+              <PopoverContent
+                side="top"
+                align="end"
+                sideOffset={12}
+                className="w-[340px] max-h-[70vh] overflow-auto"
+              >
+                <div className="flex items-center justify-between gap-2 pb-2 border-b border-(--surface2) mb-3">
+                  <div className="flex items-center gap-2 text-base font-semibold">
+                    <QueueMusicRoundedIcon fontSize="small" />
+                    <span className="capitalize">{rightView}</span>
+                  </div>
+                  <Button variant="ghost" size="small" className="shadow-none" onClick={closeQueue} aria-label="Close queue popover">
+                    <CloseIcon fontSize="small" />
+                  </Button>
                 </div>
-                <Button variant="ghost" size="small" className="shadow-none" onClick={closeQueue} aria-label="Close queue popover">
-                  <CloseIcon fontSize="small" />
-                </Button>
-              </div>
-              <div className="space-y-3">
-                <RightSidebarContent view={rightView} />
-              </div>
-            </PopoverContent>
-          </Popover>
-        ) : (
-          queueButton
-        )}
-        <VolumeControl
-          volume={volume}
-          isMuted={isMuted}
-          onChange={(value) => setVolume(value)}
-          onToggleMute={toggleMute}
-          onScroll={(delta) => changeVolumeBy(delta)}
-        />
+                <div className="space-y-3">
+                  <RightSidebarContent view={rightView} />
+                </div>
+              </PopoverContent>
+            </Popover>
+          ) : (
+            queueButton
+          )}
+          <VolumeControl
+            volume={volume}
+            isMuted={isMuted}
+            onChange={(value) => setVolume(value)}
+            onToggleMute={toggleMute}
+            onScroll={(delta) => changeVolumeBy(delta)}
+          />
+        </div>
       </div>
     </footer>
   );

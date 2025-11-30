@@ -31,17 +31,22 @@ export class HiResAudioPlayer {
   private audioContext: AudioContext | null = null;
   private sourceNode: MediaElementAudioSourceNode | null = null;
   private gainNode: GainNode | null = null;
+  private analyserNode: AnalyserNode | null = null;
   private filterNodes: BiquadFilterNode[] = [];
   private callbacks: PlayerCallbacks;
   private progressRaf: number | null = null;
   private hintedDuration = 0;
+  private frequencyData: Uint8Array | null = null;
+  private needsGraphRebuild = false;
+  private lastProgressEmit = 0;
+  private readonly progressIntervalMs = 80;
 
   public constructor(callbacks?: PlayerCallbacks) {
     this.callbacks = callbacks ?? {};
     this.audio = new Audio();
     this.audio.preload = "auto";
     this.audio.crossOrigin = "anonymous";
-    this.audio.playsInline = true;
+    this.audio.setAttribute("playsinline", "true");
     this.audio.autoplay = false;
 
     this.audio.addEventListener("play", this.handlePlay);
@@ -96,7 +101,7 @@ export class HiResAudioPlayer {
     const duration = this.getDuration();
     const bounded = Math.max(0, Math.min(time, Number.isFinite(duration) ? duration : Number.MAX_SAFE_INTEGER));
     this.audio.currentTime = bounded;
-    this.callbacks.onProgress?.(this.audio.currentTime, this.getDuration());
+    this.emitProgress(true);
     if (!this.audio.paused) {
       this.ensureProgressLoop();
     }
@@ -130,6 +135,7 @@ export class HiResAudioPlayer {
       return node;
     });
 
+    this.needsGraphRebuild = true;
     this.rebuildGraph();
   }
 
@@ -149,17 +155,34 @@ export class HiResAudioPlayer {
       return;
     }
 
+    let graphChanged = false;
+
     if (!this.audioContext) {
-      this.audioContext = new AudioCtx();
+      this.audioContext = new AudioCtx({ latencyHint: "playback" });
+      graphChanged = true;
     }
     if (!this.gainNode && this.audioContext) {
       this.gainNode = this.audioContext.createGain();
+      graphChanged = true;
+    }
+    if (!this.analyserNode && this.audioContext) {
+      this.analyserNode = this.audioContext.createAnalyser();
+      this.analyserNode.fftSize = 2048;
+      this.analyserNode.minDecibels = -90;
+      this.analyserNode.maxDecibels = -10;
+      this.analyserNode.smoothingTimeConstant = 0.85;
+      this.frequencyData = new Uint8Array(this.analyserNode.frequencyBinCount);
+      graphChanged = true;
     }
     if (!this.sourceNode && this.audioContext) {
       this.sourceNode = this.audioContext.createMediaElementSource(this.audio);
+      graphChanged = true;
     }
 
-    this.rebuildGraph();
+    if (graphChanged || this.needsGraphRebuild) {
+      this.rebuildGraph();
+      this.needsGraphRebuild = false;
+    }
   }
 
   private rebuildGraph(): void {
@@ -170,9 +193,16 @@ export class HiResAudioPlayer {
     this.sourceNode.disconnect();
     this.filterNodes.forEach((node) => node.disconnect());
     this.gainNode.disconnect();
+    if (this.analyserNode) {
+      this.analyserNode.disconnect();
+    }
 
     let head: AudioNode = this.sourceNode;
-    const chain: AudioNode[] = [...this.filterNodes, this.gainNode, this.audioContext.destination];
+    const chain: AudioNode[] = [...this.filterNodes, this.gainNode];
+    if (this.analyserNode) {
+      chain.push(this.analyserNode);
+    }
+    chain.push(this.audioContext.destination);
     chain.forEach((node) => {
       head.connect(node);
       head = node;
@@ -181,8 +211,9 @@ export class HiResAudioPlayer {
 
   private ensureProgressLoop(): void {
     if (this.progressRaf !== null) return;
+    this.emitProgress(true);
     const tick = () => {
-      this.callbacks.onProgress?.(this.audio.currentTime, this.getDuration());
+      this.emitProgress();
       this.progressRaf = requestAnimationFrame(tick);
     };
     this.progressRaf = requestAnimationFrame(tick);
@@ -197,30 +228,34 @@ export class HiResAudioPlayer {
 
   private handlePlay = () => {
     this.callbacks.onPlay?.();
+    this.emitProgress(true);
     this.ensureProgressLoop();
   };
 
   private handlePause = () => {
     this.callbacks.onPause?.();
     this.stopProgressLoop();
-    this.callbacks.onProgress?.(this.audio.currentTime, this.getDuration());
+    this.emitProgress(true);
   };
 
   private handleEnded = () => {
     this.stopProgressLoop();
+    this.emitProgress(true);
     this.callbacks.onEnded?.();
   };
 
   private handleLoadedMetadata = () => {
+    this.emitProgress(true);
     this.callbacks.onCanPlay?.(this.getDuration());
   };
 
   private handleCanPlay = () => {
+    this.emitProgress(true);
     this.callbacks.onCanPlay?.(this.getDuration());
   };
 
   private handleTimeUpdate = () => {
-    this.callbacks.onProgress?.(this.audio.currentTime, this.getDuration());
+    this.emitProgress();
   };
 
   private handleError = () => {
@@ -228,4 +263,29 @@ export class HiResAudioPlayer {
     const message = mediaError?.message ?? "Playback error";
     this.callbacks.onError?.(message);
   };
+
+  private emitProgress(force = false): void {
+    const now = typeof performance !== "undefined" ? performance.now() : Date.now();
+    if (!force && now - this.lastProgressEmit < this.progressIntervalMs) {
+      return;
+    }
+    this.lastProgressEmit = now;
+    this.callbacks.onProgress?.(this.audio.currentTime, this.getDuration());
+  }
+
+  public getFrequencyData(): Uint8Array | null {
+    this.ensureContext();
+    if (!this.analyserNode) {
+      return null;
+    }
+    if (!this.frequencyData || this.frequencyData.length !== this.analyserNode.frequencyBinCount) {
+      this.frequencyData = new Uint8Array(this.analyserNode.frequencyBinCount);
+    }
+    this.analyserNode.getByteFrequencyData(this.frequencyData);
+    return this.frequencyData;
+  }
+
+  public getSampleRate(): number | null {
+    return this.audioContext?.sampleRate ?? null;
+  }
 }

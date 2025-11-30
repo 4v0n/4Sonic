@@ -226,7 +226,6 @@ const ComponentShowcasePage = () => {
   return (
     <div className="space-y-10 p-6">
       <div className="flex flex-col gap-3">
-        <p className="text-sm uppercase tracking-[0.2em] text-(--text-grey)">UI Library</p>
         <h1 className="text-3xl font-extrabold text-(--text)">Component Showcase</h1>
         <p className="text-(--text-grey) max-w-3xl">
           A quick look at the primitives available in this project. Each card shows a live component with the styles they ship with.
