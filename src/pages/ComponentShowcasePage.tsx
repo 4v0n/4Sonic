@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { toast } from "sonner";
 import Checkbox from "../components/ui/Checkbox";
 import { RadioGroup, RadioGroupItem } from "../components/ui/RadioGroup";
@@ -18,6 +18,9 @@ import Select from "../components/ui/Select";
 import Switch from "../components/ui/Switch";
 import { useThemeContext } from "../context/ThemeContext";
 import { ToastPosition, useUiPreferencesStore } from "../store/uiPreferencesStore";
+import MediaCard from "../components/ui/MediaCard";
+import { useAuthStore } from "../store/authStore";
+import { SubsonicAlbumDetail, SubsonicArtistDetail, SubsonicSong } from "../types/subsonic";
 
 const Section: React.FC<{ title: string; description?: string; children: React.ReactNode }> = ({ title, description, children }) => (
   <section className="rounded-2xl border border-(--surface2) bg-(--surface0) p-5 shadow-sm space-y-4">
@@ -44,15 +47,30 @@ const ColorSwatch = ({ token, label }: { token: string; label?: string }) => (
   </div>
 );
 
+const ARTIST_ID = "7wFTRm8e9oyqR01et3oHjr";
+const ALBUM_ID = "03f3vk3U4DSC1gWsliTr9V";
+const SONG_ID = "HLdizuPnr7u4Tojmn9mNOM";
+
+interface MediaSamplesState {
+  artist?: SubsonicArtistDetail;
+  album?: SubsonicAlbumDetail;
+  song?: SubsonicSong;
+  loading: boolean;
+  error?: string;
+}
+
 const ComponentShowcasePage = () => {
 
   const { theme, themes } = useThemeContext();
+  const session = useAuthStore((state) => state.session);
+  const client = session?.client;
   const [isChecked, setIsChecked] = useState(false);
   const [radioValue, setRadioValue] = useState("option-one");
   const [selectValue, setSelectValue] = useState("light");
   const [switchOn, setSwitchOn] = useState(true);
   const [keybind, setKeybind] = useState("⌘ + K");
   const [textValue, setTextValue] = useState("Navidrome server");
+  const [mediaSamples, setMediaSamples] = useState<MediaSamplesState>({ loading: true });
   const toastPosition = useUiPreferencesStore((state) => state.toastPosition);
   const setToastPosition = useUiPreferencesStore((state) => state.setToastPosition);
   const activeThemeLabel = useMemo(
@@ -93,6 +111,90 @@ const ComponentShowcasePage = () => {
     },
   ]), []);
 
+  useEffect(() => {
+    if (!client) {
+      return;
+    }
+
+    let cancelled = false;
+
+    const fetchSamples = async () => {
+      setMediaSamples((previous) => ({ ...previous, loading: true, error: undefined }));
+
+      try {
+        const [artistResponse, albumResponse, songResponse] = await Promise.all([
+          client.getArtist(ARTIST_ID),
+          client.getAlbum(ALBUM_ID),
+          client.getSong(SONG_ID),
+        ]);
+
+        if (cancelled) {
+          return;
+        }
+
+        setMediaSamples({
+          loading: false,
+          artist: artistResponse.artist,
+          album: albumResponse.album,
+          song: songResponse.song,
+          error: undefined,
+        });
+      } catch (error) {
+        if (!cancelled) {
+          setMediaSamples((previous) => ({
+            ...previous,
+            loading: false,
+            error: error instanceof Error ? error.message : "Failed to load sample media",
+          }));
+        }
+      }
+    };
+
+    void fetchSamples();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [client]);
+
+  const albumMeta = useMemo(() => {
+    if (!mediaSamples.album) return "";
+    const songs = mediaSamples.album.songCount ?? mediaSamples.album.song?.length;
+    const yearPart = mediaSamples.album.year ? String(mediaSamples.album.year) : undefined;
+    const songPart = songs ? `${songs} song${songs === 1 ? "" : "s"}` : undefined;
+    return [yearPart, songPart].filter(Boolean).join(" • ");
+  }, [mediaSamples.album]);
+
+  const songMeta = useMemo(() => {
+    if (!mediaSamples.song && !mediaSamples.album) return "";
+    const albumName = mediaSamples.song?.album ?? mediaSamples.album?.name;
+    const yearPart = mediaSamples.song?.year ?? mediaSamples.album?.year;
+    const yearString = yearPart ? String(yearPart) : undefined;
+    return [albumName, yearString].filter(Boolean).join(" • ");
+  }, [mediaSamples.album, mediaSamples.song]);
+
+  const artistMeta = useMemo(() => {
+    if (!mediaSamples.artist?.albumCount) return "";
+    return `${mediaSamples.artist.albumCount} album${mediaSamples.artist.albumCount === 1 ? "" : "s"}`;
+  }, [mediaSamples.artist]);
+
+  const artistCover = useMemo(() => {
+    if (mediaSamples.artist?.artistImageUrl) {
+      return mediaSamples.artist.artistImageUrl;
+    }
+    return client?.getCoverArtUrl(mediaSamples.artist?.coverArt, { size: 512 });
+  }, [client, mediaSamples.artist]);
+
+  const albumCover = useMemo(
+    () => client?.getCoverArtUrl(mediaSamples.album?.coverArt, { size: 512 }),
+    [client, mediaSamples.album?.coverArt],
+  );
+
+  const songCover = useMemo(
+    () => client?.getCoverArtUrl(mediaSamples.song?.coverArt ?? mediaSamples.album?.coverArt, { size: 512 }),
+    [client, mediaSamples.album?.coverArt, mediaSamples.song?.coverArt],
+  );
+
   const dropdownOptions: MenuOption[] = [
     { label: "Profile", onClick: () => alert("Profile"), icon: <PersonIcon fontSize="small" /> },
     { label: "Settings", onClick: () => alert("Settings"), icon: <SettingsIcon fontSize="small" /> },
@@ -118,6 +220,72 @@ const ComponentShowcasePage = () => {
 
       <div className="grid gap-6 xl:grid-cols-12">
         <div className="xl:col-span-7 space-y-6">
+          <Section
+            title="Media Cards"
+            description="Artist, album, and song presentations with hover play affordances."
+          >
+            {mediaSamples.error ? (
+              <p className="text-sm text-(--danger1)">Unable to load media samples: {mediaSamples.error}</p>
+            ) : null}
+            <div className="grid gap-4 md:grid-cols-3">
+              <MediaCard
+                kind="artist"
+                title={mediaSamples.artist?.name}
+                subtitle={artistMeta}
+                coverUrl={artistCover}
+                isLoading={mediaSamples.loading && !mediaSamples.artist}
+                onPlay={() => toast(`Play artist: ${mediaSamples.artist?.name ?? "Artist"}`)}
+                className="w-full max-w-none"
+              />
+              <MediaCard
+                kind="album"
+                title={mediaSamples.album?.name}
+                subtitle={mediaSamples.album?.artist}
+                coverUrl={albumCover}
+                isLoading={mediaSamples.loading && !mediaSamples.album}
+                onPlay={() => toast.success(`Play album: ${mediaSamples.album?.name ?? "Album"}`)}
+                className="w-full max-w-none"
+              />
+              <MediaCard
+                kind="song"
+                title={mediaSamples.song?.title}
+                subtitle={mediaSamples.song?.artist ?? mediaSamples.album?.artist}
+                meta={mediaSamples.song?.album ?? mediaSamples.album?.name}
+                coverUrl={songCover}
+                isLoading={mediaSamples.loading && !mediaSamples.song}
+                onPlay={() => toast.success(`Play song: ${mediaSamples.song?.title ?? "Song"}`)}
+                className="w-full max-w-none"
+              />
+            </div>
+            <div className="space-y-3">
+              <MediaCard
+                layout="row"
+                kind="album"
+                title={mediaSamples.album?.name}
+                subtitle={mediaSamples.album?.artist}
+                meta={albumMeta}
+                coverUrl={albumCover}
+                isLoading={mediaSamples.loading && !mediaSamples.album}
+                onPlay={() => toast.success(`Play album: ${mediaSamples.album?.name ?? "Album"}`)}
+                className="w-full"
+              />
+              <MediaCard
+                layout="row"
+                kind="song"
+                title={mediaSamples.song?.title}
+                subtitle={mediaSamples.song?.artist ?? mediaSamples.album?.artist}
+                meta={songMeta}
+                coverUrl={songCover}
+                isLoading={mediaSamples.loading && !mediaSamples.song}
+                onPlay={() => toast.success(`Play song: ${mediaSamples.song?.title ?? "Song"}`)}
+                className="w-full"
+              />
+            </div>
+            <p className="text-xs text-(--text-grey)">
+              Using artist {ARTIST_ID}, album {ALBUM_ID}, and song {SONG_ID} from your Navidrome server.
+            </p>
+          </Section>
+
           <Section title="Theme & Palette" description={`Currently using the ${activeThemeLabel} theme.`}>
             <div className="flex flex-wrap items-center gap-3">
               <ThemeToggle />

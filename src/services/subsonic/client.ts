@@ -1,4 +1,4 @@
-import { SubsonicAlbumResponse, SubsonicArtistResponse, SubsonicArtistsResponse, SubsonicIndexesResponse, SubsonicResponse, SubsonicResponseEnvelope } from "../../types/subsonic";
+import { SubsonicAlbumResponse, SubsonicArtistResponse, SubsonicArtistsResponse, SubsonicIndexesResponse, SubsonicResponse, SubsonicResponseEnvelope, SubsonicSongResponse } from "../../types/subsonic";
 import { normalizeServerUrl } from "./auth";
 
 export interface SubsonicCredentials {
@@ -67,6 +67,33 @@ export class SubsonicClient {
 
   public async getAlbum(id: string): Promise<SubsonicResponse<SubsonicAlbumResponse>> {
     return this.request<SubsonicAlbumResponse>("getAlbum", { id });
+  }
+
+  public async getSong(id: string): Promise<SubsonicResponse<SubsonicSongResponse>> {
+    return this.request<SubsonicSongResponse>("getSong", { id });
+  }
+
+  public getCoverArtUrl(id?: string, options?: { size?: number }): string | undefined {
+    if (!id) {
+      return undefined;
+    }
+
+    const url = new URL(`${this.serverUrl}/rest/getCoverArt.view`);
+    const params = new URLSearchParams({
+      u: this.username,
+      t: this.token,
+      s: this.salt,
+      v: this.apiVersion,
+      c: this.clientName,
+      id,
+    });
+
+    if (options?.size) {
+      params.set("size", String(options.size));
+    }
+
+    url.search = params.toString();
+    return url.toString();
   }
 
   private async request<TPayload>(endpoint: string, params?: Record<string, string | number | undefined>): Promise<SubsonicResponse<TPayload>> {

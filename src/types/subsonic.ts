@@ -83,6 +83,10 @@ export interface SubsonicAlbumResponse {
   album: SubsonicAlbumDetail;
 }
 
+export interface SubsonicSongResponse {
+  song: SubsonicSong;
+}
+
 export interface SubsonicSong {
   id: string;
   title: string;
