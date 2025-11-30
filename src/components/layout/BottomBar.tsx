@@ -29,6 +29,8 @@ interface ProgressSliderProps {
 
 const ProgressSlider = ({ position, duration, disabled, onScrubStart, onScrub, onScrubEnd }: ProgressSliderProps) => {
   const barRef = useRef<HTMLDivElement>(null);
+  const activePointerIdRef = useRef<number | null>(null);
+  const draggingRef = useRef(false);
   const [isDragging, setIsDragging] = useState(false);
 
   const getTimeFromClientX = (clientX: number): number => {
@@ -41,6 +43,8 @@ const ProgressSlider = ({ position, duration, disabled, onScrubStart, onScrub, o
   const handlePointerDown = (event: React.PointerEvent<HTMLDivElement>) => {
     if (disabled || event.button === 2) return;
     const nextTime = getTimeFromClientX(event.clientX);
+    draggingRef.current = true;
+    activePointerIdRef.current = event.pointerId;
     setIsDragging(true);
     onScrubStart();
     onScrub(nextTime);
@@ -49,20 +53,38 @@ const ProgressSlider = ({ position, duration, disabled, onScrubStart, onScrub, o
 
   useEffect(() => {
     if (!isDragging) return;
+
+    const endScrub = (event: PointerEvent) => {
+      if (!draggingRef.current) return;
+      draggingRef.current = false;
+      const nextTime = getTimeFromClientX(event.clientX);
+      onScrubEnd(nextTime);
+      setIsDragging(false);
+      if (activePointerIdRef.current !== null && barRef.current?.hasPointerCapture(activePointerIdRef.current)) {
+        barRef.current.releasePointerCapture(activePointerIdRef.current);
+      }
+      activePointerIdRef.current = null;
+    };
+
     const handleMove = (event: PointerEvent) => {
+      if (!draggingRef.current) return;
+      if (event.buttons === 0) {
+        endScrub(event);
+        return;
+      }
       const nextTime = getTimeFromClientX(event.clientX);
       onScrub(nextTime);
     };
     const handleUp = (event: PointerEvent) => {
-      const nextTime = getTimeFromClientX(event.clientX);
-      onScrubEnd(nextTime);
-      setIsDragging(false);
+      endScrub(event);
     };
     window.addEventListener("pointermove", handleMove);
     window.addEventListener("pointerup", handleUp);
+    window.addEventListener("pointercancel", handleUp);
     return () => {
       window.removeEventListener("pointermove", handleMove);
       window.removeEventListener("pointerup", handleUp);
+      window.removeEventListener("pointercancel", handleUp);
     };
   }, [isDragging, onScrub, onScrubEnd, duration]);
 
