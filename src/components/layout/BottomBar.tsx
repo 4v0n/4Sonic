@@ -205,7 +205,6 @@ const VolumeControl = ({ volume, isMuted, onChange, onToggleMute, onScroll }: Vo
         requestHide();
       }}
       onWheel={(event) => {
-        event.preventDefault();
         const step = event.deltaY < 0 ? 0.05 : -0.05;
         onScroll(step);
       }}
