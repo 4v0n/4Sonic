@@ -298,6 +298,11 @@ const BottomBar = ({ isRightCompact = false }: BottomBarProps) => {
 
   const handlePrevious = () => {
     if (!playbackReady) return;
+    const restartThresholdSeconds = 3;
+    if (position > restartThresholdSeconds) {
+      seek(0);
+      return;
+    }
     void playPrevious();
   };
 
@@ -312,7 +317,7 @@ const BottomBar = ({ isRightCompact = false }: BottomBarProps) => {
   return (
     <footer className="sticky bottom-0 z-30 h-24 p-4 border-t border-(--surface1) bg-(--surface0) shadow relative">
       <div
-        className="pointer-events-none absolute left-0 right-0 bottom-0 z-0 overflow-hidden"
+        className="pointer-events-none absolute left-0 right-0 bottom-0 z-0 overflow-visible"
         style={{ height: `${visualizerHeightPercent * 100}%` }}
       >
         <BackgroundAreaVisualizer frequencyData={visualizerData} color={visualizerColor} opacity={visualizerOpacity} blur={visualizerBlur} />
