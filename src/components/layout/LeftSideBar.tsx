@@ -34,7 +34,7 @@ const NavItem = ({ to, icon, label, isIconOnly }: NavItemProps) => (
         className="
           pointer-events-none absolute left-full top-1/2 -translate-y-1/2 ml-2
           whitespace-nowrap rounded-md bg-(--surface2) px-2 py-1 text-sm text-(--text)
-          opacity-0 shadow-sm transition-opacity duration-150 group-hover:opacity-100
+          opacity-0 shadow-sm transition-opacity duration-150 group-hover:opacity-100 z-40 drop-shadow-lg
         "
         role="tooltip"
       >

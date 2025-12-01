@@ -2,6 +2,7 @@ import React from "react";
 import { PlayArrowIcon } from "../../constants/icons";
 import cn from "../../utils/cn";
 import Button from "./Button";
+import LazyImage from "./LazyImage";
 
 type MediaKind = "artist" | "album" | "song";
 type MediaLayout = "square" | "row";
@@ -90,7 +91,17 @@ const MediaCard: React.FC<MediaCardProps> = ({
         )}
       >
         <div className="relative h-16 w-16 overflow-hidden rounded-lg bg-(--surface0)">
-          {coverUrl ? <img src={coverUrl} alt={title ?? TYPE_LABEL[kind]} className="h-full w-full object-cover" /> : <CoverFallback rounded />}
+          {coverUrl ? (
+            <LazyImage
+              src={coverUrl}
+              alt={title ?? TYPE_LABEL[kind]}
+              className="h-full w-full"
+              placeholder={<CoverFallback rounded />}
+              fallback={<CoverFallback rounded />}
+            />
+          ) : (
+            <CoverFallback rounded />
+          )}
         </div>
         <div className="min-w-0 flex-1 space-y-0.5">
           <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-(--text-grey)">{TYPE_LABEL[kind]}</p>
@@ -122,7 +133,17 @@ const MediaCard: React.FC<MediaCardProps> = ({
       )}
     >
       <div className="relative aspect-square w-full overflow-hidden bg-(--surface0)">
-        {coverUrl ? <img src={coverUrl} alt={title ?? TYPE_LABEL[kind]} className="h-full w-full object-cover" /> : <CoverFallback />}
+        {coverUrl ? (
+          <LazyImage
+            src={coverUrl}
+            alt={title ?? TYPE_LABEL[kind]}
+            className="h-full w-full"
+            placeholder={<CoverFallback />}
+            fallback={<CoverFallback />}
+          />
+        ) : (
+          <CoverFallback />
+        )}
         {onPlay ? (
           <>
             <div className="absolute inset-0 bg-black/25 opacity-0 transition group-hover:opacity-100" />
@@ -147,4 +168,4 @@ const MediaCard: React.FC<MediaCardProps> = ({
   );
 };
 
-export default MediaCard;
+export default React.memo(MediaCard);
