@@ -206,6 +206,53 @@
     --info2: #788fb1;
   }
 
+  [data-theme="sakura-dark"] {
+    color-scheme: dark;
+    --dark: #000000;
+    --light: #ffffff;
+
+    --text: #f7eaf1;
+    --text-grey: #cbb6c3;
+    --text-inverted: #140c12;
+
+    --primary0: #ff7aa9;
+    --primary1: #ff90b8;
+    --primary2: #ffa6c6;
+    --primary3: #ffc2d7;
+    --primary4: #ffd8e5;
+    --primary5: #ffebf2;
+
+    --surface0: #0f0a10;
+    --surface1: #19131c;
+    --surface2: #231a27;
+    --surface3: #2d2232;
+    --surface4: #372b3d;
+    --surface5: #423447;
+
+    --surface-tonal0: #171017;
+    --surface-tonal1: #201820;
+    --surface-tonal2: #281f28;
+    --surface-tonal3: #312730;
+    --surface-tonal4: #3a3038;
+    --surface-tonal5: #433741;
+
+    --success0: #a9e4c4;
+    --success1: #6fcfa0;
+    --success2: #2f8f72;
+
+    --warning0: #f3d6a4;
+    --warning1: #eab06a;
+    --warning2: #ba7f38;
+
+    --danger0: #f3b7c6;
+    --danger1: #e7819b;
+    --danger2: #b55b71;
+
+    --info0: #c2c9f4;
+    --info1: #8ea4e8;
+    --info2: #5d73b7;
+  }
+
   [data-theme="ocean"] {
     color-scheme: light;
     --dark: #000000;
