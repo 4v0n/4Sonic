@@ -72,11 +72,17 @@ const MediaCard: React.FC<MediaCardProps> = ({
   meta,
   coverUrl,
   onPlay,
+  onClick,
   layout = "square",
   isLoading = false,
   className = "",
   ...props
 }) => {
+  const handlePlayClick = (event: React.MouseEvent<HTMLButtonElement>) => {
+    event.stopPropagation();
+    onPlay?.();
+  };
+
   if (isLoading) {
     return layout === "row" ? <RowSkeleton className={className} /> : <TileSkeleton className={className} />;
   }
@@ -87,8 +93,10 @@ const MediaCard: React.FC<MediaCardProps> = ({
         {...props}
         className={cn(
           "group flex items-center gap-4 rounded-2xl border border-(--surface2) bg-(--surface1) px-4 py-3 shadow-sm transition hover:-translate-y-[1px] hover:border-(--surface3) hover:bg-(--surface2) hover:shadow-md",
+          onClick ? "cursor-pointer" : "",
           className,
         )}
+        onClick={onClick}
       >
         <div className="relative h-16 w-16 overflow-hidden rounded-lg bg-(--surface0)">
           {coverUrl ? (
@@ -115,7 +123,7 @@ const MediaCard: React.FC<MediaCardProps> = ({
             size="large"
             aria-label={`Play ${title ?? TYPE_LABEL[kind]}`}
             className="opacity-0 transition duration-200 group-hover:opacity-100 shadow-lg"
-            onClick={onPlay}
+            onClick={handlePlayClick}
           >
             <PlayArrowIcon />
           </Button>
@@ -129,8 +137,10 @@ const MediaCard: React.FC<MediaCardProps> = ({
       {...props}
       className={cn(
         "group max-w-[220px] overflow-hidden rounded-2xl border border-(--surface2) bg-(--surface1) shadow-sm transition hover:-translate-y-[2px] hover:border-(--surface3) hover:shadow-lg",
+        onClick ? "cursor-pointer" : "",
         className,
       )}
+      onClick={onClick}
     >
       <div className="relative aspect-square w-full overflow-hidden bg-(--surface0)">
         {coverUrl ? (
@@ -152,7 +162,7 @@ const MediaCard: React.FC<MediaCardProps> = ({
               size="large"
               aria-label={`Play ${title ?? TYPE_LABEL[kind]}`}
               className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 opacity-0 transition duration-150 group-hover:opacity-100 shadow-lg"
-              onClick={onPlay}
+              onClick={handlePlayClick}
             >
               <PlayArrowIcon />
             </Button>

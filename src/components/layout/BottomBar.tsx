@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from "react";
-import { CloseIcon, PauseIcon, PlayArrowIcon, QueueMusicRoundedIcon, RepeatIcon, ShuffleIcon, SkipNextIcon, SkipPreviousIcon, VolumeDownIcon, VolumeMuteIcon, VolumeOffIcon, VolumeUpIcon } from "../../constants/icons";
+import { CloseIcon, PauseIcon, PlayArrowIcon, QueueMusicRoundedIcon, RepeatIcon, RepeatOneIcon, ShuffleIcon, SkipNextIcon, SkipPreviousIcon, VolumeDownIcon, VolumeMuteIcon, VolumeOffIcon, VolumeUpIcon } from "../../constants/icons";
 import Button from "../ui/Button";
 import { Popover, PopoverContent, PopoverTrigger } from "../ui/Popover";
 import { useRightSidebarStore } from "../../store/rightSidebarStore";
@@ -281,6 +281,8 @@ const BottomBar = ({ isRightCompact = false }: BottomBarProps) => {
   const setVolume = usePlaybackStore((state) => state.setVolume);
   const changeVolumeBy = usePlaybackStore((state) => state.changeVolumeBy);
   const toggleMute = usePlaybackStore((state) => state.toggleMute);
+  const playNext = usePlaybackStore((state) => state.playNext);
+  const playPrevious = usePlaybackStore((state) => state.playPrevious);
 
   const queueButton = (
     <Button
@@ -292,15 +294,17 @@ const BottomBar = ({ isRightCompact = false }: BottomBarProps) => {
     </Button>
   );
 
-  const disabled = !currentSong || duration <= 0;
-  const handleRestart = () => {
-    if (disabled) return;
-    seek(0);
+  const playbackReady = Boolean(currentSong);
+  const scrubDisabled = !playbackReady || duration <= 0;
+
+  const handlePrevious = () => {
+    if (!playbackReady) return;
+    void playPrevious();
   };
-  const handleSkipToEnd = () => {
-    if (disabled) return;
-    const target = Math.max(duration - 0.1, 0);
-    seek(target);
+
+  const handleNext = () => {
+    if (!playbackReady) return;
+    void playNext();
   };
 
   const effectiveVolume = isMuted ? 0 : volume;
@@ -341,7 +345,7 @@ const BottomBar = ({ isRightCompact = false }: BottomBarProps) => {
             >
               <ShuffleIcon fontSize="small" />
             </Button>
-            <Button className="shadow-none" disabled={disabled} onClick={handleRestart}>
+            <Button className="shadow-none" disabled={!playbackReady} onClick={handlePrevious}>
               <SkipPreviousIcon fontSize="small" />
             </Button>
             <Button
@@ -357,22 +361,22 @@ const BottomBar = ({ isRightCompact = false }: BottomBarProps) => {
                 <PlayArrowIcon fontSize="small" className="text-(--text-inverted)" />
               )}
             </Button>
-            <Button className="shadow-none" disabled={disabled} onClick={handleSkipToEnd}>
+            <Button className="shadow-none" disabled={!playbackReady} onClick={handleNext}>
               <SkipNextIcon fontSize="small" />
             </Button>
             <Button
-              className={`shadow-none ${repeat === "one" ? "bg-(--surface2)" : ""}`}
+              className={`shadow-none ${repeat !== "off" ? "bg-(--surface2)" : ""}`}
               aria-label="Toggle repeat"
               onClick={() => cycleRepeat()}
               disabled={!currentSong}
             >
-              <RepeatIcon fontSize="small" />
+              {repeat === "one" ? <RepeatOneIcon fontSize="small" /> : <RepeatIcon fontSize="small" />}
             </Button>
           </div>
           <ProgressSlider
             position={position}
             duration={duration}
-            disabled={disabled}
+            disabled={scrubDisabled}
             onScrubStart={() => beginScrub()}
             onScrub={(time) => seek(time)}
             onScrubEnd={(time) => endScrub(time)}

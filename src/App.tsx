@@ -4,6 +4,7 @@ import LibraryPage from "./pages/LibraryPage";
 import PlaylistsPage from "./pages/PlaylistsPage";
 import LikedSongsPage from "./pages/LikedSongsPage";
 import AlbumsPage from "./pages/AlbumsPage";
+import AlbumDetailPage from "./pages/AlbumDetailPage";
 import ArtistsPage from "./pages/ArtistsPage";
 import SettingsPage from "./pages/SettingsPage";
 import AccountsPage from "./pages/AccountsPage";
@@ -39,6 +40,7 @@ function App() {
           <Route path="/playlists" element={<PlaylistsPage />} />
           <Route path="/likes" element={<LikedSongsPage />} />
           <Route path="/albums" element={<AlbumsPage />} />
+          <Route path="/albums/:albumId" element={<AlbumDetailPage />} />
           <Route path="/artists" element={<ArtistsPage />} />
           <Route path="/settings" element={<SettingsPage />} />
           <Route path="/account" element={<AccountsPage />} />

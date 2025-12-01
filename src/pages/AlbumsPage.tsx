@@ -1,4 +1,5 @@
 import { useCallback, useMemo } from "react";
+import { useNavigate } from "react-router-dom";
 import MediaCollection, { MediaSortOption } from "../components/library/MediaCollection";
 import { useAlbums, useLibraryStatus } from "../hooks/useLibrary";
 import { useAuthStore } from "../store/authStore";
@@ -19,6 +20,7 @@ const getAlbumYear = (album: AlbumEntity): number | undefined => {
 const AlbumsPage = () => {
   const albums = useAlbums();
   const status = useLibraryStatus();
+  const navigate = useNavigate();
   const client = useAuthStore((state) => state.session?.client);
   const libraryError = useLibraryStore((state) => state.error);
 
@@ -93,8 +95,9 @@ const AlbumsPage = () => {
         album.genre,
         year ? String(year) : "",
       ].filter(Boolean).join(" "),
+      onClick: () => navigate(`/albums/${album.id}`),
     };
-  }, [client]);
+  }, [client, navigate]);
 
   return (
     <MediaCollection

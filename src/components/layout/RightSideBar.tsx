@@ -18,6 +18,10 @@ export const RightSidebarContent = ({ view }: { view: RightSidebarView }) => {
   const coverArtUrl = usePlaybackStore((state) => state.coverArtUrl);
   const position = usePlaybackStore((state) => state.position);
   const duration = usePlaybackStore((state) => state.duration);
+  const queue = usePlaybackStore((state) => state.queue);
+  const queueOrder = usePlaybackStore((state) => state.queueOrder);
+  const queuePosition = usePlaybackStore((state) => state.queuePosition);
+  const playFromQueue = usePlaybackStore((state) => state.playFromQueue);
 
   const formatTime = (value: number) => {
     if (!Number.isFinite(value) || value < 0) return "0:00";
@@ -49,13 +53,52 @@ export const RightSidebarContent = ({ view }: { view: RightSidebarView }) => {
   );
 
   if (view === "queue") {
+    const orderedQueue = queueOrder
+      .map((queueIndex, orderIndex) => {
+        const item = queue[queueIndex];
+        if (!item) return null;
+        return { item, orderIndex };
+      })
+      .filter(Boolean) as { item: (typeof queue)[number]; orderIndex: number }[];
+
+    const upcoming = queuePosition >= 0
+      ? orderedQueue.slice(queuePosition + 1)
+      : orderedQueue;
+
     return (
       <div className="space-y-3">
         {nowPlaying}
         <div className="text-sm text-(--text-grey)">Up Next</div>
-        <div className="rounded-lg border border-(--surface1) p-4 text-(--text-grey)">
-          Queue items will appear here.
-        </div>
+        {upcoming.length === 0 ? (
+          <div className="rounded-lg border border-(--surface1) p-4 text-(--text-grey)">
+            No more tracks in the queue.
+          </div>
+        ) : (
+          <div className="space-y-2">
+            {upcoming.map(({ item, orderIndex }) => (
+              <button
+                key={`${item.id}-${orderIndex}`}
+                className="w-full rounded-lg border border-(--surface1) bg-(--surface0) px-3 py-2 text-left transition hover:border-(--surface2) hover:bg-(--surface1)"
+                onClick={() => playFromQueue(orderIndex)}
+              >
+                <div className="flex items-center gap-3">
+                  <div className="h-12 w-12 overflow-hidden rounded-md border border-(--surface2) bg-(--surface1)">
+                    {item.coverArtUrl ? (
+                      <img src={item.coverArtUrl} alt={item.title} className="h-full w-full object-cover" />
+                    ) : (
+                      <div className="h-full w-full bg-(--surface2)" />
+                    )}
+                  </div>
+                  <div className="min-w-0 flex-1">
+                    <p className="truncate text-sm font-semibold text-(--text)">{item.title}</p>
+                    <p className="truncate text-xs text-(--text-grey)">{item.artist ?? item.album}</p>
+                  </div>
+                  <span className="text-xs tabular-nums text-(--text-grey)">{formatTime(item.duration ?? 0)}</span>
+                </div>
+              </button>
+            ))}
+          </div>
+        )}
       </div>
     );
   }

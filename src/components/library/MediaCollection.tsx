@@ -15,6 +15,7 @@ export type MediaCollectionItem<T = unknown> = {
   meta?: string;
   coverUrl?: string;
   onPlay?: () => void;
+  onClick?: () => void;
   searchText?: string;
   data?: T;
 };
@@ -144,8 +145,8 @@ function MediaCollection<T>({
 
   const shouldShowSkeletons = isLoading && items.length === 0;
   const skeletonCount = viewMode === "grid" ? 12 : 6;
-  const itemsToRender = shouldShowSkeletons
-    ? Array.from({ length: skeletonCount }, (_, index) => ({ id: `skeleton-${index}`, title: "" }))
+  const itemsToRender: MediaCollectionItem<T>[] = shouldShowSkeletons
+    ? Array.from({ length: skeletonCount }, (_, index) => ({ id: `skeleton-${index}`, title: "" } as MediaCollectionItem<T>))
     : filteredItems.slice(0, visibleCount);
 
   const showEmptyState = !isLoading && filteredItems.length === 0;
@@ -225,6 +226,7 @@ function MediaCollection<T>({
               meta={!shouldShowSkeletons ? item.meta : undefined}
               coverUrl={!shouldShowSkeletons ? item.coverUrl : undefined}
               onPlay={!shouldShowSkeletons ? item.onPlay : undefined}
+              onClick={!shouldShowSkeletons ? item.onClick : undefined}
               isLoading={shouldShowSkeletons}
               className="w-full"
               style={{ maxWidth: "100%" }}
@@ -243,6 +245,7 @@ function MediaCollection<T>({
               meta={!shouldShowSkeletons ? item.meta : undefined}
               coverUrl={!shouldShowSkeletons ? item.coverUrl : undefined}
               onPlay={!shouldShowSkeletons ? item.onPlay : undefined}
+              onClick={!shouldShowSkeletons ? item.onClick : undefined}
               isLoading={shouldShowSkeletons}
               className="w-full"
             />

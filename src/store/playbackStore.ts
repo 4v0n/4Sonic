@@ -5,7 +5,19 @@ import { useAuthStore } from "./authStore";
 import { HiResAudioPlayer, ParametricEqBand } from "../services/audio/player";
 import { audioCache } from "../services/audio/audioCache";
 
-type RepeatMode = "off" | "one";
+type RepeatMode = "off" | "one" | "all";
+
+export interface QueueItem {
+  id: string;
+  title: string;
+  artist?: string;
+  album?: string;
+  albumId?: string;
+  coverArt?: string;
+  coverArtUrl?: string;
+  duration?: number;
+  trackNumber?: number;
+}
 
 interface PlaybackState {
   currentSong: SubsonicSong | null;
@@ -20,9 +32,12 @@ interface PlaybackState {
   isMuted: boolean;
   isScrubbing: boolean;
   error?: string;
+  queue: QueueItem[];
+  queueOrder: number[];
+  queuePosition: number;
   getFrequencyData: () => Uint8Array | null;
   getSampleRate: () => number | null;
-  playSong: (songId: string) => Promise<void>;
+  playSong: (songId: string, options?: { queueItem?: QueueItem }) => Promise<void>;
   togglePlayPause: () => Promise<void>;
   pause: () => void;
   seek: (time: number) => void;
@@ -34,6 +49,10 @@ interface PlaybackState {
   toggleShuffle: () => void;
   cycleRepeat: () => void;
   setEq: (bands: ParametricEqBand[]) => void;
+  setQueue: (items: QueueItem[], startIndex?: number) => Promise<void>;
+  playFromQueue: (orderIndex: number) => Promise<void>;
+  playNext: () => Promise<void>;
+  playPrevious: () => Promise<void>;
 }
 
 const DEFAULT_VOLUME = 0.85;
@@ -44,9 +63,69 @@ let activeRequestToken: symbol | null = null;
 let scrubWasPlaying = false;
 let releaseCurrentSource: (() => void) | null = null;
 
+const createQueueOrder = (count: number, shuffle: boolean, anchorIndex: number): number[] => {
+  const indices = Array.from({ length: count }, (_, index) => index);
+  const clampedAnchor = Math.min(Math.max(anchorIndex, 0), Math.max(count - 1, 0));
+  if (!shuffle) {
+    return indices;
+  }
+
+  const rest = indices.filter((index) => index !== clampedAnchor);
+  for (let i = rest.length - 1; i > 0; i -= 1) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [rest[i], rest[j]] = [rest[j], rest[i]];
+  }
+
+  return [clampedAnchor, ...rest];
+};
+
+const queueItemToSong = (item: QueueItem): SubsonicSong => ({
+  id: item.id,
+  title: item.title,
+  artist: item.artist,
+  album: item.album,
+  albumId: item.albumId,
+  duration: item.duration,
+  track: item.trackNumber,
+  coverArt: item.coverArt,
+});
+
 export const usePlaybackStore = create<PlaybackState>()(
   persist(
     (set, get) => {
+      const getCurrentQueueIndex = (state: PlaybackState): number => {
+        const queueIndex = state.queueOrder[state.queuePosition];
+        return typeof queueIndex === "number" ? queueIndex : -1;
+      };
+
+      const prefetchNextInQueue = async () => {
+        const session = useAuthStore.getState().session;
+        if (!session) return;
+
+        const state = get();
+        const nextQueueIndex = state.queueOrder[state.queuePosition + 1];
+        if (typeof nextQueueIndex !== "number") return;
+        const nextItem = state.queue[nextQueueIndex];
+        if (!nextItem) return;
+
+        try {
+          const streamUrl = session.client.getStreamUrl(nextItem.id, {
+            maxBitRate: 0,
+            format: "flac",
+            estimateContentLength: true,
+          });
+          const playable = await audioCache.getPlayableSource({
+            id: nextItem.id,
+            url: streamUrl,
+            duration: nextItem.duration,
+          });
+          playable.cachePromise?.catch(() => undefined);
+          playable.cleanup?.();
+        } catch (error) {
+          console.debug("Prefetch failed", error);
+        }
+      };
+
       player.setCallbacks({
         onPlay: () => {
           set({ isPlaying: true, isLoading: false, error: undefined });
@@ -57,7 +136,15 @@ export const usePlaybackStore = create<PlaybackState>()(
           }));
         },
         onEnded: () => {
+          const state = get();
+          if (state.repeat === "one") {
+            player.seek(0);
+            void player.play();
+            set({ position: 0, isPlaying: true });
+            return;
+          }
           set({ isPlaying: false, position: 0 });
+          void state.playNext();
         },
         onCanPlay: (duration) => {
           set((state) => ({
@@ -89,10 +176,13 @@ export const usePlaybackStore = create<PlaybackState>()(
         isMuted: false,
         isScrubbing: false,
         error: undefined,
+        queue: [],
+        queueOrder: [],
+        queuePosition: -1,
         getFrequencyData: () => player.getFrequencyData(),
         getSampleRate: () => player.getSampleRate(),
 
-        playSong: async (songId: string) => {
+        playSong: async (songId: string, options) => {
           const session = useAuthStore.getState().session;
           if (!session) {
             set({ error: "Not authenticated", isLoading: false });
@@ -101,18 +191,41 @@ export const usePlaybackStore = create<PlaybackState>()(
 
           const requestToken = Symbol(songId);
           activeRequestToken = requestToken;
+          const queueItem = options?.queueItem;
 
           set({
             isLoading: true,
             error: undefined,
             position: 0,
-            duration: 0,
+            duration: queueItem?.duration ?? 0,
+            currentSong: queueItem ? queueItemToSong(queueItem) : get().currentSong,
+            coverArtUrl: queueItem?.coverArtUrl
+              ?? (queueItem?.coverArt ? session.client.getCoverArtUrl(queueItem.coverArt, { size: 512 }) : get().coverArtUrl),
           });
 
           try {
             const { song } = await session.client.getSong(songId);
             if (activeRequestToken !== requestToken) {
               return;
+            }
+
+            if (get().queue.length === 0) {
+              const coverUrl = session.client.getCoverArtUrl(song.coverArt, { size: 512 });
+              set({
+                queue: [{
+                  id: song.id,
+                  title: song.title,
+                  artist: song.artist,
+                  album: song.album,
+                  albumId: song.albumId,
+                  duration: song.duration,
+                  coverArt: song.coverArt,
+                  coverArtUrl: coverUrl,
+                  trackNumber: song.track,
+                }],
+                queueOrder: [0],
+                queuePosition: 0,
+              });
             }
 
             const streamUrl = session.client.getStreamUrl(song.id, {
@@ -133,9 +246,9 @@ export const usePlaybackStore = create<PlaybackState>()(
               return;
             }
 
-            player.stop();
             releaseCurrentSource?.();
             releaseCurrentSource = playableSource.cleanup ?? null;
+            player.stop();
             player.setSource({ id: song.id, url: playableSource.url, duration: song.duration });
             playableSource.cachePromise?.catch(() => undefined);
 
@@ -157,6 +270,7 @@ export const usePlaybackStore = create<PlaybackState>()(
               position: 0,
               duration: song.duration ?? player.getDuration(),
             });
+            void prefetchNextInQueue();
             activeRequestToken = null;
           } catch (error) {
             if (activeRequestToken === requestToken) {
@@ -176,6 +290,10 @@ export const usePlaybackStore = create<PlaybackState>()(
         togglePlayPause: async () => {
           const { isPlaying, currentSong } = get();
           if (!currentSong) {
+            const hasQueue = get().queue.length > 0;
+            if (hasQueue) {
+              await get().playFromQueue(Math.max(0, get().queuePosition === -1 ? 0 : get().queuePosition));
+            }
             return;
           }
           if (isPlaying) {
@@ -248,15 +366,108 @@ export const usePlaybackStore = create<PlaybackState>()(
         },
 
         toggleShuffle: () => {
-          set((state) => ({ shuffle: !state.shuffle }));
+          set((state) => {
+            const nextShuffle = !state.shuffle;
+            if (state.queue.length === 0) {
+              return { shuffle: nextShuffle };
+            }
+            const currentIndex = getCurrentQueueIndex(state);
+            const order = createQueueOrder(state.queue.length, nextShuffle, currentIndex >= 0 ? currentIndex : 0);
+            const nextPosition = order.findIndex((value) => value === currentIndex);
+            return {
+              shuffle: nextShuffle,
+              queueOrder: order,
+              queuePosition: nextPosition >= 0 ? nextPosition : 0,
+            };
+          });
         },
 
         cycleRepeat: () => {
-          set((state) => ({ repeat: state.repeat === "off" ? "one" : "off" }));
+          set((state) => {
+            if (state.repeat === "off") return { repeat: "all" as RepeatMode };
+            if (state.repeat === "all") return { repeat: "one" as RepeatMode };
+            return { repeat: "off" as RepeatMode };
+          });
         },
 
         setEq: (bands: ParametricEqBand[]) => {
           player.setParametricEq(bands);
+        },
+
+        setQueue: async (items: QueueItem[], startIndex = 0) => {
+          if (items.length === 0) {
+            set({ queue: [], queueOrder: [], queuePosition: -1 });
+            return;
+          }
+
+          const clampedStart = Math.min(Math.max(startIndex, 0), items.length - 1);
+          const state = get();
+          const order = createQueueOrder(items.length, state.shuffle, clampedStart);
+          const nextPosition = order.findIndex((value) => value === clampedStart);
+
+          set({
+            queue: items,
+            queueOrder: order,
+            queuePosition: nextPosition >= 0 ? nextPosition : 0,
+          });
+          await get().playFromQueue(nextPosition >= 0 ? nextPosition : 0);
+        },
+
+        playFromQueue: async (orderIndex: number) => {
+          const state = get();
+          if (orderIndex < 0 || orderIndex >= state.queueOrder.length) {
+            return;
+          }
+          const queueIndex = state.queueOrder[orderIndex];
+          const item = state.queue[queueIndex];
+          if (!item) {
+            return;
+          }
+          set({ queuePosition: orderIndex, duration: item.duration ?? 0, position: 0 });
+          await get().playSong(item.id, { queueItem: item });
+        },
+
+        playNext: async () => {
+          const state = get();
+          const hasQueue = state.queueOrder.length > 0 && state.queuePosition !== -1;
+          if (!hasQueue) {
+            player.pause();
+            set({ isPlaying: false });
+            return;
+          }
+          const nextOrderIndex = state.queuePosition + 1;
+          if (nextOrderIndex >= state.queueOrder.length) {
+            if (state.repeat === "all") {
+              await get().playFromQueue(0);
+            } else {
+              set({ isPlaying: false, position: 0 });
+            }
+            return;
+          }
+          await get().playFromQueue(nextOrderIndex);
+        },
+
+        playPrevious: async () => {
+          const state = get();
+          const hasQueue = state.queueOrder.length > 0 && state.queuePosition !== -1;
+          if (!hasQueue) {
+            if (state.currentSong) {
+              player.seek(0);
+              set({ position: 0 });
+            }
+            return;
+          }
+          const prevOrderIndex = state.queuePosition - 1;
+          if (prevOrderIndex >= 0) {
+            await get().playFromQueue(prevOrderIndex);
+            return;
+          }
+          if (state.repeat === "all" && state.queueOrder.length > 0) {
+            await get().playFromQueue(state.queueOrder.length - 1);
+            return;
+          }
+          player.seek(0);
+          set({ position: 0 });
         },
       };
     },
@@ -277,6 +488,6 @@ export const usePlaybackStore = create<PlaybackState>()(
   ),
 );
 
-export const playSong = async (songId: string): Promise<void> => {
-  await usePlaybackStore.getState().playSong(songId);
+export const playSong = async (songId: string, options?: { queueItem?: QueueItem }): Promise<void> => {
+  await usePlaybackStore.getState().playSong(songId, options);
 };
