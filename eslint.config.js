@@ -5,9 +5,10 @@ import pluginReact from "eslint-plugin-react";
 
 
 export default [
-  { ignores: ["dist/**", "temp/**"] },
+  { ignores: ["dist/**", "temp/**", "src-tauri/target/**"] },
   { files: ["**/*.{js,mjs,cjs,ts,jsx,tsx}"] },
   { languageOptions: { globals: { ...globals.browser, ...globals.node } } },
+  { settings: { react: { version: "detect" } } },
   { "rules": {
     "react/jsx-uses-react": "error",
     "react/jsx-uses-vars": "error",
