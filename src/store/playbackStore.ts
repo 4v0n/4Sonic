@@ -193,24 +193,34 @@ export const usePlaybackStore = create<PlaybackState>()(
           activeRequestToken = requestToken;
           const queueItem = options?.queueItem;
 
+          const queuedSong = queueItem ? queueItemToSong(queueItem) : null;
+          const queuedCover = queueItem?.coverArtUrl
+            ?? (queueItem?.coverArt ? session.client.getCoverArtUrl(queueItem.coverArt, { size: 512 }) : undefined);
+
           set({
             isLoading: true,
             error: undefined,
             position: 0,
             duration: queueItem?.duration ?? 0,
-            currentSong: queueItem ? queueItemToSong(queueItem) : get().currentSong,
-            coverArtUrl: queueItem?.coverArtUrl
-              ?? (queueItem?.coverArt ? session.client.getCoverArtUrl(queueItem.coverArt, { size: 512 }) : get().coverArtUrl),
+            currentSong: queuedSong ?? get().currentSong,
+            coverArtUrl: queuedCover ?? get().coverArtUrl,
           });
 
           try {
-            const { song } = await session.client.getSong(songId);
+            const needsFreshMetadata = !queueItem || get().queue.length === 0;
+            const { song, coverArtUrl } = needsFreshMetadata
+              ? await session.client.getSong(songId).then(({ song: fetchedSong }) => ({
+                song: fetchedSong,
+                coverArtUrl: session.client.getCoverArtUrl(fetchedSong.coverArt, { size: 512 }),
+              }))
+              : { song: queuedSong!, coverArtUrl: queuedCover };
+
             if (activeRequestToken !== requestToken) {
               return;
             }
 
             if (get().queue.length === 0) {
-              const coverUrl = session.client.getCoverArtUrl(song.coverArt, { size: 512 });
+              const coverUrl = coverArtUrl ?? (song.coverArt ? session.client.getCoverArtUrl(song.coverArt, { size: 512 }) : undefined);
               set({
                 queue: [{
                   id: song.id,
@@ -228,15 +238,16 @@ export const usePlaybackStore = create<PlaybackState>()(
               });
             }
 
-            const streamUrl = session.client.getStreamUrl(song.id, {
+            const streamSongId = song.id ?? songId;
+            const streamUrl = session.client.getStreamUrl(streamSongId, {
               maxBitRate: 0,
               format: "flac",
               estimateContentLength: true,
             });
 
-            audioCache.cancelOtherPrefetches(song.id);
+            audioCache.cancelOtherPrefetches(streamSongId);
             const playableSource = await audioCache.getPlayableSource({
-              id: song.id,
+              id: streamSongId,
               url: streamUrl,
               duration: song.duration,
             });
@@ -249,7 +260,7 @@ export const usePlaybackStore = create<PlaybackState>()(
             releaseCurrentSource?.();
             releaseCurrentSource = playableSource.cleanup ?? null;
             player.stop();
-            player.setSource({ id: song.id, url: playableSource.url, duration: song.duration });
+            player.setSource({ id: streamSongId, url: playableSource.url, duration: song.duration });
             playableSource.cachePromise?.catch(() => undefined);
 
             if (activeRequestToken !== requestToken) {
@@ -263,12 +274,12 @@ export const usePlaybackStore = create<PlaybackState>()(
 
             set({
               currentSong: song,
-              coverArtUrl: session.client.getCoverArtUrl(song.coverArt, { size: 512 }),
+              coverArtUrl: coverArtUrl ?? session.client.getCoverArtUrl(song.coverArt, { size: 512 }),
               isPlaying: true,
               isLoading: false,
               error: undefined,
               position: 0,
-              duration: song.duration ?? player.getDuration(),
+              duration: song.duration ?? queueItem?.duration ?? player.getDuration(),
             });
             void prefetchNextInQueue();
             activeRequestToken = null;
