@@ -82,6 +82,7 @@ const AlbumsPage = () => {
     const metaParts = [];
     if (year) metaParts.push(String(year));
     if (album.songCount) metaParts.push(`${album.songCount} song${album.songCount === 1 ? "" : "s"}`);
+    
 
     return {
       id: album.id,
@@ -108,7 +109,7 @@ const AlbumsPage = () => {
       mapItem={mapAlbumToItem}
       sortOptions={albumSortOptions}
       defaultSort="az"
-      searchPlaceholder="Filter albums..."
+      searchPlaceholder="Search"
       isLoading={isLoading}
       error={libraryError}
       emptyMessage="No albums match your search."

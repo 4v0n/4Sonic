@@ -315,7 +315,7 @@ const BottomBar = ({ isRightCompact = false }: BottomBarProps) => {
   const visualizerHeightPercent = Math.min(1, Math.max(0, visualizerHeight * effectiveVolume));
 
   return (
-    <footer className="sticky bottom-0 z-30 h-24 p-4 border-t border-(--surface1) bg-(--surface0) shadow relative">
+    <footer className="sticky bottom-0 z-30 h-24 p-4 border-t border-(--surface1) bg-(--surface0) shadow">
       <div
         className="pointer-events-none absolute left-0 right-0 bottom-0 z-0 overflow-visible"
         style={{ height: `${visualizerHeightPercent * 100}%` }}
@@ -324,7 +324,7 @@ const BottomBar = ({ isRightCompact = false }: BottomBarProps) => {
       </div>
       <div className="relative z-10 flex h-full w-full items-center justify-between">
         <div className="flex items-center w-1/3 min-w-0 gap-3">
-          <div className="h-14 w-14 overflow-hidden rounded-lg border border-(--surface2) bg-(--surface1)">
+          <div className="h-18 w-18 overflow-hidden rounded-lg border border-(--surface2) bg-(--surface1)">
             {coverArtUrl ? (
               <img src={coverArtUrl} alt={currentSong?.title ?? "Cover"} className="h-full w-full object-cover" />
             ) : (

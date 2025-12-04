@@ -92,13 +92,14 @@ const MediaCard: React.FC<MediaCardProps> = ({
       <div
         {...props}
         className={cn(
-          "group flex items-center gap-4 rounded-2xl border border-(--surface2) bg-(--surface1) px-4 py-3 shadow-sm transition hover:-translate-y-[1px] hover:border-(--surface3) hover:bg-(--surface2) hover:shadow-md",
+          "group flex items-center gap-4 rounded-lg border border-(--surface2) bg-(--surface1) p-2 shadow transition",
+          "hover:border-(--surface3) hover:bg-(--surface2) hover:shadow-md cursor-pointer",
           onClick ? "cursor-pointer" : "",
           className,
         )}
         onClick={onClick}
       >
-        <div className="relative h-16 w-16 overflow-hidden rounded-lg bg-(--surface0)">
+        <div className="relative h-20 w-20 overflow-hidden rounded-md bg-(--surface0) shadow transition-shadow group-hover:shadow-md">
           {coverUrl ? (
             <LazyImage
               src={coverUrl}
@@ -112,7 +113,6 @@ const MediaCard: React.FC<MediaCardProps> = ({
           )}
         </div>
         <div className="min-w-0 flex-1 space-y-0.5">
-          <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-(--text-grey)">{TYPE_LABEL[kind]}</p>
           <p className="truncate text-base font-semibold text-(--text)">{title ?? "Unknown"}</p>
           {subtitle ? <p className="truncate text-sm text-(--text-grey)">{subtitle}</p> : null}
           {meta ? <p className="text-xs text-(--text-grey)">{meta}</p> : null}
@@ -136,13 +136,14 @@ const MediaCard: React.FC<MediaCardProps> = ({
     <div
       {...props}
       className={cn(
-        "group max-w-[220px] overflow-hidden rounded-2xl border border-(--surface2) bg-(--surface1) shadow-sm transition hover:-translate-y-[2px] hover:border-(--surface3) hover:shadow-lg",
+        "group max-w-[220px] p-3 overflow-hidden rounded-lg bg-transparent shadow",
+        "transition hover:bg-(--surface2) hover:shadow-lg cursor-pointer",
         onClick ? "cursor-pointer" : "",
         className,
       )}
       onClick={onClick}
     >
-      <div className="relative aspect-square w-full overflow-hidden bg-(--surface0)">
+      <div className="relative aspect-square rounded-md w-full overflow-hidden bg-(--surface0) shadow transition-shadow group-hover:shadow-md">
         {coverUrl ? (
           <LazyImage
             src={coverUrl}
@@ -169,7 +170,7 @@ const MediaCard: React.FC<MediaCardProps> = ({
           </>
         ) : null}
       </div>
-      <div className="space-y-1 p-3">
+      <div className="space-y-1 pt-2">
         <p className="truncate text-sm font-semibold text-(--text)">{title ?? "Unknown"}</p>
         {subtitle ? <p className="truncate text-xs text-(--text-grey)">{subtitle}</p> : null}
         {meta ? <p className="text-xs text-(--text-grey)">{meta}</p> : null}

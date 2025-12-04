@@ -68,7 +68,7 @@ const ArtistsPage = () => {
       mapItem={mapArtistToItem}
       sortOptions={sortOptions}
       defaultSort="az"
-      searchPlaceholder="Filter artists..."
+      searchPlaceholder="Search..."
       isLoading={isLoading}
       error={libraryError}
       emptyMessage="No artists match your search."
