@@ -229,20 +229,18 @@ export const usePlaybackStore = create<PlaybackState>()(
             }
 
             if (needsFreshMetadata && queueItem && get().queue.length > 0) {
-              set((state) => {
-                const queueIndex = state.queueOrder[state.queuePosition];
-                if (typeof queueIndex !== "number" || !state.queue[queueIndex]) {
-                  return undefined;
-                }
-                const updatedQueue = [...state.queue];
+              const { queueOrder, queuePosition, queue } = get();
+              const queueIndex = queueOrder[queuePosition];
+              if (typeof queueIndex === "number" && queue[queueIndex]) {
+                const updatedQueue = [...queue];
                 updatedQueue[queueIndex] = {
                   ...updatedQueue[queueIndex],
                   bitDepth: song.bitDepth,
                   samplingRate: song.samplingRate,
                   suffix: song.suffix ?? updatedQueue[queueIndex].suffix,
                 };
-                return { queue: updatedQueue };
-              });
+                set({ queue: updatedQueue });
+              }
             }
 
             if (get().queue.length === 0) {
