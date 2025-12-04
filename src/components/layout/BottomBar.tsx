@@ -8,6 +8,7 @@ import { usePlaybackStore } from "../../store/playbackStore";
 import { useUiPreferencesStore } from "../../store/uiPreferencesStore";
 import BackgroundAreaVisualizer from "../visualizer/BackgroundAreaVisualizer";
 import useAudioVisualizerData from "../../hooks/useAudioVisualizerData";
+import HiResAudioLogo from "../../assets/Hi-Res_Audio_Logo.svg";
 
 type BottomBarProps = { isRightCompact?: boolean };
 
@@ -283,6 +284,21 @@ const BottomBar = ({ isRightCompact = false }: BottomBarProps) => {
   const playNext = usePlaybackStore((state) => state.playNext);
   const playPrevious = usePlaybackStore((state) => state.playPrevious);
 
+  const samplingRate = currentSong?.samplingRate;
+  const bitDepth = currentSong?.bitDepth;
+  const qualityFormat = currentSong?.suffix ? currentSong.suffix.toUpperCase() : undefined;
+  const formattedSampleRate = samplingRate
+    ? (() => {
+        const khz = samplingRate / 1000;
+        const decimals = Number.isInteger(khz) ? 0 : 1;
+        return `${khz.toFixed(decimals)} kHz`;
+      })()
+    : undefined;
+  const qualityText = [qualityFormat, formattedSampleRate, bitDepth ? `${bitDepth}-bit` : null]
+    .filter(Boolean)
+    .join(" • ");
+  const isHiRes = (samplingRate ?? 0) > 44100 || (bitDepth ?? 0) > 16;
+
   const queueButton = (
     <Button
       className={`shadow-none ${isQueueOpen ? "bg-(--surface2)" : ""}`}
@@ -336,6 +352,14 @@ const BottomBar = ({ isRightCompact = false }: BottomBarProps) => {
             <p className="text-xs text-(--text-grey) truncate">
               {currentSong?.artist ?? "Select a song to start"}
             </p>
+            {qualityText ? (
+              <div className="mt-1 flex items-center gap-2">
+                <p className="text-[11px] text-(--text-grey) truncate">{qualityText}</p>
+                {isHiRes ? (
+                  <img src={HiResAudioLogo} alt="Hi-Res audio" className="h-4 w-auto shrink-0" />
+                ) : null}
+              </div>
+            ) : null}
           </div>
         </div>
 

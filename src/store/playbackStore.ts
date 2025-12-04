@@ -17,6 +17,9 @@ export interface QueueItem {
   coverArtUrl?: string;
   duration?: number;
   trackNumber?: number;
+  bitDepth?: number;
+  samplingRate?: number;
+  suffix?: string;
 }
 
 interface PlaybackState {
@@ -88,6 +91,9 @@ const queueItemToSong = (item: QueueItem): SubsonicSong => ({
   duration: item.duration,
   track: item.trackNumber,
   coverArt: item.coverArt,
+  bitDepth: item.bitDepth,
+  samplingRate: item.samplingRate,
+  suffix: item.suffix,
 });
 
 export const usePlaybackStore = create<PlaybackState>()(
@@ -207,7 +213,10 @@ export const usePlaybackStore = create<PlaybackState>()(
           });
 
           try {
-            const needsFreshMetadata = !queueItem || get().queue.length === 0;
+            const qualityMissing = !queueItem?.suffix
+              || typeof queueItem?.samplingRate !== "number"
+              || typeof queueItem?.bitDepth !== "number";
+            const needsFreshMetadata = !queueItem || get().queue.length === 0 || qualityMissing;
             const { song, coverArtUrl } = needsFreshMetadata
               ? await session.client.getSong(songId).then(({ song: fetchedSong }) => ({
                 song: fetchedSong,
@@ -217,6 +226,23 @@ export const usePlaybackStore = create<PlaybackState>()(
 
             if (activeRequestToken !== requestToken) {
               return;
+            }
+
+            if (needsFreshMetadata && queueItem && get().queue.length > 0) {
+              set((state) => {
+                const queueIndex = state.queueOrder[state.queuePosition];
+                if (typeof queueIndex !== "number" || !state.queue[queueIndex]) {
+                  return undefined;
+                }
+                const updatedQueue = [...state.queue];
+                updatedQueue[queueIndex] = {
+                  ...updatedQueue[queueIndex],
+                  bitDepth: song.bitDepth,
+                  samplingRate: song.samplingRate,
+                  suffix: song.suffix ?? updatedQueue[queueIndex].suffix,
+                };
+                return { queue: updatedQueue };
+              });
             }
 
             if (get().queue.length === 0) {
@@ -232,6 +258,9 @@ export const usePlaybackStore = create<PlaybackState>()(
                   coverArt: song.coverArt,
                   coverArtUrl: coverUrl,
                   trackNumber: song.track,
+                  bitDepth: song.bitDepth,
+                  samplingRate: song.samplingRate,
+                  suffix: song.suffix,
                 }],
                 queueOrder: [0],
                 queuePosition: 0,

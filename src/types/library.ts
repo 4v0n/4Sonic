@@ -31,9 +31,12 @@ export interface TrackEntity {
   trackNumber?: number;
   discNumber?: number;
   bitRate?: number;
+  bitDepth?: number;
+  samplingRate?: number;
   year?: number;
   genre?: string;
   coverArt?: string;
+  suffix?: string;
 }
 
 export interface LibraryMeta {
@@ -47,4 +50,3 @@ export interface LibrarySnapshot extends LibraryMeta {
   albums: AlbumEntity[];
   tracks: TrackEntity[];
 }
-

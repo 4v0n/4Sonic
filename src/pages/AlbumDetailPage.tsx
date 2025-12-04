@@ -65,6 +65,9 @@ const AlbumDetailPage = () => {
       coverArt: track.coverArt ?? album?.coverArt,
       coverArtUrl: track.coverArt ? client?.getCoverArtUrl(track.coverArt, { size: 512 }) : albumCoverUrl,
       trackNumber: track.trackNumber,
+      bitDepth: track.bitDepth,
+      samplingRate: track.samplingRate,
+      suffix: track.suffix,
     })),
     [albumTracks, album, albumCoverUrl, client],
   );

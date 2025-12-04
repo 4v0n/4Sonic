@@ -6,7 +6,10 @@ export interface LibraryMetaRow {
   signature?: string;
   indexedAt?: number;
   serverUrl?: string;
+  schemaVersion?: number;
 }
+
+export const LIBRARY_SCHEMA_VERSION = 2;
 
 class LibraryDatabase extends Dexie {
   public artists!: Table<ArtistEntity, string>;
@@ -50,6 +53,7 @@ export const saveLibrarySnapshot = async (snapshot: LibrarySnapshot): Promise<vo
       signature: snapshot.signature,
       indexedAt: snapshot.indexedAt,
       serverUrl: snapshot.serverUrl,
+      schemaVersion: LIBRARY_SCHEMA_VERSION,
     });
   });
 };
@@ -57,6 +61,11 @@ export const saveLibrarySnapshot = async (snapshot: LibrarySnapshot): Promise<vo
 export const loadLibrarySnapshot = async (): Promise<LibrarySnapshot | null> => {
   const metaRow = await libraryDb.meta.get("library");
   if (!metaRow?.signature || !metaRow.indexedAt || !metaRow.serverUrl) {
+    return null;
+  }
+
+  if (metaRow.schemaVersion !== LIBRARY_SCHEMA_VERSION) {
+    await clearLibrarySnapshot();
     return null;
   }
 
@@ -88,4 +97,3 @@ export const clearLibrarySnapshot = async (): Promise<void> => {
     await libraryDb.meta.delete("library");
   });
 };
-

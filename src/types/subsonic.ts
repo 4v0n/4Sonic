@@ -98,6 +98,8 @@ export interface SubsonicSong {
   discNumber?: number;
   duration?: number;
   bitRate?: number;
+  bitDepth?: number;
+  samplingRate?: number;
   year?: number;
   genre?: string;
   size?: number;

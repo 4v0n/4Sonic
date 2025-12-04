@@ -71,9 +71,12 @@ const mapTrack = (song: SubsonicSong): TrackEntity => ({
   trackNumber: song.track,
   discNumber: song.discNumber,
   bitRate: song.bitRate,
+  bitDepth: song.bitDepth,
+  samplingRate: song.samplingRate,
   year: song.year,
   genre: song.genre,
   coverArt: song.coverArt,
+  suffix: song.suffix,
 });
 
 const processWithConcurrency = async <T>(
