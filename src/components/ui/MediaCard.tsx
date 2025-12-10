@@ -2,7 +2,7 @@ import React from "react";
 import { PlayArrowIcon } from "../../constants/icons";
 import cn from "../../utils/cn";
 import Button from "./Button";
-import LazyImage from "./LazyImage";
+import CoverImage from "./CoverImage";
 
 type MediaKind = "artist" | "album" | "song";
 type MediaLayout = "square" | "row";
@@ -23,15 +23,6 @@ const TYPE_LABEL: Record<MediaKind, string> = {
   album: "Album",
   song: "Song",
 };
-
-const CoverFallback = ({ rounded }: { rounded?: boolean }) => (
-  <div
-    className={cn(
-      "h-full w-full bg-gradient-to-br from-(--surface-tonal1) via-(--surface-tonal2) to-(--surface-tonal3)",
-      rounded ? "rounded-lg" : "",
-    )}
-  />
-);
 
 const TileSkeleton = ({ className }: { className?: string }) => (
   <div
@@ -95,23 +86,16 @@ const MediaCard: React.FC<MediaCardProps> = ({
           "group flex items-center gap-4 rounded-lg border border-(--surface2) bg-(--surface1) p-2 shadow transition",
           "hover:border-(--surface3) hover:bg-(--surface2) hover:shadow-md cursor-pointer",
           onClick ? "cursor-pointer" : "",
-          className,
-        )}
+        className,
+      )}
         onClick={onClick}
       >
-        <div className="relative h-20 w-20 overflow-hidden rounded-md bg-(--surface0) shadow transition-shadow group-hover:shadow-md">
-          {coverUrl ? (
-            <LazyImage
-              src={coverUrl}
-              alt={title ?? TYPE_LABEL[kind]}
-              className="h-full w-full"
-              placeholder={<CoverFallback rounded />}
-              fallback={<CoverFallback rounded />}
-            />
-          ) : (
-            <CoverFallback rounded />
-          )}
-        </div>
+        <CoverImage
+          src={coverUrl}
+          alt={title ?? TYPE_LABEL[kind]}
+          rounded
+          className="relative h-20 w-20 overflow-hidden rounded-md bg-(--surface0) shadow transition-shadow group-hover:shadow-md"
+        />
         <div className="min-w-0 flex-1 space-y-0.5">
           <p className="truncate text-base font-semibold text-(--text)">{title ?? "Unknown"}</p>
           {subtitle ? <p className="truncate text-sm text-(--text-grey)">{subtitle}</p> : null}
@@ -144,17 +128,11 @@ const MediaCard: React.FC<MediaCardProps> = ({
       onClick={onClick}
     >
       <div className="relative aspect-square rounded-md w-full overflow-hidden bg-(--surface0) shadow transition-shadow group-hover:shadow-md">
-        {coverUrl ? (
-          <LazyImage
-            src={coverUrl}
-            alt={title ?? TYPE_LABEL[kind]}
-            className="h-full w-full"
-            placeholder={<CoverFallback />}
-            fallback={<CoverFallback />}
-          />
-        ) : (
-          <CoverFallback />
-        )}
+        <CoverImage
+          src={coverUrl}
+          alt={title ?? TYPE_LABEL[kind]}
+          className="h-full w-full"
+        />
         {onPlay ? (
           <>
             <div className="absolute inset-0 bg-black/25 opacity-0 transition group-hover:opacity-100" />

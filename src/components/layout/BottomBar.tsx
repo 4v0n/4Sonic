@@ -8,16 +8,10 @@ import { usePlaybackStore } from "../../store/playbackStore";
 import { useUiPreferencesStore } from "../../store/uiPreferencesStore";
 import BackgroundAreaVisualizer from "../visualizer/BackgroundAreaVisualizer";
 import useAudioVisualizerData from "../../hooks/useAudioVisualizerData";
+import { formatTime } from "../../utils/time";
 import HiResAudioLogo from "../../assets/Hi-Res_Audio_Logo.svg";
 
 type BottomBarProps = { isRightCompact?: boolean };
-
-const formatTime = (seconds: number): string => {
-  if (!Number.isFinite(seconds) || seconds < 0) return "0:00";
-  const mins = Math.floor(seconds / 60);
-  const secs = Math.floor(seconds % 60);
-  return `${mins}:${secs.toString().padStart(2, "0")}`;
-};
 
 interface ProgressSliderProps {
   position: number;

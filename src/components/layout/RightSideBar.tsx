@@ -3,6 +3,7 @@ import { CloseIcon, QueueMusicRoundedIcon } from "../../constants/icons";
 import Button from "../ui/Button";
 import type { RightSidebarView } from "../../store/rightSidebarStore";
 import { usePlaybackStore } from "../../store/playbackStore";
+import { formatTime } from "../../utils/time";
 
 interface RightSideBarProps {
   width: number;
@@ -22,13 +23,6 @@ export const RightSidebarContent = ({ view }: { view: RightSidebarView }) => {
   const queueOrder = usePlaybackStore((state) => state.queueOrder);
   const queuePosition = usePlaybackStore((state) => state.queuePosition);
   const playFromQueue = usePlaybackStore((state) => state.playFromQueue);
-
-  const formatTime = (value: number) => {
-    if (!Number.isFinite(value) || value < 0) return "0:00";
-    const mins = Math.floor(value / 60);
-    const secs = Math.floor(value % 60);
-    return `${mins}:${secs.toString().padStart(2, "0")}`;
-  };
 
   const nowPlaying = (
     <div className="space-y-2">

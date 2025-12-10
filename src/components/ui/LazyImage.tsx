@@ -5,6 +5,7 @@ const loadedImages = new Set<string>();
 
 interface LazyImageProps extends Omit<React.ImgHTMLAttributes<HTMLImageElement>, "className"> {
   className?: string;
+  imgClassName?: string;
   placeholder?: React.ReactNode;
   fallback?: React.ReactNode;
 }
@@ -13,6 +14,7 @@ const LazyImage: React.FC<LazyImageProps> = ({
   src,
   alt = "",
   className,
+  imgClassName,
   placeholder,
   fallback,
   ...props
@@ -73,7 +75,7 @@ const LazyImage: React.FC<LazyImageProps> = ({
           decoding="async"
           onLoad={handleLoad}
           onError={handleError}
-          className="h-full w-full object-cover"
+          className={cn("h-full w-full object-cover", imgClassName)}
           {...props}
         />
       ) : null}

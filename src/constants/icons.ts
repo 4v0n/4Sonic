@@ -30,3 +30,5 @@ export { default as LightModeIcon } from "@mui/icons-material/LightModeRounded";
 export { default as GridViewIcon } from "@mui/icons-material/GridViewRounded";
 export { default as ListViewIcon } from "@mui/icons-material/ViewListRounded";
 export { default as ArrowUpIcon } from "@mui/icons-material/KeyboardArrowUpRounded";
+export { default as ClockIcon } from "@mui/icons-material/AccessTime";
+export { default as BugReportIcon } from "@mui/icons-material/BugReportRounded";
