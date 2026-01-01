@@ -434,7 +434,21 @@ export const usePlaybackStore = create<PlaybackState>()(
 
         setQueue: async (items: QueueItem[], startIndex = 0) => {
           if (items.length === 0) {
-            set({ queue: [], queueOrder: [], queuePosition: -1 });
+            player.stop();
+            releaseCurrentSource?.();
+            releaseCurrentSource = null;
+            activeRequestToken = null;
+            set({
+              queue: [],
+              queueOrder: [],
+              queuePosition: -1,
+              currentSong: null,
+              coverArtUrl: undefined,
+              isPlaying: false,
+              isLoading: false,
+              position: 0,
+              duration: 0,
+            });
             return;
           }
 
@@ -454,11 +468,19 @@ export const usePlaybackStore = create<PlaybackState>()(
         playFromQueue: async (orderIndex: number) => {
           const state = get();
           if (orderIndex < 0 || orderIndex >= state.queueOrder.length) {
+            set({ isPlaying: false, isLoading: false });
             return;
           }
           const queueIndex = state.queueOrder[orderIndex];
           const item = state.queue[queueIndex];
           if (!item) {
+            set({
+              queuePosition: -1,
+              isPlaying: false,
+              isLoading: false,
+              duration: 0,
+              position: 0,
+            });
             return;
           }
           set({ queuePosition: orderIndex, duration: item.duration ?? 0, position: 0 });

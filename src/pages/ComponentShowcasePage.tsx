@@ -22,10 +22,11 @@ import MediaCard from "../components/ui/MediaCard";
 import Carousel, { CarouselItem } from "../components/ui/Carousel";
 import { useAuthStore } from "../store/authStore";
 import { SubsonicAlbumDetail, SubsonicArtistDetail, SubsonicSong } from "../types/subsonic";
-import { playSong, usePlaybackStore } from "../store/playbackStore";
+import { usePlaybackStore } from "../store/playbackStore";
 import { formatTime } from "../utils/time";
 import CoverImage, { CoverFallback } from "../components/ui/CoverImage";
 import cn from "../utils/cn";
+import { playAlbum, playArtist, playSongById } from "../utils/playbackActions";
 
 const Section: React.FC<{ title: string; description?: string; children: React.ReactNode }> = ({ title, description, children }) => (
   <section className="rounded-2xl border border-(--surface2) bg-(--surface0) p-5 shadow-sm space-y-4">
@@ -201,17 +202,48 @@ const ComponentShowcasePage = () => {
     [client, mediaSamples.album?.coverArt, mediaSamples.song?.coverArt],
   );
 
+  const albumSongs = useMemo(() => mediaSamples.album?.song ?? [], [mediaSamples.album?.song]);
+
   const handlePlaySampleSong = async () => {
     if (!mediaSamples.song?.id) {
       toast.error("Song not loaded yet");
       return;
     }
     try {
-      await playSong(mediaSamples.song.id);
+      await playSongById(mediaSamples.song.id);
       toast.success(`Playing ${mediaSamples.song.title}`);
     } catch (error) {
       const description = error instanceof Error ? error.message : undefined;
       toast.error("Unable to play song", description ? { description } : undefined);
+    }
+  };
+
+  const handlePlaySampleAlbum = async () => {
+    if (!mediaSamples.album?.id) {
+      toast.error("Album not loaded yet");
+      return;
+    }
+    try {
+      await playAlbum(mediaSamples.album);
+      toast.success(`Playing album ${mediaSamples.album.name}`);
+    } catch (error) {
+      const description = error instanceof Error ? error.message : undefined;
+      toast.error("Unable to play album", description ? { description } : undefined);
+    }
+  };
+
+  const handlePlaySampleArtist = async () => {
+    if (!mediaSamples.artist?.id) {
+      toast.error("Artist not loaded yet");
+      return;
+    }
+    try {
+      const artistSongs = albumSongs.filter((song) => song.artistId === mediaSamples.artist?.id || song.artist === mediaSamples.artist?.name);
+      await playArtist(mediaSamples.artist, { fallbackSongs: artistSongs });
+      toast.success(`Playing ${mediaSamples.artist.name}`);
+    } catch (error) {
+      const description = error instanceof Error ? error.message : undefined;
+      toast.error("Unable to play artist", description ? { description } : undefined);
     }
   };
 
@@ -223,7 +255,7 @@ const ComponentShowcasePage = () => {
         subtitle: artistMeta,
         meta: undefined,
         coverUrl: artistCover,
-        onPlay: () => toast(`Play artist: ${mediaSamples.artist?.name ?? "Artist"}`),
+        onPlay: handlePlaySampleArtist,
         isLoading: mediaSamples.loading && !mediaSamples.artist,
       },
       {
@@ -232,7 +264,7 @@ const ComponentShowcasePage = () => {
         subtitle: mediaSamples.album?.artist,
         meta: undefined,
         coverUrl: albumCover,
-        onPlay: () => toast.success(`Play album: ${mediaSamples.album?.name ?? "Album"}`),
+        onPlay: handlePlaySampleAlbum,
         isLoading: mediaSamples.loading && !mediaSamples.album,
       },
       {
@@ -276,6 +308,8 @@ const ComponentShowcasePage = () => {
     albumCover,
     artistCover,
     artistMeta,
+    handlePlaySampleAlbum,
+    handlePlaySampleArtist,
     handlePlaySampleSong,
     mediaSamples.album,
     mediaSamples.artist,
@@ -323,7 +357,7 @@ const ComponentShowcasePage = () => {
                 subtitle={artistMeta}
                 coverUrl={artistCover}
                 isLoading={mediaSamples.loading && !mediaSamples.artist}
-                onPlay={() => toast(`Play artist: ${mediaSamples.artist?.name ?? "Artist"}`)}
+                onPlay={handlePlaySampleArtist}
                 className="w-full max-w-none"
               />
               <MediaCard
@@ -332,7 +366,7 @@ const ComponentShowcasePage = () => {
                 subtitle={mediaSamples.album?.artist}
                 coverUrl={albumCover}
                 isLoading={mediaSamples.loading && !mediaSamples.album}
-                onPlay={() => toast.success(`Play album: ${mediaSamples.album?.name ?? "Album"}`)}
+                onPlay={handlePlaySampleAlbum}
                 className="w-full max-w-none"
               />
               <MediaCard
@@ -355,7 +389,7 @@ const ComponentShowcasePage = () => {
                 meta={albumMeta}
                 coverUrl={albumCover}
                 isLoading={mediaSamples.loading && !mediaSamples.album}
-                onPlay={() => toast.success(`Play album: ${mediaSamples.album?.name ?? "Album"}`)}
+                onPlay={handlePlaySampleAlbum}
                 className="w-full"
               />
               <MediaCard
@@ -684,7 +718,12 @@ const ComponentShowcasePage = () => {
                             "hover:bg-(--surface2) cursor-pointer transition-colors",
                             currentSongId === song.id && "bg-(--surface-tonal0)",
                           )}
-                          onClick={() => playSong(song.id)}
+                          onClick={() => {
+                            void playSongById(song.id).catch((error) => {
+                              const description = error instanceof Error ? error.message : undefined;
+                              toast.error("Unable to play song", description ? { description } : undefined);
+                            });
+                          }}
                         >
                           <td>{index + 1}</td>
                           <td>{song.title}</td>
