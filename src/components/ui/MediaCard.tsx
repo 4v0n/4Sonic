@@ -86,8 +86,8 @@ const MediaCard: React.FC<MediaCardProps> = ({
           "group flex items-center gap-4 rounded-lg border border-(--surface2) bg-(--surface1) p-2 shadow transition",
           "hover:border-(--surface3) hover:bg-(--surface2) hover:shadow-md cursor-pointer",
           onClick ? "cursor-pointer" : "",
-        className,
-      )}
+          className,
+        )}
         onClick={onClick}
       >
         <CoverImage
@@ -148,10 +148,18 @@ const MediaCard: React.FC<MediaCardProps> = ({
           </>
         ) : null}
       </div>
-      <div className="space-y-1 pt-2">
+      <div className="flex min-h-[60px] flex-col gap-1 pt-2">
         <p className="truncate text-sm font-semibold text-(--text)">{title ?? "Unknown"}</p>
-        {subtitle ? <p className="truncate text-xs text-(--text-grey)">{subtitle}</p> : null}
-        {meta ? <p className="text-xs text-(--text-grey)">{meta}</p> : null}
+        {subtitle ? (
+          <p className="truncate text-xs text-(--text-grey)">{subtitle}</p>
+        ) : (
+          <p className="truncate text-xs text-(--text-grey) invisible" aria-hidden>Subtitle placeholder</p>
+        )}
+        {meta ? (
+          <p className="truncate text-xs text-(--text-grey)">{meta}</p>
+        ) : (
+          <p className="truncate text-xs text-(--text-grey) invisible" aria-hidden>Meta placeholder</p>
+        )}
       </div>
     </div>
   );

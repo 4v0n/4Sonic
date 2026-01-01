@@ -43,6 +43,10 @@ interface MediaCollectionProps<T> {
 const DEFAULT_EMPTY_MESSAGE = "Nothing matches your filters yet.";
 const GRID_PAGE_SIZE = 24;
 const LIST_PAGE_SIZE = 18;
+const GRID_CARD_MIN_WIDTH = 180;
+const GRID_ROW_HEIGHT = 260;
+const LIST_ROW_HEIGHT = 96;
+const INTERSECTION_ROOT_MARGIN = "2600px 0px";
 
 function MediaCollection<T>({
   title,
@@ -57,6 +61,18 @@ function MediaCollection<T>({
   error,
   emptyMessage = DEFAULT_EMPTY_MESSAGE,
 }: MediaCollectionProps<T>) {
+  const [viewportSize, setViewportSize] = useState(() => ({
+    width: typeof window !== "undefined" ? window.innerWidth : 1280,
+    height: typeof window !== "undefined" ? window.innerHeight : 900,
+  }));
+  useEffect(() => {
+    const handleResize = () => {
+      setViewportSize({ width: window.innerWidth, height: window.innerHeight });
+    };
+    window.addEventListener("resize", handleResize);
+    return () => window.removeEventListener("resize", handleResize);
+  }, []);
+
   const [viewMode, setViewMode] = useState<ViewMode>("grid");
   const [searchQuery, setSearchQuery] = useState("");
   const [sortValue, setSortValue] = useState<string>(() => {
@@ -115,19 +131,43 @@ function MediaCollection<T>({
   const pageSize = viewMode === "grid" ? GRID_PAGE_SIZE : LIST_PAGE_SIZE;
   const [visibleCount, setVisibleCount] = useState(pageSize);
 
+  const [gridNode, setGridNode] = useState<HTMLDivElement | null>(null);
+  const [gridWidth, setGridWidth] = useState(0);
   useEffect(() => {
-    setVisibleCount(pageSize);
-  }, [pageSize, searchQuery, activeSort]);
+    if (!gridNode) return;
+    setGridWidth(gridNode.clientWidth);
+    const resizeObserver = new ResizeObserver(() => setGridWidth(gridNode.clientWidth));
+    resizeObserver.observe(gridNode);
+    return () => resizeObserver.disconnect();
+  }, [gridNode]);
+
+  const desiredVisible = useMemo(() => {
+    if (viewMode === "grid") {
+      const containerWidth = gridWidth || viewportSize.width;
+      const columns = Math.max(1, Math.floor(containerWidth / GRID_CARD_MIN_WIDTH));
+      const rows = Math.max(1, Math.ceil(viewportSize.height / GRID_ROW_HEIGHT));
+      return Math.max(pageSize, columns * rows + columns * 2);
+    }
+    const rows = Math.max(1, Math.ceil(viewportSize.height / LIST_ROW_HEIGHT));
+    return Math.max(pageSize, rows + 6);
+  }, [gridWidth, pageSize, viewportSize.height, viewportSize.width, viewMode]);
 
   useEffect(() => {
-    setVisibleCount((current) => Math.min(current, filteredItems.length || pageSize));
-  }, [filteredItems.length, pageSize]);
+    setVisibleCount(() => Math.max(desiredVisible, pageSize));
+  }, [desiredVisible, pageSize, searchQuery, activeSort]);
+
+  useEffect(() => {
+    setVisibleCount((current) => Math.min(Math.max(current, desiredVisible), filteredItems.length || desiredVisible));
+  }, [desiredVisible, filteredItems.length, pageSize]);
 
   const hasMore = !isLoading && filteredItems.length > visibleCount;
   const loadMore = useCallback(() => {
     if (!hasMore) return;
-    setVisibleCount((current) => Math.min(current + pageSize, filteredItems.length));
-  }, [filteredItems.length, hasMore, pageSize]);
+    setVisibleCount((current) => {
+      const next = Math.max(current + pageSize, desiredVisible);
+      return Math.min(next, filteredItems.length);
+    });
+  }, [desiredVisible, filteredItems.length, hasMore, pageSize]);
 
   const sentinelRef = useRef<HTMLDivElement | null>(null);
   useEffect(() => {
@@ -138,7 +178,7 @@ function MediaCollection<T>({
       if (entry.isIntersecting) {
         loadMore();
       }
-    }, { rootMargin: "600px 0px" });
+    }, { rootMargin: INTERSECTION_ROOT_MARGIN });
     observer.observe(node);
     return () => observer.disconnect();
   }, [hasMore, loadMore]);
@@ -216,7 +256,10 @@ function MediaCollection<T>({
           {emptyMessage}
         </div>
       ) : viewMode === "grid" ? (
-        <div className="grid grid-cols-[repeat(auto-fill,minmax(180px,1fr))] gap-4">
+        <div
+          ref={setGridNode}
+          className="grid grid-cols-[repeat(auto-fill,minmax(180px,1fr))] gap-4"
+        >
           {itemsToRender.map((item) => (
             <MediaCard
               key={item.id}

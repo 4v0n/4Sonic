@@ -3,7 +3,7 @@ import { toast } from "sonner";
 import Checkbox from "../components/ui/Checkbox";
 import { RadioGroup, RadioGroupItem } from "../components/ui/RadioGroup";
 import Toggle from "../components/ui/Toggle";
-import { AlbumIcon, SettingsIcon, PersonIcon, LogoutIcon, SearchIcon } from "../constants/icons";
+import { AlbumIcon, SettingsIcon, PersonIcon, LogoutIcon, SearchIcon, ClockIcon } from "../constants/icons";
 import { ToggleGroup, ToggleGroupItem } from "../components/ui/ToggleGroup";
 import { KeybindInput } from "../components/ui/KeybindInput";
 import { Dialog, DialogClose, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "../components/ui/Dialog";
@@ -19,9 +19,13 @@ import Switch from "../components/ui/Switch";
 import { useThemeContext } from "../context/ThemeContext";
 import { ToastPosition, useUiPreferencesStore } from "../store/uiPreferencesStore";
 import MediaCard from "../components/ui/MediaCard";
+import Carousel, { CarouselItem } from "../components/ui/Carousel";
 import { useAuthStore } from "../store/authStore";
 import { SubsonicAlbumDetail, SubsonicArtistDetail, SubsonicSong } from "../types/subsonic";
-import { playSong } from "../store/playbackStore";
+import { playSong, usePlaybackStore } from "../store/playbackStore";
+import { formatTime } from "../utils/time";
+import CoverImage, { CoverFallback } from "../components/ui/CoverImage";
+import cn from "../utils/cn";
 
 const Section: React.FC<{ title: string; description?: string; children: React.ReactNode }> = ({ title, description, children }) => (
   <section className="rounded-2xl border border-(--surface2) bg-(--surface0) p-5 shadow-sm space-y-4">
@@ -65,6 +69,7 @@ const ComponentShowcasePage = () => {
   const { theme, themes } = useThemeContext();
   const session = useAuthStore((state) => state.session);
   const client = session?.client;
+  const currentSongId = usePlaybackStore((state) => state.currentSong?.id);
   const [isChecked, setIsChecked] = useState(false);
   const [radioValue, setRadioValue] = useState("option-one");
   const [selectValue, setSelectValue] = useState("light");
@@ -210,6 +215,76 @@ const ComponentShowcasePage = () => {
     }
   };
 
+  const carouselItems = useMemo<CarouselItem[]>(() => {
+    const baseCards = [
+      {
+        kind: "artist" as const,
+        title: mediaSamples.artist?.name,
+        subtitle: artistMeta,
+        meta: undefined,
+        coverUrl: artistCover,
+        onPlay: () => toast(`Play artist: ${mediaSamples.artist?.name ?? "Artist"}`),
+        isLoading: mediaSamples.loading && !mediaSamples.artist,
+      },
+      {
+        kind: "album" as const,
+        title: mediaSamples.album?.name,
+        subtitle: mediaSamples.album?.artist,
+        meta: undefined,
+        coverUrl: albumCover,
+        onPlay: () => toast.success(`Play album: ${mediaSamples.album?.name ?? "Album"}`),
+        isLoading: mediaSamples.loading && !mediaSamples.album,
+      },
+      {
+        kind: "song" as const,
+        title: mediaSamples.song?.title,
+        subtitle: mediaSamples.song?.artist ?? mediaSamples.album?.artist,
+        meta: songMeta,
+        coverUrl: songCover,
+        onPlay: handlePlaySampleSong,
+        isLoading: mediaSamples.loading && !mediaSamples.song,
+      },
+    ];
+
+    const ensureTitle = (kind: string, title?: string, index?: number) => {
+      if (title) return title;
+      const label = kind === "artist" ? "Artist" : kind === "album" ? "Album" : "Song";
+      return index ? `${label} ${index}` : label;
+    };
+
+    return Array.from({ length: 9 }, (_, index) => {
+      const blueprint = baseCards[index % baseCards.length];
+      const title = ensureTitle(blueprint.kind, blueprint.title, index + 1);
+
+      return {
+        id: `${blueprint.kind}-${index}`,
+        children: (
+          <MediaCard
+            kind={blueprint.kind}
+            title={title}
+            subtitle={blueprint.subtitle}
+            meta={blueprint.meta}
+            coverUrl={blueprint.coverUrl}
+            isLoading={blueprint.isLoading}
+            onPlay={blueprint.onPlay}
+            className="w-full"
+          />
+        ),
+      };
+    });
+  }, [
+    albumCover,
+    artistCover,
+    artistMeta,
+    handlePlaySampleSong,
+    mediaSamples.album,
+    mediaSamples.artist,
+    mediaSamples.loading,
+    mediaSamples.song,
+    songCover,
+    songMeta,
+  ]);
+
   const dropdownOptions: MenuOption[] = [
     { label: "Profile", onClick: () => alert("Profile"), icon: <PersonIcon fontSize="small" /> },
     { label: "Settings", onClick: () => alert("Settings"), icon: <SettingsIcon fontSize="small" /> },
@@ -297,6 +372,16 @@ const ComponentShowcasePage = () => {
             </div>
             <p className="text-xs text-(--text-grey)">
               Using artist {ARTIST_ID}, album {ALBUM_ID}, and song {SONG_ID} from your Navidrome server.
+            </p>
+          </Section>
+
+          <Section
+            title="Media Carousel"
+            description="Swipe, scroll, or tap arrows to browse horizontally."
+          >
+            <Carousel ariaLabel="Media carousel" items={carouselItems} />
+            <p className="text-xs text-(--text-grey)">
+              Works with mouse wheel, touch swipe, trackpad, or the arrow buttons.
             </p>
           </Section>
 
@@ -560,6 +645,58 @@ const ComponentShowcasePage = () => {
                 </ContextMenuItem>
               </ContextMenuContent>
             </ContextMenu>
+          </Section>
+
+          <Section title="Song Table" description="Songs table for Albums and Playlist">
+            <div>
+              <div className="p-2 space-x-2 flex">
+                <div>
+                  <CoverImage
+                    src={client?.getCoverArtUrl(mediaSamples.album?.coverArt, { size: 512 })}
+                    alt={mediaSamples.album?.name ?? "Album cover"}
+                    className="w-50 h-50 rounded border border-(--surface2)"
+                    placeholder={<CoverFallback rounded className="rounded" />}
+                    fallback={<CoverFallback rounded className="rounded" />}
+                  />
+                </div>
+                <div>
+                  <h1 className="text-4xl font-extrabold leading-tight text-(--text)">
+                    {mediaSamples.album?.name}
+                  </h1>
+                </div>
+              </div>
+              <div className="px-4">
+                <table className="w-full">
+                  <thead>
+                    <tr className="text-left">
+                      <th>#</th>
+                      <th>Title</th>
+                      <th>Album</th>
+                      <th><ClockIcon /></th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {mediaSamples.album?.song?.map((song, index) => {
+                      return (
+                        <tr
+                          key={song.id ?? `${song.title}-${index}`}
+                          className={cn(
+                            "hover:bg-(--surface2) cursor-pointer transition-colors",
+                            currentSongId === song.id && "bg-(--surface-tonal0)",
+                          )}
+                          onClick={() => playSong(song.id)}
+                        >
+                          <td>{index + 1}</td>
+                          <td>{song.title}</td>
+                          <td>{song.album}</td>
+                          <td>{song.duration ? formatTime(song.duration) : "-"}</td>
+                        </tr>
+                      );
+                    })}
+                  </tbody>
+                </table>
+              </div>
+            </div>
           </Section>
         </div>
       </div>
