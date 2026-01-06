@@ -16,6 +16,7 @@ import TextInput from "../components/ui/TextInput";
 import { Popover, PopoverClose, PopoverContent, PopoverTrigger } from "../components/ui/Popover";
 import Select from "../components/ui/Select";
 import Switch from "../components/ui/Switch";
+import GraphicEQ, { BaselinePoint, EqBand } from "../components/ui/GraphicEQ";
 import AlbumSongsTable from "../components/library/AlbumSongsTable";
 import { useThemeContext } from "../context/ThemeContext";
 import { ToastPosition, useUiPreferencesStore } from "../store/uiPreferencesStore";
@@ -74,6 +75,21 @@ const ComponentShowcasePage = () => {
   const [keybind, setKeybind] = useState("⌘ + K");
   const [textValue, setTextValue] = useState("Navidrome server");
   const [mediaSamples, setMediaSamples] = useState<MediaSamplesState>({ loading: true });
+  const DEFAULT_EQ_BANDS: EqBand[] = useMemo(() => ([
+    { freq: 31, gain: 0 },
+    { freq: 62, gain: 0 },
+    { freq: 125, gain: 0 },
+    { freq: 250, gain: 0 },
+    { freq: 500, gain: 0 },
+    { freq: 1000, gain: 0 },
+    { freq: 2000, gain: 0 },
+    { freq: 4000, gain: 0 },
+    { freq: 8000, gain: 0 },
+    { freq: 16000, gain: 0 },
+  ]), []);
+  const [eqBands, setEqBands] = useState<EqBand[]>(DEFAULT_EQ_BANDS);
+  const [eqBaseline, setEqBaseline] = useState<BaselinePoint[] | undefined>(undefined);
+  const [eqPreampDb, setEqPreampDb] = useState(0);
   const toastPosition = useUiPreferencesStore((state) => state.toastPosition);
   const setToastPosition = useUiPreferencesStore((state) => state.setToastPosition);
   const activeThemeLabel = useMemo(
@@ -113,6 +129,68 @@ const ComponentShowcasePage = () => {
       tokens: ["success0", "success1", "success2", "warning0", "warning1", "warning2", "danger0", "danger1", "danger2", "info0", "info1", "info2"],
     },
   ]), []);
+
+  const eqFilters = useMemo(() => eqBands.map((band) => ({
+    type: "Peaking",
+    frequency: band.freq,
+    gain: band.gain,
+    q: 1.4,
+  })), [eqBands]);
+
+  const maxGain = useMemo(
+    () => (eqBands.length ? eqBands.reduce((max, band) => Math.max(max, band.gain), eqBands[0].gain) : 0),
+    [eqBands],
+  );
+  useEffect(() => {
+    setEqPreampDb(-maxGain);
+  }, [maxGain]);
+
+  const formatEqFrequency = (freq: number) => {
+    if (freq >= 1000) {
+      return `${(freq / 1000).toFixed(freq >= 10000 ? 0 : 1)} kHz`;
+    }
+    return `${freq} Hz`;
+  };
+
+  const handleBaselineUpload: React.ChangeEventHandler<HTMLInputElement> = async (event) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+    try {
+      const text = await file.text();
+      const points = text
+        .split(/\r?\n/)
+        .map((line) => line.trim())
+        .filter(Boolean)
+        .map((line) => {
+          const [freqStr, splStr] = line.split(/\s+/);
+          const freq = Number.parseFloat(freqStr);
+          const spl = Number.parseFloat(splStr);
+          if (!Number.isFinite(freq) || !Number.isFinite(spl) || freq <= 0) return null;
+          return { freq, spl };
+        })
+        .filter((point): point is BaselinePoint => Boolean(point));
+
+      if (points.length < 10) {
+        toast.error("Unable to load baseline", { description: "Need at least 10 rows of freq/SPL data." });
+        event.target.value = "";
+        return;
+      }
+
+      setEqBaseline(points);
+      toast.success(`Loaded baseline with ${points.length} points`);
+    } catch (error) {
+      const description = error instanceof Error ? error.message : undefined;
+      toast.error("Failed to parse baseline file", description ? { description } : undefined);
+    } finally {
+      event.target.value = "";
+    }
+  };
+
+  const handleEqReset = () => {
+    setEqBands(DEFAULT_EQ_BANDS);
+    setEqBaseline(undefined);
+    setEqPreampDb(0);
+  };
 
   useEffect(() => {
     if (!client) {
@@ -679,6 +757,51 @@ const ComponentShowcasePage = () => {
 
           <Section title="Song Table" description="Songs table for Albums and Playlist">
             <AlbumSongsTable album={mediaSamples.album} />
+          </Section>
+
+          <Section title="Graphic EQ" description="10-band graphic EQ with draggable handles and live response curve.">
+            <GraphicEQ bands={eqBands} onChange={setEqBands} baseline={eqBaseline} />
+            <div className="flex flex-wrap items-center gap-3 text-sm text-(--text-grey)">
+              <Button size="small" variant="outline" onClick={() => document.getElementById("eq-baseline-upload")?.click()}>
+                Upload baseline
+              </Button>
+              <Button size="small" variant="ghost" onClick={handleEqReset}>
+                Reset
+              </Button>
+              <input
+                id="eq-baseline-upload"
+                type="file"
+                accept=".txt,.frd,text/plain"
+                className="hidden"
+                onChange={handleBaselineUpload}
+              />
+              <span className="text-xs text-(--text-grey)">
+                Baseline becomes the new centerline; EQ uses Q=1.4. Suggested preamp: {eqPreampDb.toFixed(1)} dB.
+              </span>
+            </div>
+            <div className="overflow-x-auto">
+              <table className="w-full text-sm text-(--text)">
+                <thead>
+                  <tr>
+                    <th className="text-left py-2">Type</th>
+                    <th className="text-left py-2">Frequency</th>
+                    <th className="text-left py-2">Gain</th>
+                    <th className="text-left py-2">Q</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {eqFilters.map((filter, index) => (
+                    <tr key={`${filter.frequency}-${index}`}>
+                      <td className="py-1">Peaking</td>
+                      <td className="py-1">{formatEqFrequency(filter.frequency)}</td>
+                      <td className="py-1">{filter.gain.toFixed(1)} dB</td>
+                      <td className="py-1">{filter.q.toFixed(1)}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+            <p className="text-xs text-(--text-grey)">Demo only: values are not saved or applied.</p>
           </Section>
         </div>
       </div>
