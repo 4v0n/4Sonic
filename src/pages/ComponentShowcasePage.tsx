@@ -3,7 +3,7 @@ import { toast } from "sonner";
 import Checkbox from "../components/ui/Checkbox";
 import { RadioGroup, RadioGroupItem } from "../components/ui/RadioGroup";
 import Toggle from "../components/ui/Toggle";
-import { AlbumIcon, SettingsIcon, PersonIcon, LogoutIcon, SearchIcon, ClockIcon } from "../constants/icons";
+import { AlbumIcon, SettingsIcon, PersonIcon, LogoutIcon, SearchIcon } from "../constants/icons";
 import { ToggleGroup, ToggleGroupItem } from "../components/ui/ToggleGroup";
 import { KeybindInput } from "../components/ui/KeybindInput";
 import { Dialog, DialogClose, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "../components/ui/Dialog";
@@ -16,16 +16,13 @@ import TextInput from "../components/ui/TextInput";
 import { Popover, PopoverClose, PopoverContent, PopoverTrigger } from "../components/ui/Popover";
 import Select from "../components/ui/Select";
 import Switch from "../components/ui/Switch";
+import AlbumSongsTable from "../components/library/AlbumSongsTable";
 import { useThemeContext } from "../context/ThemeContext";
 import { ToastPosition, useUiPreferencesStore } from "../store/uiPreferencesStore";
 import MediaCard from "../components/ui/MediaCard";
 import Carousel, { CarouselItem } from "../components/ui/Carousel";
 import { useAuthStore } from "../store/authStore";
 import { SubsonicAlbumDetail, SubsonicArtistDetail, SubsonicSong } from "../types/subsonic";
-import { usePlaybackStore } from "../store/playbackStore";
-import { formatTime } from "../utils/time";
-import CoverImage, { CoverFallback } from "../components/ui/CoverImage";
-import cn from "../utils/cn";
 import { playAlbum, playArtist, playSongById } from "../utils/playbackActions";
 
 const Section: React.FC<{ title: string; description?: string; children: React.ReactNode }> = ({ title, description, children }) => (
@@ -70,7 +67,6 @@ const ComponentShowcasePage = () => {
   const { theme, themes } = useThemeContext();
   const session = useAuthStore((state) => state.session);
   const client = session?.client;
-  const currentSongId = usePlaybackStore((state) => state.currentSong?.id);
   const [isChecked, setIsChecked] = useState(false);
   const [radioValue, setRadioValue] = useState("option-one");
   const [selectValue, setSelectValue] = useState("light");
@@ -682,60 +678,7 @@ const ComponentShowcasePage = () => {
           </Section>
 
           <Section title="Song Table" description="Songs table for Albums and Playlist">
-            <div>
-              <div className="p-2 space-x-2 flex">
-                <div>
-                  <CoverImage
-                    src={client?.getCoverArtUrl(mediaSamples.album?.coverArt, { size: 512 })}
-                    alt={mediaSamples.album?.name ?? "Album cover"}
-                    className="w-50 h-50 rounded border border-(--surface2)"
-                    placeholder={<CoverFallback rounded className="rounded" />}
-                    fallback={<CoverFallback rounded className="rounded" />}
-                  />
-                </div>
-                <div>
-                  <h1 className="text-4xl font-extrabold leading-tight text-(--text)">
-                    {mediaSamples.album?.name}
-                  </h1>
-                </div>
-              </div>
-              <div className="px-4">
-                <table className="w-full">
-                  <thead>
-                    <tr className="text-left">
-                      <th>#</th>
-                      <th>Title</th>
-                      <th>Album</th>
-                      <th><ClockIcon /></th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {mediaSamples.album?.song?.map((song, index) => {
-                      return (
-                        <tr
-                          key={song.id ?? `${song.title}-${index}`}
-                          className={cn(
-                            "hover:bg-(--surface2) cursor-pointer transition-colors",
-                            currentSongId === song.id && "bg-(--surface-tonal0)",
-                          )}
-                          onClick={() => {
-                            void playSongById(song.id).catch((error) => {
-                              const description = error instanceof Error ? error.message : undefined;
-                              toast.error("Unable to play song", description ? { description } : undefined);
-                            });
-                          }}
-                        >
-                          <td>{index + 1}</td>
-                          <td>{song.title}</td>
-                          <td>{song.album}</td>
-                          <td>{song.duration ? formatTime(song.duration) : "-"}</td>
-                        </tr>
-                      );
-                    })}
-                  </tbody>
-                </table>
-              </div>
-            </div>
+            <AlbumSongsTable album={mediaSamples.album} />
           </Section>
         </div>
       </div>

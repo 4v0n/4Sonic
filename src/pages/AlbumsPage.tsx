@@ -82,7 +82,6 @@ const AlbumsPage = () => {
     const metaParts = [];
     if (year) metaParts.push(String(year));
     if (album.songCount) metaParts.push(`${album.songCount} song${album.songCount === 1 ? "" : "s"}`);
-    
 
     return {
       id: album.id,
