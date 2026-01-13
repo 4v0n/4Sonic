@@ -35,11 +35,18 @@ interface PlaybackState {
   isMuted: boolean;
   isScrubbing: boolean;
   error?: string;
+  outputDeviceId: string | null;
+  outputSinkId: string | null;
+  exclusiveMode: boolean;
+  bitPerfectMode: boolean;
   queue: QueueItem[];
   queueOrder: number[];
   queuePosition: number;
   getFrequencyData: () => Uint8Array | null;
   getSampleRate: () => number | null;
+  setOutputDevice: (deviceId: string | null, sinkId?: string | null) => Promise<void>;
+  setExclusiveMode: (enabled: boolean) => void;
+  setBitPerfectMode: (enabled: boolean) => void;
   playSong: (songId: string, options?: { queueItem?: QueueItem }) => Promise<void>;
   togglePlayPause: () => Promise<void>;
   pause: () => void;
@@ -182,6 +189,10 @@ export const usePlaybackStore = create<PlaybackState>()(
         isMuted: false,
         isScrubbing: false,
         error: undefined,
+        outputDeviceId: null,
+        outputSinkId: null,
+        exclusiveMode: false,
+        bitPerfectMode: false,
         queue: [],
         queueOrder: [],
         queuePosition: -1,
@@ -390,6 +401,33 @@ export const usePlaybackStore = create<PlaybackState>()(
           });
         },
 
+        setOutputDevice: async (deviceId, sinkId) => {
+          const targetSink = sinkId ?? "";
+          try {
+            await player.setOutputDevice(targetSink || null);
+            set({
+              outputDeviceId: deviceId,
+              outputSinkId: targetSink || null,
+            });
+          } catch (error) {
+            console.warn("Failed to set output device", error);
+            set({
+              outputDeviceId: deviceId,
+              outputSinkId: targetSink || null,
+            });
+          }
+        },
+
+        setExclusiveMode: (enabled: boolean) => {
+          player.setAudioMode({ exclusive: enabled });
+          set({ exclusiveMode: enabled });
+        },
+
+        setBitPerfectMode: (enabled: boolean) => {
+          player.setAudioMode({ bitPerfect: enabled });
+          set({ bitPerfectMode: enabled });
+        },
+
         changeVolumeBy: (delta: number) => {
           const { volume } = get();
           const next = Math.max(0, Math.min(1, volume + delta));
@@ -538,10 +576,21 @@ export const usePlaybackStore = create<PlaybackState>()(
         isMuted: state.isMuted,
         shuffle: state.shuffle,
         repeat: state.repeat,
+        outputDeviceId: state.outputDeviceId,
+        outputSinkId: state.outputSinkId,
+        exclusiveMode: state.exclusiveMode,
+        bitPerfectMode: state.bitPerfectMode,
       }),
       onRehydrateStorage: () => (state) => {
         if (state) {
           player.setVolume(state.isMuted ? 0 : state.volume ?? DEFAULT_VOLUME);
+          player.setAudioMode({
+            exclusive: state.exclusiveMode ?? false,
+            bitPerfect: state.bitPerfectMode ?? false,
+          });
+          if (state.outputSinkId) {
+            player.setOutputDevice(state.outputSinkId).catch(() => undefined);
+          }
         }
       },
     },

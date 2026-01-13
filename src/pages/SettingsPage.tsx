@@ -1,5 +1,11 @@
+import { useMemo } from "react";
 import TextInput from "../components/ui/TextInput";
+import Switch from "../components/ui/Switch";
+import Select from "../components/ui/Select";
+import Button from "../components/ui/Button";
 import { useUiPreferencesStore } from "../store/uiPreferencesStore";
+import { usePlaybackStore } from "../store/playbackStore";
+import { useWindowsAudioDevices } from "../hooks/useWindowsAudioDevices";
 
 const SettingsPage = () => {
   const visualizerColor = useUiPreferencesStore((state) => state.visualizerColor);
@@ -10,11 +16,46 @@ const SettingsPage = () => {
   const setVisualizerOpacity = useUiPreferencesStore((state) => state.setVisualizerOpacity);
   const setVisualizerBlur = useUiPreferencesStore((state) => state.setVisualizerBlur);
   const setVisualizerHeight = useUiPreferencesStore((state) => state.setVisualizerHeight);
+  const outputDeviceId = usePlaybackStore((state) => state.outputDeviceId);
+  const setOutputDevice = usePlaybackStore((state) => state.setOutputDevice);
+  const exclusiveMode = usePlaybackStore((state) => state.exclusiveMode);
+  const setExclusiveMode = usePlaybackStore((state) => state.setExclusiveMode);
+  const bitPerfectMode = usePlaybackStore((state) => state.bitPerfectMode);
+  const setBitPerfectMode = usePlaybackStore((state) => state.setBitPerfectMode);
+  const {
+    isWindows,
+    devices: windowsDevices,
+    loading: windowsDevicesLoading,
+    error: windowsDeviceError,
+    refresh,
+    supportsSinkSelection,
+  } = useWindowsAudioDevices();
 
   const handleColorInput = (value: string) => {
     const prefixed = value.startsWith("#") ? value : `#${value}`;
     if (/^#[0-9a-fA-F]{0,6}$/.test(prefixed)) {
       setVisualizerColor(prefixed);
+    }
+  };
+
+  const outputOptions = useMemo(
+    () => [
+      { label: "System default (WASAPI)", value: "" },
+      ...windowsDevices.map((device) => ({
+        label: device.label,
+        value: device.id,
+        disabled: !supportsSinkSelection && !device.sinkId,
+      })),
+    ],
+    [supportsSinkSelection, windowsDevices],
+  );
+
+  const handleOutputChange = async (value: string) => {
+    const target = windowsDevices.find((device) => device.id === value);
+    try {
+      await setOutputDevice(value || null, target?.sinkId ?? null);
+    } catch (error) {
+      console.warn("Unable to switch output device", error);
     }
   };
 
@@ -120,6 +161,79 @@ const SettingsPage = () => {
           </div>
         </div>
       </section>
+
+      {isWindows ? (
+        <section className="rounded-2xl border border-(--surface2) bg-(--surface0) p-5 shadow-sm space-y-5">
+          <div className="flex items-start justify-between gap-3">
+            <div className="space-y-1">
+              <h2 className="text-xl font-semibold text-(--text)">Windows audio (WASAPI)</h2>
+              <p className="text-sm text-(--text-grey)">
+                Exclusive playback and bit-perfect output are only available on Windows. Selection uses the OS&apos;s WASAPI
+                devices and falls back to the system default when unsupported.
+              </p>
+            </div>
+            <Button size="small" variant="secondary" onClick={() => void refresh()} disabled={windowsDevicesLoading}>
+              {windowsDevicesLoading ? "Scanning..." : "Rescan outputs"}
+            </Button>
+          </div>
+
+          <div className="space-y-4">
+            <div className="flex items-center justify-between gap-3 rounded-xl border border-(--surface2) bg-(--surface1) px-4 py-3">
+              <div className="space-y-1">
+                <p className="text-sm font-semibold text-(--text)">Exclusive playback</p>
+                <p className="text-xs text-(--text-grey)">
+                  Requests WASAPI exclusive output and bypasses the shared mixer when available. Playback will fall back to
+                  shared mode if the device rejects exclusivity.
+                </p>
+              </div>
+              <Switch
+                checked={exclusiveMode}
+                onCheckedChange={(checked) => setExclusiveMode(Boolean(checked))}
+                disabled={windowsDevicesLoading}
+              />
+            </div>
+
+            <div className="flex items-center justify-between gap-3 rounded-xl border border-(--surface2) bg-(--surface1) px-4 py-3">
+              <div className="space-y-1">
+                <p className="text-sm font-semibold text-(--text)">Bit-perfect mode</p>
+                <p className="text-xs text-(--text-grey)">
+                  Minimizes DSP by bypassing EQ/visualizer nodes for the cleanest path to the device. Volume and mute are
+                  still honored by the player.
+                </p>
+              </div>
+              <Switch
+                checked={bitPerfectMode}
+                onCheckedChange={(checked) => setBitPerfectMode(Boolean(checked))}
+                disabled={windowsDevicesLoading}
+              />
+            </div>
+
+            <div className="space-y-2">
+              <label className="text-sm font-medium text-(--text)">Output device</label>
+              <Select
+                options={outputOptions}
+                value={outputDeviceId ?? ""}
+                onValueChange={handleOutputChange}
+                disabled={!supportsSinkSelection || windowsDevicesLoading}
+                fullWidth
+                placeholder="Select an output"
+              />
+              <p className="text-xs text-(--text-grey)">
+                {supportsSinkSelection
+                  ? "Uses WASAPI devices and Chromium sink selection. Keep the system volume at 100% for best fidelity."
+                  : "This runtime cannot switch sinks; playback stays on the default output."}
+              </p>
+              {windowsDeviceError ? (
+                <p className="text-xs text-(--danger0)">{windowsDeviceError}</p>
+              ) : null}
+            </div>
+          </div>
+        </section>
+      ) : (
+        <section className="rounded-2xl border border-(--surface2) bg-(--surface0) p-5 shadow-sm">
+          <p className="text-sm text-(--text-grey)">Windows-only WASAPI settings become available when running on Windows.</p>
+        </section>
+      )}
     </div>
   );
 };

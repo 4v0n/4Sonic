@@ -1,3 +1,8 @@
+type SinkableAudioElement = HTMLAudioElement & {
+  setSinkId?: (sinkId: string) => Promise<void>;
+  sinkId?: string;
+};
+
 export interface HiResTrack {
   id: string;
   url: string;
@@ -20,6 +25,11 @@ interface PlayerCallbacks {
   onError?: (message: string) => void;
 }
 
+type OutputMode = {
+  exclusive?: boolean;
+  bitPerfect?: boolean;
+};
+
 /**
  * Thin Web Audio based wrapper around an HTMLAudioElement. Streams directly from
  * Navidrome/Subsonic endpoints (hi-res capable when the server provides it) and
@@ -27,7 +37,7 @@ interface PlayerCallbacks {
  * of peaking filters.
  */
 export class HiResAudioPlayer {
-  private readonly audio: HTMLAudioElement;
+  private readonly audio: SinkableAudioElement;
   private audioContext: AudioContext | null = null;
   private sourceNode: MediaElementAudioSourceNode | null = null;
   private gainNode: GainNode | null = null;
@@ -40,6 +50,10 @@ export class HiResAudioPlayer {
   private needsGraphRebuild = false;
   private lastProgressEmit = 0;
   private readonly progressIntervalMs = 80;
+  private outputSinkId: string | null = null;
+  private bitPerfectMode = false;
+  private exclusiveMode = false;
+  private eqBands: ParametricEqBand[] = [];
 
   public constructor(callbacks?: PlayerCallbacks) {
     this.callbacks = callbacks ?? {};
@@ -60,6 +74,52 @@ export class HiResAudioPlayer {
 
   public setCallbacks(callbacks: PlayerCallbacks): void {
     this.callbacks = callbacks;
+  }
+
+  public setAudioMode(mode: OutputMode): void {
+    const exclusiveChanged = typeof mode.exclusive === "boolean" && this.exclusiveMode !== mode.exclusive;
+    if (exclusiveChanged) {
+      this.exclusiveMode = mode.exclusive ?? this.exclusiveMode;
+    }
+    if (typeof mode.bitPerfect === "boolean") {
+      const changed = this.bitPerfectMode !== mode.bitPerfect;
+      this.bitPerfectMode = mode.bitPerfect;
+      if (changed) {
+        if (this.bitPerfectMode) {
+          this.teardownGraph();
+        } else {
+          this.needsGraphRebuild = true;
+          this.ensureContext();
+          if (this.eqBands.length > 0) {
+            this.setParametricEq(this.eqBands);
+          }
+        }
+      }
+    }
+    if (exclusiveChanged && this.audioContext && !this.bitPerfectMode) {
+      this.teardownGraph();
+      this.ensureContext();
+    }
+  }
+
+  public async setOutputDevice(sinkId: string | null): Promise<void> {
+    if (this.outputSinkId === sinkId) {
+      return;
+    }
+    this.outputSinkId = sinkId;
+    const setSink = this.audio.setSinkId;
+    if (typeof setSink !== "function") {
+      if (sinkId === null || sinkId === undefined || sinkId === "") {
+        return;
+      }
+      throw new Error("Output device selection is not supported by this runtime");
+    }
+    const target = sinkId ?? "";
+    const currentSinkId = (this.audio as SinkableAudioElement).sinkId;
+    if (currentSinkId === target) {
+      return;
+    }
+    await setSink.call(this.audio, target);
   }
 
   public setSource(track: HiResTrack): void {
@@ -111,7 +171,7 @@ export class HiResAudioPlayer {
     const clamped = Math.max(0, Math.min(1, value));
     this.ensureContext();
 
-    if (this.gainNode && this.audioContext) {
+    if (!this.bitPerfectMode && this.gainNode && this.audioContext) {
       this.gainNode.gain.cancelScheduledValues(this.audioContext.currentTime);
       this.gainNode.gain.setTargetAtTime(clamped, this.audioContext.currentTime, 0.01);
     } else {
@@ -120,8 +180,9 @@ export class HiResAudioPlayer {
   }
 
   public setParametricEq(bands: ParametricEqBand[]): void {
+    this.eqBands = [...bands];
     this.ensureContext();
-    if (!this.audioContext) {
+    if (!this.audioContext || this.bitPerfectMode) {
       return;
     }
 
@@ -147,6 +208,9 @@ export class HiResAudioPlayer {
   }
 
   private ensureContext(): void {
+    if (this.bitPerfectMode) {
+      return;
+    }
     if (typeof window === "undefined") {
       return;
     }
@@ -158,7 +222,7 @@ export class HiResAudioPlayer {
     let graphChanged = false;
 
     if (!this.audioContext) {
-      this.audioContext = new AudioCtx({ latencyHint: "playback" });
+      this.audioContext = new AudioCtx({ latencyHint: this.exclusiveMode ? "interactive" : "playback" });
       graphChanged = true;
     }
     if (!this.gainNode && this.audioContext) {
@@ -186,6 +250,9 @@ export class HiResAudioPlayer {
   }
 
   private rebuildGraph(): void {
+    if (this.bitPerfectMode) {
+      return;
+    }
     if (!this.audioContext || !this.sourceNode || !this.gainNode) {
       return;
     }
@@ -207,6 +274,28 @@ export class HiResAudioPlayer {
       head.connect(node);
       head = node;
     });
+  }
+
+  private teardownGraph(): void {
+    this.filterNodes.forEach((node) => node.disconnect());
+    this.filterNodes = [];
+    if (this.sourceNode) {
+      this.sourceNode.disconnect();
+    }
+    if (this.gainNode) {
+      this.gainNode.disconnect();
+      this.gainNode = null;
+    }
+    if (this.analyserNode) {
+      this.analyserNode.disconnect();
+      this.analyserNode = null;
+    }
+    this.frequencyData = null;
+
+    if (this.audioContext) {
+      this.audioContext.suspend().catch(() => undefined);
+    }
+    this.needsGraphRebuild = true;
   }
 
   private ensureProgressLoop(): void {
@@ -275,6 +364,9 @@ export class HiResAudioPlayer {
 
   public getFrequencyData(): Uint8Array | null {
     this.ensureContext();
+    if (this.bitPerfectMode) {
+      return null;
+    }
     if (!this.analyserNode) {
       return null;
     }
