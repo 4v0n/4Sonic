@@ -146,6 +146,10 @@ export class HiResAudioPlayer {
     return this.hintedDuration;
   }
 
+  public getCurrentTime(): number {
+    return this.audio.currentTime;
+  }
+
   private ensureContext(): void {
     if (typeof window === "undefined") {
       return;

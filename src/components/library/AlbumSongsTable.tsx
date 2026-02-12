@@ -8,6 +8,7 @@ import { SubsonicAlbumDetail, SubsonicSong } from "../../types/subsonic";
 import cn from "../../utils/cn";
 import { formatTime } from "../../utils/time";
 import { playSongById } from "../../utils/playbackActions";
+import { getAlbumCoverUrl } from "../../utils/mediaImages";
 
 interface AlbumSongsTableProps {
   album?: SubsonicAlbumDetail;
@@ -19,8 +20,8 @@ const AlbumSongsTable: React.FC<AlbumSongsTableProps> = ({ album, onSongClick })
   const currentSongId = usePlaybackStore((state) => state.currentSong?.id);
 
   const coverUrl = useMemo(
-    () => client?.getCoverArtUrl(album?.coverArt, { size: 512 }),
-    [album?.coverArt, client],
+    () => getAlbumCoverUrl(album, client),
+    [album, client],
   );
 
   const songs = useMemo(() => album?.song ?? [], [album?.song]);

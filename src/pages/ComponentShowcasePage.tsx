@@ -25,6 +25,7 @@ import Carousel, { CarouselItem } from "../components/ui/Carousel";
 import { useAuthStore } from "../store/authStore";
 import { SubsonicAlbumDetail, SubsonicArtistDetail, SubsonicSong } from "../types/subsonic";
 import { playAlbum, playArtist, playSongById } from "../utils/playbackActions";
+import { getAlbumCoverUrl, getArtistImageUrl, getSongCoverUrl } from "../utils/mediaImages";
 
 const Section: React.FC<{ title: string; description?: string; children: React.ReactNode }> = ({ title, description, children }) => (
   <section className="rounded-2xl border border-(--surface2) bg-(--surface0) p-5 shadow-sm space-y-4">
@@ -259,21 +260,19 @@ const ComponentShowcasePage = () => {
     return `${mediaSamples.artist.albumCount} album${mediaSamples.artist.albumCount === 1 ? "" : "s"}`;
   }, [mediaSamples.artist]);
 
-  const artistCover = useMemo(() => {
-    if (mediaSamples.artist?.artistImageUrl) {
-      return mediaSamples.artist.artistImageUrl;
-    }
-    return client?.getCoverArtUrl(mediaSamples.artist?.coverArt, { size: 512 });
-  }, [client, mediaSamples.artist]);
+  const artistCover = useMemo(
+    () => getArtistImageUrl(mediaSamples.artist, client),
+    [client, mediaSamples.artist],
+  );
 
   const albumCover = useMemo(
-    () => client?.getCoverArtUrl(mediaSamples.album?.coverArt, { size: 512 }),
-    [client, mediaSamples.album?.coverArt],
+    () => getAlbumCoverUrl(mediaSamples.album, client),
+    [client, mediaSamples.album],
   );
 
   const songCover = useMemo(
-    () => client?.getCoverArtUrl(mediaSamples.song?.coverArt ?? mediaSamples.album?.coverArt, { size: 512 }),
-    [client, mediaSamples.album?.coverArt, mediaSamples.song?.coverArt],
+    () => getSongCoverUrl(mediaSamples.song, mediaSamples.album, client),
+    [client, mediaSamples.album, mediaSamples.song],
   );
 
   const albumSongs = useMemo(() => mediaSamples.album?.song ?? [], [mediaSamples.album?.song]);

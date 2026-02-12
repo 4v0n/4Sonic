@@ -1,5 +1,6 @@
 import { useEffect } from "react";
 import { usePlaybackStore } from "../store/playbackStore";
+import { DEFAULT_COVER_SIZE } from "../utils/mediaImages";
 
 const MEDIA_SEEK_STEP = 10;
 
@@ -40,7 +41,7 @@ export const useMediaSession = (): void => {
         title: currentSong.title ?? "",
         artist: currentSong.artist ?? "",
         album: currentSong.album ?? "",
-        artwork: coverArtUrl ? [{ src: coverArtUrl, sizes: "512x512" }] : [],
+        artwork: coverArtUrl ? [{ src: coverArtUrl, sizes: `${DEFAULT_COVER_SIZE}x${DEFAULT_COVER_SIZE}` }] : [],
       })
       : null;
 

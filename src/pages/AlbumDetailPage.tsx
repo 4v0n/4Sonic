@@ -4,8 +4,10 @@ import AlbumSongsTable from "../components/library/AlbumSongsTable";
 import Button from "../components/ui/Button";
 import Spinner from "../components/ui/Spinner";
 import { useLibraryStore } from "../store/libraryStore";
-import { SubsonicAlbumDetail, SubsonicSong } from "../types/subsonic";
+import { SubsonicAlbumDetail } from "../types/subsonic";
 import { playAlbum } from "../utils/playbackActions";
+import { trackToSong } from "../utils/playbackMapping";
+import { sortSongsForQueue } from "../utils/playbackSort";
 
 
 const AlbumDetailPage = () => {
@@ -16,36 +18,24 @@ const AlbumDetailPage = () => {
   const album = useLibraryStore((state) => state.albums.find((entry) => entry.id === albumId));
 
   const albumTracks = useMemo(
-    () => tracks.filter((track) => track.albumId === albumId).sort((left, right) => {
-      const leftDisc = left.discNumber ?? 0;
-      const rightDisc = right.discNumber ?? 0;
-      if (leftDisc !== rightDisc) return leftDisc - rightDisc;
-      const leftTrack = left.trackNumber ?? 0;
-      const rightTrack = right.trackNumber ?? 0;
-      if (leftTrack !== rightTrack) return leftTrack - rightTrack;
-      return left.title.localeCompare(right.title);
-    }),
+    () => tracks.filter((track) => track.albumId === albumId),
     [albumId, tracks],
   );
 
   const albumForTable = useMemo<SubsonicAlbumDetail | undefined>(() => {
     if (!album) return undefined;
-    const songs: SubsonicSong[] = albumTracks.map((track) => ({
-      id: track.id,
-      title: track.title,
-      album: track.albumName ?? album.title,
-      albumId: track.albumId ?? album.id,
-      artist: track.artistName ?? album.artistName,
-      artistId: track.artistId ?? album.artistId,
-      track: track.trackNumber,
-      discNumber: track.discNumber,
-      duration: track.duration,
-      bitDepth: track.bitDepth,
-      samplingRate: track.samplingRate,
-      year: track.year ?? album.year,
-      genre: track.genre ?? album.genre,
-      coverArt: track.coverArt ?? album.coverArt,
-      suffix: track.suffix,
+    const songs = sortSongsForQueue(albumTracks.map((track) => {
+      const base = trackToSong(track);
+      return {
+        ...base,
+        album: base.album ?? album.title,
+        albumId: base.albumId ?? album.id,
+        artist: base.artist ?? album.artistName,
+        artistId: base.artistId ?? album.artistId,
+        year: base.year ?? album.year,
+        genre: base.genre ?? album.genre,
+        coverArt: base.coverArt ?? album.coverArt,
+      };
     }));
 
     return {

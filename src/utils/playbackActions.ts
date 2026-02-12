@@ -1,48 +1,18 @@
-import { QueueItem, usePlaybackStore } from "../store/playbackStore";
+import { usePlaybackStore } from "../store/playbackStore";
 import { useAuthStore } from "../store/authStore";
 import { useLibraryStore } from "../store/libraryStore";
 import { SubsonicAlbumDetail, SubsonicArtistDetail, SubsonicSong } from "../types/subsonic";
-import { TrackEntity } from "../types/library";
+import { songToQueueItem, trackToSong } from "./playbackMapping";
+import { sortSongsForQueue } from "./playbackSort";
+import { getCoverArtUrl } from "./mediaImages";
 
 type PrepareSongsOptions = {
   sort?: boolean;
 };
 
-const sortSongsForQueue = (songs: SubsonicSong[]): SubsonicSong[] => {
-  return [...songs].sort((left, right) => {
-    const leftAlbum = left.album ?? "";
-    const rightAlbum = right.album ?? "";
-    if (leftAlbum !== rightAlbum) return leftAlbum.localeCompare(rightAlbum);
-
-    const leftDisc = left.discNumber ?? 0;
-    const rightDisc = right.discNumber ?? 0;
-    if (leftDisc !== rightDisc) return leftDisc - rightDisc;
-
-    const leftTrack = left.track ?? 0;
-    const rightTrack = right.track ?? 0;
-    if (leftTrack !== rightTrack) return leftTrack - rightTrack;
-
-    const leftTitle = left.title ?? "";
-    const rightTitle = right.title ?? "";
-    return leftTitle.localeCompare(rightTitle);
-  });
+const isPlayableSong = (song?: SubsonicSong | null): song is SubsonicSong & { id: string } => {
+  return Boolean(song?.id) && !song?.isDir;
 };
-
-const trackToSong = (track: TrackEntity): SubsonicSong => ({
-  id: track.id,
-  title: track.title,
-  album: track.albumName,
-  albumId: track.albumId,
-  artist: track.artistName,
-  artistId: track.artistId,
-  track: track.trackNumber,
-  discNumber: track.discNumber,
-  duration: track.duration,
-  bitDepth: track.bitDepth,
-  samplingRate: track.samplingRate,
-  coverArt: track.coverArt,
-  suffix: track.suffix,
-});
 
 const ensureClient = () => {
   const session = useAuthStore.getState().session;
@@ -53,7 +23,7 @@ const ensureClient = () => {
 };
 
 const prepareSongs = (songs: SubsonicSong[], options?: PrepareSongsOptions): SubsonicSong[] => {
-  const filtered = songs.filter((song): song is SubsonicSong & { id: string } => Boolean(song?.id));
+  const filtered = songs.filter(isPlayableSong);
   if (filtered.length === 0) {
     return [];
   }
@@ -62,21 +32,6 @@ const prepareSongs = (songs: SubsonicSong[], options?: PrepareSongsOptions): Sub
   }
   return sortSongsForQueue(filtered);
 };
-
-const mapSongToQueueItem = (song: SubsonicSong, coverArtUrl?: string): QueueItem => ({
-  id: song.id,
-  title: song.title,
-  artist: song.artist,
-  album: song.album,
-  albumId: song.albumId,
-  duration: song.duration,
-  coverArt: song.coverArt,
-  coverArtUrl,
-  trackNumber: song.track,
-  bitDepth: song.bitDepth,
-  samplingRate: song.samplingRate,
-  suffix: song.suffix,
-});
 
 const setQueueFromSongs = async (
   songs: SubsonicSong[],
@@ -90,9 +45,9 @@ const setQueueFromSongs = async (
     throw new Error("No playable songs available.");
   }
 
-  const queueItems: QueueItem[] = normalized.map((song) => mapSongToQueueItem(
+  const queueItems = normalized.map((song) => songToQueueItem(
     song,
-    client.getCoverArtUrl(song.coverArt, { size: 512 }),
+    getCoverArtUrl(client, song.coverArt),
   ));
 
   const targetIndex = Math.min(Math.max(startIndex, 0), queueItems.length - 1);

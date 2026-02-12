@@ -14,7 +14,10 @@ class AudioCache {
   private objectUrls = new Map<string, string>();
   private prefetchControllers = new Map<string, AbortController>();
 
-  public async getPlayableSource(track: { id: string; url: string; duration?: number }): Promise<PlayableSource> {
+  public async getPlayableSource(
+    track: { id: string; url: string; duration?: number },
+    options?: { allowPrefetch?: boolean },
+  ): Promise<PlayableSource> {
     if (typeof indexedDB === "undefined") {
       return { url: track.url, fromCache: false };
     }
@@ -27,6 +30,10 @@ class AudioCache {
         fromCache: true,
         cleanup: () => this.release(track.id),
       };
+    }
+
+    if (options?.allowPrefetch === false) {
+      return { url: track.url, fromCache: false };
     }
 
     const cachePromise = this.prefetch(track);

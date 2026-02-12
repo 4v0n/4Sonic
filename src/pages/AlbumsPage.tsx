@@ -5,6 +5,7 @@ import { useAlbums, useLibraryStatus } from "../hooks/useLibrary";
 import { useAuthStore } from "../store/authStore";
 import { useLibraryStore } from "../store/libraryStore";
 import { AlbumEntity } from "../types/library";
+import { getAlbumCoverUrl } from "../utils/mediaImages";
 
 const getAlbumYear = (album: AlbumEntity): number | undefined => {
   if (typeof album.year === "number") {
@@ -88,7 +89,7 @@ const AlbumsPage = () => {
       title: album.title,
       subtitle: album.artistName,
       meta: metaParts.length > 0 ? metaParts.join(" • ") : undefined,
-      coverUrl: client?.getCoverArtUrl(album.coverArt, { size: 512 }),
+      coverUrl: getAlbumCoverUrl(album, client),
       searchText: [
         album.title,
         album.artistName,

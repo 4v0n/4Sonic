@@ -4,6 +4,7 @@ import { useArtists, useLibraryStatus } from "../hooks/useLibrary";
 import { useAuthStore } from "../store/authStore";
 import { useLibraryStore } from "../store/libraryStore";
 import { ArtistEntity } from "../types/library";
+import { getArtistImageUrl } from "../utils/mediaImages";
 
 const ArtistsPage = () => {
   const artists = useArtists();
@@ -54,7 +55,7 @@ const ArtistsPage = () => {
       id: artist.id,
       title: artist.name,
       subtitle: artist.albumCount ? `${artist.albumCount} ${albumLabel}` : undefined,
-      coverUrl: artist.artistImageUrl ?? client?.getCoverArtUrl(artist.coverArt, { size: 512 }),
+      coverUrl: getArtistImageUrl(artist, client),
       searchText: [artist.name, String(artist.albumCount ?? "")].filter(Boolean).join(" "),
     };
   }, [client]);
