@@ -33,7 +33,7 @@ const prepareSongs = (songs: SubsonicSong[], options?: PrepareSongsOptions): Sub
   return sortSongsForQueue(filtered);
 };
 
-const setQueueFromSongs = async (
+const enqueueAndPlay = async (
   songs: SubsonicSong[],
   startIndex = 0,
   options?: PrepareSongsOptions,
@@ -50,14 +50,25 @@ const setQueueFromSongs = async (
     getCoverArtUrl(client, song.coverArt),
   ));
 
+  const store = usePlaybackStore.getState();
+  const insertionIndex = store.queuePosition >= 0 ? store.queuePosition + 1 : 0;
   const targetIndex = Math.min(Math.max(startIndex, 0), queueItems.length - 1);
-  await usePlaybackStore.getState().setQueue(queueItems, targetIndex);
+
+  store.addToQueueFront(queueItems);
+  await store.playFromQueue(insertionIndex + targetIndex);
 };
 
 export const playSongById = async (songId: string): Promise<void> => {
   const client = ensureClient();
   const { song } = await client.getSong(songId);
-  await setQueueFromSongs([song], 0, { sort: false });
+  await enqueueAndPlay([song], 0, { sort: false });
+};
+
+export const playSong = async (song: SubsonicSong): Promise<void> => {
+  if (!song?.id) {
+    throw new Error("Song is missing an id.");
+  }
+  await enqueueAndPlay([song], 0, { sort: false });
 };
 
 export const playAlbum = async (
@@ -72,7 +83,7 @@ export const playAlbum = async (
     ? normalized.findIndex((song) => song.id === options.startSongId)
     : 0;
 
-  await setQueueFromSongs(normalized, startIndex >= 0 ? startIndex : 0, { sort: false });
+  await enqueueAndPlay(normalized, startIndex >= 0 ? startIndex : 0, { sort: false });
 };
 
 export const playArtist = async (
@@ -110,5 +121,5 @@ export const playArtist = async (
     throw new Error("No songs available for this artist.");
   }
 
-  await setQueueFromSongs(songs, 0, { sort: true });
+  await enqueueAndPlay(songs, 0, { sort: true });
 };

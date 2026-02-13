@@ -41,6 +41,10 @@ interface PlaybackState {
   cycleRepeat: () => void;
   setEq: (bands: ParametricEqBand[]) => void;
   setQueue: (items: QueueItem[], startIndex?: number) => Promise<void>;
+  addToQueue: (items: QueueItem[]) => void;
+  addToQueueFront: (items: QueueItem[]) => void;
+  moveQueueItem: (fromOrderIndex: number, toOrderIndex: number) => void;
+  removeFromQueue: (orderIndex: number) => void;
   playFromQueue: (orderIndex: number) => Promise<void>;
   playNext: () => Promise<void>;
   playPrevious: () => Promise<void>;
@@ -69,6 +73,15 @@ const createQueueOrder = (count: number, shuffle: boolean, anchorIndex: number):
   }
 
   return [clampedAnchor, ...rest];
+};
+
+const shuffleIndices = (indices: number[]): number[] => {
+  const shuffled = [...indices];
+  for (let i = shuffled.length - 1; i > 0; i -= 1) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]];
+  }
+  return shuffled;
 };
 
 const resolveDuration = (duration: number, fallback: number): number => {
@@ -466,6 +479,139 @@ export const usePlaybackStore = create<PlaybackState>()(
             queuePosition: nextPosition >= 0 ? nextPosition : 0,
           });
           await get().playFromQueue(nextPosition >= 0 ? nextPosition : 0);
+        },
+
+        addToQueue: (items: QueueItem[]) => {
+          if (items.length === 0) return;
+          set((state) => {
+            const baseQueue = state.queue;
+            const newQueue = [...baseQueue, ...items];
+            const newIndices = items.map((_, idx) => baseQueue.length + idx);
+
+            if (state.queueOrder.length === 0) {
+              const order = state.shuffle
+                ? createQueueOrder(newQueue.length, true, 0)
+                : Array.from({ length: newQueue.length }, (_, index) => index);
+              return {
+                queue: newQueue,
+                queueOrder: order,
+                queuePosition: state.queuePosition,
+              };
+            }
+
+            const appended = state.shuffle ? shuffleIndices(newIndices) : newIndices;
+            return {
+              queue: newQueue,
+              queueOrder: [...state.queueOrder, ...appended],
+            };
+          });
+        },
+
+        addToQueueFront: (items: QueueItem[]) => {
+          if (items.length === 0) return;
+          set((state) => {
+            const baseQueue = state.queue;
+            const newQueue = [...baseQueue, ...items];
+            const newIndices = items.map((_, idx) => baseQueue.length + idx);
+
+            if (state.queueOrder.length === 0) {
+              const order = state.shuffle
+                ? createQueueOrder(newQueue.length, true, 0)
+                : Array.from({ length: newQueue.length }, (_, index) => index);
+              return {
+                queue: newQueue,
+                queueOrder: order,
+                queuePosition: state.queuePosition,
+              };
+            }
+
+            const insertionIndex = state.queuePosition >= 0 ? state.queuePosition + 1 : 0;
+            const order = [...state.queueOrder];
+            order.splice(insertionIndex, 0, ...newIndices);
+            return {
+              queue: newQueue,
+              queueOrder: order,
+              queuePosition: state.queuePosition,
+            };
+          });
+        },
+
+        moveQueueItem: (fromOrderIndex: number, toOrderIndex: number) => {
+          set((state) => {
+            if (state.queueOrder.length === 0) {
+              return state;
+            }
+            const boundedFrom = Math.max(0, Math.min(fromOrderIndex, state.queueOrder.length - 1));
+            const boundedTo = Math.max(0, Math.min(toOrderIndex, state.queueOrder.length - 1));
+            if (boundedFrom === boundedTo) {
+              return state;
+            }
+
+            const order = [...state.queueOrder];
+            const [moved] = order.splice(boundedFrom, 1);
+            order.splice(boundedTo, 0, moved);
+
+            let nextPosition = state.queuePosition;
+            if (state.queuePosition === boundedFrom) {
+              nextPosition = boundedTo;
+            } else if (boundedFrom < state.queuePosition && boundedTo >= state.queuePosition) {
+              nextPosition = state.queuePosition - 1;
+            } else if (boundedFrom > state.queuePosition && boundedTo <= state.queuePosition) {
+              nextPosition = state.queuePosition + 1;
+            }
+
+            return {
+              queueOrder: order,
+              queuePosition: nextPosition,
+            };
+          });
+        },
+
+        removeFromQueue: (orderIndex: number) => {
+          const state = get();
+          if (state.queueOrder.length === 0) return;
+
+          const boundedIndex = Math.max(0, Math.min(orderIndex, state.queueOrder.length - 1));
+          const queueIndex = state.queueOrder[boundedIndex];
+          if (typeof queueIndex !== "number") return;
+
+          if (state.queue.length <= 1) {
+            void get().setQueue([]);
+            return;
+          }
+
+          const nextQueue = state.queue.filter((_, index) => index !== queueIndex);
+          const nextOrder = state.queueOrder
+            .filter((_, index) => index !== boundedIndex)
+            .map((index) => (index > queueIndex ? index - 1 : index));
+
+          let nextPosition = state.queuePosition;
+          const removingCurrent = state.queuePosition === boundedIndex;
+          if (removingCurrent) {
+            if (nextOrder.length === 0) {
+              nextPosition = -1;
+            } else if (boundedIndex >= nextOrder.length) {
+              nextPosition = nextOrder.length - 1;
+            } else {
+              nextPosition = boundedIndex;
+            }
+          } else if (boundedIndex < state.queuePosition) {
+            nextPosition = state.queuePosition - 1;
+          }
+
+          set({
+            queue: nextQueue,
+            queueOrder: nextOrder,
+            queuePosition: nextPosition,
+            currentSong: removingCurrent && !state.isPlaying ? null : state.currentSong,
+            coverArtUrl: removingCurrent && !state.isPlaying ? undefined : state.coverArtUrl,
+            position: removingCurrent && !state.isPlaying ? 0 : state.position,
+            duration: removingCurrent && !state.isPlaying ? 0 : state.duration,
+          });
+
+          if (removingCurrent && state.isPlaying && nextPosition >= 0) {
+            void get().playFromQueue(nextPosition);
+          }
         },
 
         playFromQueue: async (orderIndex: number) => {

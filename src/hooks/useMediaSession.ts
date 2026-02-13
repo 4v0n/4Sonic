@@ -1,8 +1,7 @@
 import { useEffect } from "react";
+import { toast } from "sonner";
 import { usePlaybackStore } from "../store/playbackStore";
 import { DEFAULT_COVER_SIZE } from "../utils/mediaImages";
-
-const MEDIA_SEEK_STEP = 10;
 
 const getMediaSession = (): (Navigator & { mediaSession: MediaSession })["mediaSession"] | null => {
   if (typeof navigator === "undefined") return null;
@@ -94,16 +93,15 @@ export const useMediaSession = (): void => {
       }
     };
 
-    const handleSeekForward = (event: MediaSessionActionDetails) => {
+    const handleLike = () => {
       const state = usePlaybackStore.getState();
-      const offset = "seekOffset" in event && typeof event.seekOffset === "number" ? event.seekOffset : MEDIA_SEEK_STEP;
-      state.seek((state.position ?? 0) + offset);
-    };
-
-    const handleSeekBackward = (event: MediaSessionActionDetails) => {
-      const state = usePlaybackStore.getState();
-      const offset = "seekOffset" in event && typeof event.seekOffset === "number" ? event.seekOffset : MEDIA_SEEK_STEP;
-      state.seek(Math.max(0, (state.position ?? 0) - offset));
+      const title = state.currentSong?.title ?? "Unknown track";
+      console.log("Media session like", {
+        id: state.currentSong?.id,
+        title,
+        artist: state.currentSong?.artist,
+      });
+      toast.success(`Liked ${title}`);
     };
 
     const setHandler = (
@@ -123,8 +121,8 @@ export const useMediaSession = (): void => {
     setHandler("nexttrack", handleNext);
     setHandler("stop", handleStop);
     setHandler("seekto", handleSeekTo);
-    setHandler("seekforward", handleSeekForward);
-    setHandler("seekbackward", handleSeekBackward);
+    setHandler("like", handleLike);
+    setHandler("favorite", handleLike);
 
     return () => {
       setHandler("play", null);
@@ -133,8 +131,8 @@ export const useMediaSession = (): void => {
       setHandler("nexttrack", null);
       setHandler("stop", null);
       setHandler("seekto", null);
-      setHandler("seekforward", null);
-      setHandler("seekbackward", null);
+      setHandler("like", null);
+      setHandler("favorite", null);
     };
   }, []);
 
