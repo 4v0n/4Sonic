@@ -4,6 +4,7 @@ import Button from "../ui/Button";
 import type { RightSidebarView } from "../../store/rightSidebarStore";
 import { usePlaybackStore } from "../../store/playbackStore";
 import { formatTime } from "../../utils/time";
+import CoverImage from "../ui/CoverImage";
 
 interface RightSideBarProps {
   width: number;
@@ -29,11 +30,13 @@ export const RightSidebarContent = ({ view }: { view: RightSidebarView }) => {
       <div className="text-sm text-(--text-grey)">Now Playing</div>
       <div className="flex gap-3 rounded-xl border border-(--surface2) bg-(--surface1) p-3">
         <div className="h-14 w-14 flex-shrink-0 overflow-hidden rounded-lg border border-(--surface2) bg-(--surface2)">
-          {coverArtUrl ? (
-            <img src={coverArtUrl} alt={currentSong?.title ?? "Cover"} className="h-full w-full object-cover" />
-          ) : (
-            <div className="h-full w-full bg-(--surface2)" />
-          )}
+          <CoverImage
+            src={coverArtUrl}
+            alt={currentSong?.title ?? "Cover"}
+            className="h-full w-full"
+            placeholder={<div className="h-full w-full bg-(--surface2)" />}
+            fallback={<div className="h-full w-full bg-(--surface2)" />}
+          />
         </div>
         <div className="min-w-0 flex-1">
           <p className="text-sm font-semibold truncate">{currentSong?.title ?? "Nothing playing"}</p>
@@ -77,11 +80,13 @@ export const RightSidebarContent = ({ view }: { view: RightSidebarView }) => {
               >
                 <div className="flex items-center gap-3">
                   <div className="h-12 w-12 overflow-hidden rounded-md border border-(--surface2) bg-(--surface1)">
-                    {item.coverArtUrl ? (
-                      <img src={item.coverArtUrl} alt={item.title} className="h-full w-full object-cover" />
-                    ) : (
-                      <div className="h-full w-full bg-(--surface2)" />
-                    )}
+                    <CoverImage
+                      src={item.coverArtUrl}
+                      alt={item.title}
+                      className="h-full w-full"
+                      placeholder={<div className="h-full w-full bg-(--surface2)" />}
+                      fallback={<div className="h-full w-full bg-(--surface2)" />}
+                    />
                   </div>
                   <div className="min-w-0 flex-1">
                     <p className="truncate text-sm font-semibold text-(--text)">{item.title}</p>

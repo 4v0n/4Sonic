@@ -1,5 +1,6 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import cn from "../../utils/cn";
+import { imageCache } from "../../services/image/imageCache";
 
 const loadedImages = new Set<string>();
 
@@ -20,15 +21,23 @@ const LazyImage: React.FC<LazyImageProps> = ({
   ...props
 }) => {
   const containerRef = useRef<HTMLDivElement | null>(null);
+  const cleanupRef = useRef<(() => void) | null>(null);
+  const cacheRetryRef = useRef(false);
   const [isVisible, setIsVisible] = useState(false);
   const [isLoaded, setIsLoaded] = useState(false);
   const [hasError, setHasError] = useState(false);
+  const [resolvedSrc, setResolvedSrc] = useState<string | undefined>();
 
   const shouldEagerLoad = useMemo(() => (src ? loadedImages.has(src) : false), [src]);
 
   useEffect(() => {
-    setIsLoaded(shouldEagerLoad);
+    setIsLoaded(false);
     setHasError(false);
+    setResolvedSrc(undefined);
+    setIsVisible(Boolean(src) && shouldEagerLoad);
+    cacheRetryRef.current = false;
+    cleanupRef.current?.();
+    cleanupRef.current = null;
   }, [shouldEagerLoad, src]);
 
   useEffect(() => {
@@ -53,6 +62,41 @@ const LazyImage: React.FC<LazyImageProps> = ({
     return () => observer.disconnect();
   }, [shouldEagerLoad, src]);
 
+  useEffect(() => {
+    if (!isVisible || !src) {
+      return;
+    }
+
+    let cancelled = false;
+    void (async () => {
+      try {
+        const source = await imageCache.getImageSource(src);
+        if (cancelled) {
+          source.cleanup?.();
+          return;
+        }
+
+        cleanupRef.current?.();
+        cleanupRef.current = source.cleanup ?? null;
+        setResolvedSrc(source.url);
+        source.cachePromise?.catch(() => undefined);
+      } catch {
+        if (!cancelled) {
+          setResolvedSrc(src);
+        }
+      }
+    })();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [isVisible, src]);
+
+  useEffect(() => () => {
+    cleanupRef.current?.();
+    cleanupRef.current = null;
+  }, []);
+
   const handleLoad = useCallback(() => {
     if (src) {
       loadedImages.add(src);
@@ -62,14 +106,22 @@ const LazyImage: React.FC<LazyImageProps> = ({
   }, [src]);
 
   const handleError = useCallback(() => {
+    if (src && resolvedSrc && resolvedSrc !== src && !cacheRetryRef.current) {
+      cacheRetryRef.current = true;
+      setIsLoaded(false);
+      setHasError(false);
+      setResolvedSrc(src);
+      void imageCache.invalidate(src);
+      return;
+    }
     setHasError(true);
-  }, []);
+  }, [resolvedSrc, src]);
 
   return (
     <div ref={containerRef} className={cn("relative h-full w-full", className)}>
-      {isVisible && src && !hasError ? (
+      {isVisible && resolvedSrc && !hasError ? (
         <img
-          src={src}
+          src={resolvedSrc}
           alt={alt}
           loading="lazy"
           decoding="async"

@@ -172,13 +172,14 @@ These helpers:
 - **Library data** is persisted in IndexedDB (`Dexie`) and rehydrated on load.
 - **Audio cache** (streamed tracks) is persisted in IndexedDB and LRU-evicted.
 - **Playback preferences** (volume/mute/shuffle/repeat) are persisted via Zustand.
-- **Image caching** is currently in-memory only (browser cache may help, but we do not persist images yet).
+- **Image cache** (cover art / artist images) is persisted in IndexedDB and loaded lazily when image tiles enter the viewport. Cached entries are LRU-evicted and image blobs are normalized to `image/webp` when it reduces size.
 
 ## Related Utilities (What / Why / Where)
 - `src/utils/playbackSort.ts`: `sortSongsForQueue` — consistent disc/track/title ordering. Use when presenting album/track lists.
 - `src/utils/playbackMapping.ts`: `trackToSong`, `songToQueueItem`, `queueItemToSong` — central mappings to avoid duplicated shape conversions.
 - `src/utils/time.ts`: `formatTime` — display durations in UI.
 - `src/utils/mediaImages.ts`: `getArtistImageUrl`, `getAlbumCoverUrl`, `getSongCoverUrl` — consistent cover art sizing and artist image fallback.
+- `src/services/image/imageCache.ts`: `imageCache.getImageSource` — persistent IndexedDB-backed image cache used by `LazyImage` (lazy fetch + LRU eviction + WebP normalization when beneficial).
 - `src/utils/numbers.ts`: `clamp`, `clamp01`, `safeNumber` — bound values (volume, seek, sliders) and sanitize numeric input.
 - `src/utils/strings.ts`: `normalizeText`, `tokenize`, `buildSearchBlob`, `includesNormalized` — normalize and match strings for search and filtering.
 - `src/utils/search.ts`: `createSearchCandidate`, `matchesQuery`, `scoreQuery`, `filterAndRank` — basic ranking/filtering for local fuzzy-ish search.

@@ -9,6 +9,7 @@ import { useUiPreferencesStore } from "../../store/uiPreferencesStore";
 import BackgroundAreaVisualizer from "../visualizer/BackgroundAreaVisualizer";
 import useAudioVisualizerData from "../../hooks/useAudioVisualizerData";
 import { formatTime } from "../../utils/time";
+import CoverImage from "../ui/CoverImage";
 
 type BottomBarProps = { isRightCompact?: boolean };
 
@@ -333,11 +334,13 @@ const BottomBar = ({ isRightCompact = false }: BottomBarProps) => {
       <div className="relative z-10 flex h-full w-full items-center justify-between">
         <div className="flex items-center w-1/3 min-w-0 gap-3">
           <div className="h-18 w-18 overflow-hidden rounded-lg border border-(--surface2) bg-(--surface1)">
-            {coverArtUrl ? (
-              <img src={coverArtUrl} alt={currentSong?.title ?? "Cover"} className="h-full w-full object-cover" />
-            ) : (
-              <div className="h-full w-full bg-(--surface2)" />
-            )}
+            <CoverImage
+              src={coverArtUrl}
+              alt={currentSong?.title ?? "Cover"}
+              className="h-full w-full"
+              placeholder={<div className="h-full w-full bg-(--surface2)" />}
+              fallback={<div className="h-full w-full bg-(--surface2)" />}
+            />
           </div>
           <div className="min-w-0">
             <p className="text-sm font-semibold truncate">{currentSong?.title ?? "Nothing playing"}</p>
