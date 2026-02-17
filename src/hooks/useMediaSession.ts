@@ -3,6 +3,8 @@ import { toast } from "sonner";
 import { usePlaybackStore } from "../store/playbackStore";
 import { DEFAULT_COVER_SIZE } from "../utils/mediaImages";
 
+type OptionalMediaSessionAction = "like" | "favorite";
+
 const getMediaSession = (): (Navigator & { mediaSession: MediaSession })["mediaSession"] | null => {
   if (typeof navigator === "undefined") return null;
   const maybeNavigator = navigator as Navigator & { mediaSession?: MediaSession };
@@ -105,11 +107,11 @@ export const useMediaSession = (): void => {
     };
 
     const setHandler = (
-      action: MediaSessionAction,
+      action: MediaSessionAction | OptionalMediaSessionAction,
       handler: MediaSessionActionHandler | null,
     ) => {
       try {
-        mediaSession.setActionHandler(action, handler);
+        mediaSession.setActionHandler(action as MediaSessionAction, handler);
       } catch (error) {
         console.debug(`Unable to attach media session handler for ${action}`, error);
       }
