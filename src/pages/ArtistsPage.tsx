@@ -1,14 +1,18 @@
 import { useCallback, useMemo } from "react";
+import { useNavigate } from "react-router-dom";
+import { toast } from "sonner";
 import MediaCollection, { MediaSortOption } from "../components/library/MediaCollection";
 import { useArtists, useLibraryStatus } from "../hooks/useLibrary";
 import { useAuthStore } from "../store/authStore";
 import { useLibraryStore } from "../store/libraryStore";
 import { ArtistEntity } from "../types/library";
 import { getArtistImageUrl } from "../utils/mediaImages";
+import { addArtistToQueue, playArtist, queueArtistNext } from "../utils/playbackActions";
 
 const ArtistsPage = () => {
   const artists = useArtists();
   const status = useLibraryStatus();
+  const navigate = useNavigate();
   const client = useAuthStore((state) => state.session?.client);
   const libraryError = useLibraryStore((state) => state.error);
 
@@ -57,8 +61,27 @@ const ArtistsPage = () => {
       subtitle: artist.albumCount ? `${artist.albumCount} ${albumLabel}` : undefined,
       coverUrl: getArtistImageUrl(artist, client),
       searchText: [artist.name, String(artist.albumCount ?? "")].filter(Boolean).join(" "),
+      onPlay: () => {
+        void playArtist(artist.id).catch((error) => {
+          const errorMessage = error instanceof Error ? error.message : undefined;
+          toast.error("Unable to play artist", errorMessage ? { description: errorMessage } : undefined);
+        });
+      },
+      onPlayNext: () => {
+        void queueArtistNext(artist.id).catch((error) => {
+          const errorMessage = error instanceof Error ? error.message : undefined;
+          toast.error("Unable to queue artist next", errorMessage ? { description: errorMessage } : undefined);
+        });
+      },
+      onAddToQueue: () => {
+        void addArtistToQueue(artist.id).catch((error) => {
+          const errorMessage = error instanceof Error ? error.message : undefined;
+          toast.error("Unable to add artist to queue", errorMessage ? { description: errorMessage } : undefined);
+        });
+      },
+      onClick: () => navigate(`/artists/${artist.id}`),
     };
-  }, [client]);
+  }, [client, navigate]);
 
   return (
     <MediaCollection

@@ -15,6 +15,8 @@ export type MediaCollectionItem<T = unknown> = {
   meta?: string;
   coverUrl?: string;
   onPlay?: () => void;
+  onPlayNext?: () => void;
+  onAddToQueue?: () => void;
   onClick?: () => void;
   searchText?: string;
   data?: T;
@@ -269,6 +271,8 @@ function MediaCollection<T>({
               meta={!shouldShowSkeletons ? item.meta : undefined}
               coverUrl={!shouldShowSkeletons ? item.coverUrl : undefined}
               onPlay={!shouldShowSkeletons ? item.onPlay : undefined}
+              onPlayNext={!shouldShowSkeletons ? item.onPlayNext : undefined}
+              onAddToQueue={!shouldShowSkeletons ? item.onAddToQueue : undefined}
               onClick={!shouldShowSkeletons ? item.onClick : undefined}
               isLoading={shouldShowSkeletons}
               className="w-full"
@@ -288,6 +292,8 @@ function MediaCollection<T>({
               meta={!shouldShowSkeletons ? item.meta : undefined}
               coverUrl={!shouldShowSkeletons ? item.coverUrl : undefined}
               onPlay={!shouldShowSkeletons ? item.onPlay : undefined}
+              onPlayNext={!shouldShowSkeletons ? item.onPlayNext : undefined}
+              onAddToQueue={!shouldShowSkeletons ? item.onAddToQueue : undefined}
               onClick={!shouldShowSkeletons ? item.onClick : undefined}
               isLoading={shouldShowSkeletons}
               className="w-full"

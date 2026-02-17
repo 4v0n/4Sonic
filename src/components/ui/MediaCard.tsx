@@ -1,8 +1,9 @@
 import React from "react";
-import { PlayArrowIcon } from "../../constants/icons";
+import { ArrowForwardIcon, PlayArrowIcon, QueueMusicRoundedIcon } from "../../constants/icons";
 import cn from "../../utils/cn";
 import Button from "./Button";
 import CoverImage from "./CoverImage";
+import { ContextMenu, ContextMenuContent, ContextMenuItem, ContextMenuTrigger } from "./ContextMenu";
 
 type MediaKind = "artist" | "album" | "song";
 type MediaLayout = "square" | "row";
@@ -14,6 +15,8 @@ export interface MediaCardProps extends React.HTMLAttributes<HTMLDivElement> {
   meta?: string;
   coverUrl?: string;
   onPlay?: () => void;
+  onPlayNext?: () => void;
+  onAddToQueue?: () => void;
   layout?: MediaLayout;
   isLoading?: boolean;
 }
@@ -63,6 +66,8 @@ const MediaCard: React.FC<MediaCardProps> = ({
   meta,
   coverUrl,
   onPlay,
+  onPlayNext,
+  onAddToQueue,
   onClick,
   layout = "square",
   isLoading = false,
@@ -78,8 +83,10 @@ const MediaCard: React.FC<MediaCardProps> = ({
     return layout === "row" ? <RowSkeleton className={className} /> : <TileSkeleton className={className} />;
   }
 
+  const hasQueueActions = Boolean(onPlay || onPlayNext || onAddToQueue);
+
   if (layout === "row") {
-    return (
+    const rowCard = (
       <div
         {...props}
         className={cn(
@@ -114,9 +121,36 @@ const MediaCard: React.FC<MediaCardProps> = ({
         ) : null}
       </div>
     );
+
+    if (!hasQueueActions) {
+      return rowCard;
+    }
+
+    return (
+      <ContextMenu>
+        <ContextMenuTrigger asChild>{rowCard}</ContextMenuTrigger>
+        <ContextMenuContent>
+          {onPlay ? (
+            <ContextMenuItem icon={<PlayArrowIcon />} onSelect={onPlay}>
+              Play
+            </ContextMenuItem>
+          ) : null}
+          {onPlayNext ? (
+            <ContextMenuItem icon={<ArrowForwardIcon />} onSelect={onPlayNext}>
+              Play next
+            </ContextMenuItem>
+          ) : null}
+          {onAddToQueue ? (
+            <ContextMenuItem icon={<QueueMusicRoundedIcon />} onSelect={onAddToQueue}>
+              Add to queue
+            </ContextMenuItem>
+          ) : null}
+        </ContextMenuContent>
+      </ContextMenu>
+    );
   }
 
-  return (
+  const squareCard = (
     <div
       {...props}
       className={cn(
@@ -162,6 +196,33 @@ const MediaCard: React.FC<MediaCardProps> = ({
         )}
       </div>
     </div>
+  );
+
+  if (!hasQueueActions) {
+    return squareCard;
+  }
+
+  return (
+    <ContextMenu>
+      <ContextMenuTrigger asChild>{squareCard}</ContextMenuTrigger>
+      <ContextMenuContent>
+        {onPlay ? (
+          <ContextMenuItem icon={<PlayArrowIcon />} onSelect={onPlay}>
+            Play
+          </ContextMenuItem>
+        ) : null}
+        {onPlayNext ? (
+          <ContextMenuItem icon={<ArrowForwardIcon />} onSelect={onPlayNext}>
+            Play next
+          </ContextMenuItem>
+        ) : null}
+        {onAddToQueue ? (
+          <ContextMenuItem icon={<QueueMusicRoundedIcon />} onSelect={onAddToQueue}>
+            Add to queue
+          </ContextMenuItem>
+        ) : null}
+      </ContextMenuContent>
+    </ContextMenu>
   );
 };
 

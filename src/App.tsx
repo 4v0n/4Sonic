@@ -6,6 +6,7 @@ import LikedSongsPage from "./pages/LikedSongsPage";
 import AlbumsPage from "./pages/AlbumsPage";
 import AlbumDetailPage from "./pages/AlbumDetailPage";
 import ArtistsPage from "./pages/ArtistsPage";
+import ArtistDetailPage from "./pages/ArtistDetailPage";
 import SettingsPage from "./pages/SettingsPage";
 import AccountsPage from "./pages/AccountsPage";
 import ComponentShowcasePage from "./pages/ComponentShowcasePage";
@@ -42,6 +43,7 @@ function App() {
           <Route path="/albums" element={<AlbumsPage />} />
           <Route path="/albums/:albumId" element={<AlbumDetailPage />} />
           <Route path="/artists" element={<ArtistsPage />} />
+          <Route path="/artists/:artistId" element={<ArtistDetailPage />} />
           <Route path="/settings" element={<SettingsPage />} />
           <Route path="/account" element={<AccountsPage />} />
           <Route path="/components" element={<ComponentShowcasePage />} />

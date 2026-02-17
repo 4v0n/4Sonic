@@ -1,14 +1,15 @@
 import { useMemo } from "react";
 import { toast } from "sonner";
 import CoverImage, { CoverFallback } from "../ui/CoverImage";
-import { ClockIcon } from "../../constants/icons";
+import { ArrowForwardIcon, ClockIcon, PlayArrowIcon, QueueMusicRoundedIcon } from "../../constants/icons";
 import { useAuthStore } from "../../store/authStore";
 import { usePlaybackStore } from "../../store/playbackStore";
 import { SubsonicAlbumDetail, SubsonicSong } from "../../types/subsonic";
 import cn from "../../utils/cn";
 import { formatTime } from "../../utils/time";
-import { playSongById } from "../../utils/playbackActions";
+import { addSongToQueue, playSongById, queueSongNext } from "../../utils/playbackActions";
 import { getAlbumCoverUrl } from "../../utils/mediaImages";
+import { ContextMenu, ContextMenuContent, ContextMenuItem, ContextMenuTrigger } from "../ui/ContextMenu";
 
 interface AlbumSongsTableProps {
   album?: SubsonicAlbumDetail;
@@ -71,20 +72,48 @@ const AlbumSongsTable: React.FC<AlbumSongsTableProps> = ({ album, onSongClick })
                 }
               };
 
+              const handlePlayNext = () => {
+                void queueSongNext(song).catch((error) => {
+                  const description = error instanceof Error ? error.message : undefined;
+                  toast.error("Unable to queue song next", description ? { description } : undefined);
+                });
+              };
+
+              const handleAddToQueue = () => {
+                void addSongToQueue(song).catch((error) => {
+                  const description = error instanceof Error ? error.message : undefined;
+                  toast.error("Unable to add song to queue", description ? { description } : undefined);
+                });
+              };
+
               return (
-                <tr
-                  key={song.id ?? `${song.title}-${index}`}
-                  className={cn(
-                    "hover:bg-(--surface2) cursor-pointer transition-colors",
-                    currentSongId === song.id && "bg-(--surface-tonal0)",
-                  )}
-                  onClick={handleClick}
-                >
-                  <td>{index + 1}</td>
-                  <td>{song.title}</td>
-                  <td>{song.album}</td>
-                  <td>{song.duration ? formatTime(song.duration) : "-"}</td>
-                </tr>
+                <ContextMenu key={song.id ?? `${song.title}-${index}`}>
+                  <ContextMenuTrigger asChild>
+                    <tr
+                      className={cn(
+                        "hover:bg-(--surface2) cursor-pointer transition-colors",
+                        currentSongId === song.id && "bg-(--surface-tonal0)",
+                      )}
+                      onClick={handleClick}
+                    >
+                      <td>{index + 1}</td>
+                      <td>{song.title}</td>
+                      <td>{song.album}</td>
+                      <td>{song.duration ? formatTime(song.duration) : "-"}</td>
+                    </tr>
+                  </ContextMenuTrigger>
+                  <ContextMenuContent>
+                    <ContextMenuItem icon={<PlayArrowIcon />} onSelect={handleClick}>
+                      Play
+                    </ContextMenuItem>
+                    <ContextMenuItem icon={<ArrowForwardIcon />} onSelect={handlePlayNext}>
+                      Play next
+                    </ContextMenuItem>
+                    <ContextMenuItem icon={<QueueMusicRoundedIcon />} onSelect={handleAddToQueue}>
+                      Add to queue
+                    </ContextMenuItem>
+                  </ContextMenuContent>
+                </ContextMenu>
               );
             })}
           </tbody>

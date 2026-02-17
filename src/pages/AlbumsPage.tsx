@@ -1,11 +1,13 @@
 import { useCallback, useMemo } from "react";
 import { useNavigate } from "react-router-dom";
+import { toast } from "sonner";
 import MediaCollection, { MediaSortOption } from "../components/library/MediaCollection";
 import { useAlbums, useLibraryStatus } from "../hooks/useLibrary";
 import { useAuthStore } from "../store/authStore";
 import { useLibraryStore } from "../store/libraryStore";
 import { AlbumEntity } from "../types/library";
 import { getAlbumCoverUrl } from "../utils/mediaImages";
+import { addAlbumToQueue, playAlbum, queueAlbumNext } from "../utils/playbackActions";
 
 const getAlbumYear = (album: AlbumEntity): number | undefined => {
   if (typeof album.year === "number") {
@@ -96,6 +98,24 @@ const AlbumsPage = () => {
         album.genre,
         year ? String(year) : "",
       ].filter(Boolean).join(" "),
+      onPlay: () => {
+        void playAlbum(album.id).catch((error) => {
+          const errorMessage = error instanceof Error ? error.message : undefined;
+          toast.error("Unable to play album", errorMessage ? { description: errorMessage } : undefined);
+        });
+      },
+      onPlayNext: () => {
+        void queueAlbumNext(album.id).catch((error) => {
+          const errorMessage = error instanceof Error ? error.message : undefined;
+          toast.error("Unable to queue album next", errorMessage ? { description: errorMessage } : undefined);
+        });
+      },
+      onAddToQueue: () => {
+        void addAlbumToQueue(album.id).catch((error) => {
+          const errorMessage = error instanceof Error ? error.message : undefined;
+          toast.error("Unable to add album to queue", errorMessage ? { description: errorMessage } : undefined);
+        });
+      },
       onClick: () => navigate(`/albums/${album.id}`),
     };
   }, [client, navigate]);

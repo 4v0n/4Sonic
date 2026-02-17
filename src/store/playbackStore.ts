@@ -5,10 +5,11 @@ import { QueueItem } from "../types/playback";
 import { useAuthStore } from "./authStore";
 import { HiResAudioPlayer, ParametricEqBand } from "../services/audio/player";
 import { audioCache } from "../services/audio/audioCache";
-import { queueItemToSong, songToQueueItem } from "../utils/playbackMapping";
+import { queueItemToSong } from "../utils/playbackMapping";
 import { getCoverArtUrl } from "../utils/mediaImages";
 
 type RepeatMode = "off" | "one" | "all";
+type QueueSource = "priority" | "regular";
 
 interface PlaybackState {
   currentSong: SubsonicSong | null;
@@ -23,12 +24,18 @@ interface PlaybackState {
   isMuted: boolean;
   isScrubbing: boolean;
   error?: string;
+  // Priority queue: explicit user "Play next"/"Add to queue" actions.
   queue: QueueItem[];
   queueOrder: number[];
   queuePosition: number;
+  // Regular queue: full replacement queue from "Play" actions.
+  regularQueue: QueueItem[];
+  regularQueueOrder: number[];
+  regularQueuePosition: number;
+  currentSource: QueueSource | null;
   getFrequencyData: () => Uint8Array | null;
   getSampleRate: () => number | null;
-  playSong: (songId: string, options?: { queueItem?: QueueItem }) => Promise<void>;
+  playSong: (songId: string, options?: { queueItem?: QueueItem; source?: QueueSource }) => Promise<void>;
   togglePlayPause: () => Promise<void>;
   pause: () => void;
   seek: (time: number) => void;
@@ -46,6 +53,7 @@ interface PlaybackState {
   moveQueueItem: (fromOrderIndex: number, toOrderIndex: number) => void;
   removeFromQueue: (orderIndex: number) => void;
   playFromQueue: (orderIndex: number) => Promise<void>;
+  playFromRegularQueue: (orderIndex: number) => Promise<void>;
   playNext: () => Promise<void>;
   playPrevious: () => Promise<void>;
 }
@@ -75,15 +83,6 @@ const createQueueOrder = (count: number, shuffle: boolean, anchorIndex: number):
   return [clampedAnchor, ...rest];
 };
 
-const shuffleIndices = (indices: number[]): number[] => {
-  const shuffled = [...indices];
-  for (let i = shuffled.length - 1; i > 0; i -= 1) {
-    const j = Math.floor(Math.random() * (i + 1));
-    [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]];
-  }
-  return shuffled;
-};
-
 const resolveDuration = (duration: number, fallback: number): number => {
   if (Number.isFinite(duration) && duration > 0) {
     return duration;
@@ -102,9 +101,30 @@ const clampTime = (time: number, duration?: number): number => {
 export const usePlaybackStore = create<PlaybackState>()(
   persist(
     (set, get) => {
-      const getCurrentQueueIndex = (state: PlaybackState): number => {
-        const queueIndex = state.queueOrder[state.queuePosition];
+      const getCurrentRegularQueueIndex = (state: PlaybackState): number => {
+        const queueIndex = state.regularQueueOrder[state.regularQueuePosition];
         return typeof queueIndex === "number" ? queueIndex : -1;
+      };
+
+      const getNextRegularOrderIndex = (state: PlaybackState): number => {
+        return state.regularQueuePosition >= 0 ? state.regularQueuePosition + 1 : 0;
+      };
+
+      const getNextPlayableItem = (state: PlaybackState): QueueItem | null => {
+        const nextPriorityIndex = state.queueOrder[0];
+        if (typeof nextPriorityIndex === "number") {
+          const nextPriority = state.queue[nextPriorityIndex];
+          if (nextPriority) {
+            return nextPriority;
+          }
+        }
+
+        const nextRegularOrderIndex = getNextRegularOrderIndex(state);
+        const nextRegularIndex = state.regularQueueOrder[nextRegularOrderIndex];
+        if (typeof nextRegularIndex === "number") {
+          return state.regularQueue[nextRegularIndex] ?? null;
+        }
+        return null;
       };
 
       const prefetchNextInQueue = async (allowNetwork: boolean) => {
@@ -113,9 +133,7 @@ export const usePlaybackStore = create<PlaybackState>()(
         if (!session) return;
 
         const state = get();
-        const nextQueueIndex = state.queueOrder[state.queuePosition + 1];
-        if (typeof nextQueueIndex !== "number") return;
-        const nextItem = state.queue[nextQueueIndex];
+        const nextItem = getNextPlayableItem(state);
         if (!nextItem) return;
 
         try {
@@ -208,6 +226,10 @@ export const usePlaybackStore = create<PlaybackState>()(
         queue: [],
         queueOrder: [],
         queuePosition: -1,
+        regularQueue: [],
+        regularQueueOrder: [],
+        regularQueuePosition: -1,
+        currentSource: null,
         getFrequencyData: () => player.getFrequencyData(),
         getSampleRate: () => player.getSampleRate(),
 
@@ -238,7 +260,7 @@ export const usePlaybackStore = create<PlaybackState>()(
             const qualityMissing = !queueItem?.suffix
               || typeof queueItem?.samplingRate !== "number"
               || typeof queueItem?.bitDepth !== "number";
-            const needsFreshMetadata = !queueItem || get().queue.length === 0 || qualityMissing;
+            const needsFreshMetadata = !queueItem || qualityMissing;
             const { song, coverArtUrl } = needsFreshMetadata
               ? await session.client.getSong(songId).then(({ song: fetchedSong }) => ({
                 song: fetchedSong,
@@ -250,28 +272,19 @@ export const usePlaybackStore = create<PlaybackState>()(
               return;
             }
 
-            if (needsFreshMetadata && queueItem && get().queue.length > 0) {
-              const { queueOrder, queuePosition, queue } = get();
-              const queueIndex = queueOrder[queuePosition];
-              if (typeof queueIndex === "number" && queue[queueIndex]) {
-                const updatedQueue = [...queue];
+            if (needsFreshMetadata && queueItem && options?.source === "regular" && get().regularQueue.length > 0) {
+              const { regularQueueOrder, regularQueuePosition, regularQueue } = get();
+              const queueIndex = regularQueueOrder[regularQueuePosition];
+              if (typeof queueIndex === "number" && regularQueue[queueIndex]) {
+                const updatedQueue = [...regularQueue];
                 updatedQueue[queueIndex] = {
                   ...updatedQueue[queueIndex],
                   bitDepth: song.bitDepth,
                   samplingRate: song.samplingRate,
                   suffix: song.suffix ?? updatedQueue[queueIndex].suffix,
                 };
-                set({ queue: updatedQueue });
+                set({ regularQueue: updatedQueue });
               }
-            }
-
-            if (get().queue.length === 0) {
-              const coverUrl = coverArtUrl ?? getCoverArtUrl(session.client, song.coverArt);
-              set({
-                queue: [songToQueueItem(song, coverUrl)],
-                queueOrder: [0],
-                queuePosition: 0,
-              });
             }
 
             const streamSongId = song.id ?? songId;
@@ -314,6 +327,7 @@ export const usePlaybackStore = create<PlaybackState>()(
             set({
               currentSong: song,
               coverArtUrl: coverArtUrl ?? getCoverArtUrl(session.client, song.coverArt),
+              currentSource: options?.source ?? get().currentSource,
               isPlaying: true,
               isLoading: false,
               error: undefined,
@@ -341,9 +355,11 @@ export const usePlaybackStore = create<PlaybackState>()(
         togglePlayPause: async () => {
           const { isPlaying, currentSong } = get();
           if (!currentSong) {
-            const hasQueue = get().queue.length > 0;
-            if (hasQueue) {
-              await get().playFromQueue(Math.max(0, get().queuePosition === -1 ? 0 : get().queuePosition));
+            const state = get();
+            if (state.queue.length > 0) {
+              await state.playFromQueue(0);
+            } else if (state.regularQueue.length > 0) {
+              await state.playFromRegularQueue(Math.max(0, state.regularQueuePosition === -1 ? 0 : state.regularQueuePosition));
             }
             return;
           }
@@ -421,16 +437,16 @@ export const usePlaybackStore = create<PlaybackState>()(
         toggleShuffle: () => {
           set((state) => {
             const nextShuffle = !state.shuffle;
-            if (state.queue.length === 0) {
+            if (state.regularQueue.length === 0) {
               return { shuffle: nextShuffle };
             }
-            const currentIndex = getCurrentQueueIndex(state);
-            const order = createQueueOrder(state.queue.length, nextShuffle, currentIndex >= 0 ? currentIndex : 0);
+            const currentIndex = getCurrentRegularQueueIndex(state);
+            const order = createQueueOrder(state.regularQueue.length, nextShuffle, currentIndex >= 0 ? currentIndex : 0);
             const nextPosition = order.findIndex((value) => value === currentIndex);
             return {
               shuffle: nextShuffle,
-              queueOrder: order,
-              queuePosition: nextPosition >= 0 ? nextPosition : 0,
+              regularQueueOrder: order,
+              regularQueuePosition: nextPosition >= 0 ? nextPosition : state.regularQueuePosition,
             };
           });
         },
@@ -457,6 +473,10 @@ export const usePlaybackStore = create<PlaybackState>()(
               queue: [],
               queueOrder: [],
               queuePosition: -1,
+              regularQueue: [],
+              regularQueueOrder: [],
+              regularQueuePosition: -1,
+              currentSource: null,
               currentSong: null,
               coverArtUrl: undefined,
               isPlaying: false,
@@ -474,11 +494,15 @@ export const usePlaybackStore = create<PlaybackState>()(
           const nextPosition = order.findIndex((value) => value === clampedStart);
 
           set({
-            queue: items,
-            queueOrder: order,
-            queuePosition: nextPosition >= 0 ? nextPosition : 0,
+            queue: [],
+            queueOrder: [],
+            queuePosition: -1,
+            regularQueue: items,
+            regularQueueOrder: order,
+            regularQueuePosition: nextPosition >= 0 ? nextPosition : 0,
+            currentSource: "regular",
           });
-          await get().playFromQueue(nextPosition >= 0 ? nextPosition : 0);
+          await get().playFromRegularQueue(nextPosition >= 0 ? nextPosition : 0);
         },
 
         addToQueue: (items: QueueItem[]) => {
@@ -489,20 +513,19 @@ export const usePlaybackStore = create<PlaybackState>()(
             const newIndices = items.map((_, idx) => baseQueue.length + idx);
 
             if (state.queueOrder.length === 0) {
-              const order = state.shuffle
-                ? createQueueOrder(newQueue.length, true, 0)
-                : Array.from({ length: newQueue.length }, (_, index) => index);
+              const order = Array.from({ length: newQueue.length }, (_, index) => index);
               return {
                 queue: newQueue,
                 queueOrder: order,
-                queuePosition: state.queuePosition,
+                queuePosition: -1,
               };
             }
 
-            const appended = state.shuffle ? shuffleIndices(newIndices) : newIndices;
+            const appended = newIndices;
             return {
               queue: newQueue,
               queueOrder: [...state.queueOrder, ...appended],
+              queuePosition: -1,
             };
           });
         },
@@ -515,23 +538,21 @@ export const usePlaybackStore = create<PlaybackState>()(
             const newIndices = items.map((_, idx) => baseQueue.length + idx);
 
             if (state.queueOrder.length === 0) {
-              const order = state.shuffle
-                ? createQueueOrder(newQueue.length, true, 0)
-                : Array.from({ length: newQueue.length }, (_, index) => index);
+              const order = Array.from({ length: newQueue.length }, (_, index) => index);
               return {
                 queue: newQueue,
                 queueOrder: order,
-                queuePosition: state.queuePosition,
+                queuePosition: -1,
               };
             }
 
-            const insertionIndex = state.queuePosition >= 0 ? state.queuePosition + 1 : 0;
+            const insertionIndex = 0;
             const order = [...state.queueOrder];
             order.splice(insertionIndex, 0, ...newIndices);
             return {
               queue: newQueue,
               queueOrder: order,
-              queuePosition: state.queuePosition,
+              queuePosition: -1,
             };
           });
         },
@@ -551,18 +572,9 @@ export const usePlaybackStore = create<PlaybackState>()(
             const [moved] = order.splice(boundedFrom, 1);
             order.splice(boundedTo, 0, moved);
 
-            let nextPosition = state.queuePosition;
-            if (state.queuePosition === boundedFrom) {
-              nextPosition = boundedTo;
-            } else if (boundedFrom < state.queuePosition && boundedTo >= state.queuePosition) {
-              nextPosition = state.queuePosition - 1;
-            } else if (boundedFrom > state.queuePosition && boundedTo <= state.queuePosition) {
-              nextPosition = state.queuePosition + 1;
-            }
-
             return {
               queueOrder: order,
-              queuePosition: nextPosition,
+              queuePosition: -1,
             };
           });
         },
@@ -575,43 +587,16 @@ export const usePlaybackStore = create<PlaybackState>()(
           const queueIndex = state.queueOrder[boundedIndex];
           if (typeof queueIndex !== "number") return;
 
-          if (state.queue.length <= 1) {
-            void get().setQueue([]);
-            return;
-          }
-
           const nextQueue = state.queue.filter((_, index) => index !== queueIndex);
           const nextOrder = state.queueOrder
             .filter((_, index) => index !== boundedIndex)
             .map((index) => (index > queueIndex ? index - 1 : index));
 
-          let nextPosition = state.queuePosition;
-          const removingCurrent = state.queuePosition === boundedIndex;
-          if (removingCurrent) {
-            if (nextOrder.length === 0) {
-              nextPosition = -1;
-            } else if (boundedIndex >= nextOrder.length) {
-              nextPosition = nextOrder.length - 1;
-            } else {
-              nextPosition = boundedIndex;
-            }
-          } else if (boundedIndex < state.queuePosition) {
-            nextPosition = state.queuePosition - 1;
-          }
-
           set({
             queue: nextQueue,
             queueOrder: nextOrder,
-            queuePosition: nextPosition,
-            currentSong: removingCurrent && !state.isPlaying ? null : state.currentSong,
-            coverArtUrl: removingCurrent && !state.isPlaying ? undefined : state.coverArtUrl,
-            position: removingCurrent && !state.isPlaying ? 0 : state.position,
-            duration: removingCurrent && !state.isPlaying ? 0 : state.duration,
+            queuePosition: -1,
           });
-
-          if (removingCurrent && state.isPlaying && nextPosition >= 0) {
-            void get().playFromQueue(nextPosition);
-          }
         },
 
         playFromQueue: async (orderIndex: number) => {
@@ -632,49 +617,107 @@ export const usePlaybackStore = create<PlaybackState>()(
             });
             return;
           }
-          set({ queuePosition: orderIndex, duration: item.duration ?? 0, position: 0 });
-          await get().playSong(item.id, { queueItem: item });
+
+          const nextQueue = state.queue.filter((_, index) => index !== queueIndex);
+          const nextOrder = state.queueOrder
+            .filter((_, index) => index !== orderIndex)
+            .map((index) => (index > queueIndex ? index - 1 : index));
+
+          set({
+            queue: nextQueue,
+            queueOrder: nextOrder,
+            queuePosition: -1,
+            currentSource: "priority",
+            duration: item.duration ?? 0,
+            position: 0,
+          });
+          await get().playSong(item.id, { queueItem: item, source: "priority" });
+        },
+
+        playFromRegularQueue: async (orderIndex: number) => {
+          const state = get();
+          if (orderIndex < 0 || orderIndex >= state.regularQueueOrder.length) {
+            set({ isPlaying: false, isLoading: false });
+            return;
+          }
+
+          const queueIndex = state.regularQueueOrder[orderIndex];
+          const item = state.regularQueue[queueIndex];
+          if (!item) {
+            set({
+              regularQueuePosition: -1,
+              isPlaying: false,
+              isLoading: false,
+              duration: 0,
+              position: 0,
+            });
+            return;
+          }
+
+          set({
+            regularQueuePosition: orderIndex,
+            currentSource: "regular",
+            duration: item.duration ?? 0,
+            position: 0,
+          });
+          await get().playSong(item.id, { queueItem: item, source: "regular" });
         },
 
         playNext: async () => {
           const state = get();
-          const hasQueue = state.queueOrder.length > 0 && state.queuePosition !== -1;
-          if (!hasQueue) {
-            player.pause();
-            set({ isPlaying: false });
+          if (state.queueOrder.length > 0) {
+            await get().playFromQueue(0);
             return;
           }
-          const nextOrderIndex = state.queuePosition + 1;
-          if (nextOrderIndex >= state.queueOrder.length) {
+
+          if (state.regularQueueOrder.length === 0) {
+            player.pause();
+            set({ isPlaying: false, currentSource: null });
+            return;
+          }
+
+          const nextRegularOrderIndex = getNextRegularOrderIndex(state);
+          if (nextRegularOrderIndex >= state.regularQueueOrder.length) {
             if (state.repeat === "all") {
-              await get().playFromQueue(0);
+              await get().playFromRegularQueue(0);
             } else {
-              set({ isPlaying: false, position: 0 });
+              set({ isPlaying: false, position: 0, currentSource: null });
             }
             return;
           }
-          await get().playFromQueue(nextOrderIndex);
+          await get().playFromRegularQueue(nextRegularOrderIndex);
         },
 
         playPrevious: async () => {
           const state = get();
-          const hasQueue = state.queueOrder.length > 0 && state.queuePosition !== -1;
-          if (!hasQueue) {
+          if (state.currentSource !== "regular") {
             if (state.currentSong) {
               player.seek(0);
               set({ position: 0 });
             }
             return;
           }
-          const prevOrderIndex = state.queuePosition - 1;
+
+          const hasRegularQueue = state.regularQueueOrder.length > 0 && state.regularQueuePosition !== -1;
+          if (!hasRegularQueue) {
+            if (state.currentSong) {
+              player.seek(0);
+              set({ position: 0 });
+            }
+            return;
+          }
+
+          const prevOrderIndex = state.regularQueuePosition - 1;
           if (prevOrderIndex >= 0) {
-            await get().playFromQueue(prevOrderIndex);
+            await get().playFromRegularQueue(prevOrderIndex);
             return;
           }
-          if (state.repeat === "all" && state.queueOrder.length > 0) {
-            await get().playFromQueue(state.queueOrder.length - 1);
+
+          if (state.repeat === "all" && state.regularQueueOrder.length > 0) {
+            await get().playFromRegularQueue(state.regularQueueOrder.length - 1);
             return;
           }
+
           player.seek(0);
           set({ position: 0 });
         },
@@ -697,6 +740,6 @@ export const usePlaybackStore = create<PlaybackState>()(
   ),
 );
 
-export const playSong = async (songId: string, options?: { queueItem?: QueueItem }): Promise<void> => {
+export const playSong = async (songId: string, options?: { queueItem?: QueueItem; source?: QueueSource }): Promise<void> => {
   await usePlaybackStore.getState().playSong(songId, options);
 };

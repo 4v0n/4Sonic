@@ -73,15 +73,23 @@ playSong(song)
 playSongById(songId)
 playAlbum(albumIdOrDetail, { startSongId? })
 playArtist(artistIdOrDetail, { fallbackSongs? })
+queueSongNext(song)
+addSongToQueue(song)
+queueAlbumNext(albumIdOrDetail)
+addAlbumToQueue(albumIdOrDetail)
+queueArtistNext(artistIdOrDetail)
+addArtistToQueue(artistIdOrDetail)
 ```
 
 What each does:
 - `playSong(song)`: plays a **song object** immediately (e.g. `playSong(album.tracks[0])`).
 - `playSongById(songId)`: fetches the song and plays it immediately.
-- `playAlbum(...)`: inserts the album’s songs and starts at `startSongId` (or the first track).
-- `playArtist(...)`: inserts the artist’s songs and starts immediately (can fall back to provided songs).
+- `playAlbum(...)`: replaces the regular queue with album songs and starts at `startSongId` (or the first track).
+- `playArtist(...)`: replaces the regular queue with artist songs and starts immediately (can fall back to provided songs).
+- `queue*Next(...)`: pushes songs into the **priority queue** front (played before regular queue).
+- `add*ToQueue(...)`: appends songs to the **priority queue** tail.
 
-All of the `play*` helpers above **do not clear the queue**. They act as “Play now / Play next” by inserting items at the front of the queue and jumping to the first inserted item.
+All of the `play*` helpers above replace now playing and refill the **regular queue**. Priority queue entries are always consumed first.
 
 ### Player store (state + actions)
 Use `usePlaybackStore` from `src/store/playbackStore.ts`.
@@ -89,7 +97,8 @@ Use `usePlaybackStore` from `src/store/playbackStore.ts`.
 Common state:
 - `currentSong`, `coverArtUrl`
 - `isPlaying`, `isLoading`, `position`, `duration`
-- `queue`, `queueOrder`, `queuePosition`
+- `queue`, `queueOrder` (priority queue)
+- `regularQueue`, `regularQueueOrder`, `regularQueuePosition`
 - `shuffle`, `repeat`, `volume`, `isMuted`, `error`
 
 Common actions:
@@ -97,11 +106,13 @@ Common actions:
 - `togglePlayPause()`, `pause()`
 - `seek(time)` / `beginScrub()` / `endScrub(time?)`
 - `setQueue(items, startIndex?)`
-- `addToQueue(items)` (append to end)
-- `addToQueueFront(items)` (insert right after current track)
+- `addToQueue(items)` (append to priority queue)
+- `addToQueueFront(items)` (insert at the front of priority queue)
 - `moveQueueItem(fromOrderIndex, toOrderIndex)` (reorder queue)
 - `removeFromQueue(orderIndex)` (delete from queue)
-- `playFromQueue(orderIndex)`, `playNext()`, `playPrevious()`
+- `playFromQueue(orderIndex)` (play/remove from priority queue)
+- `playFromRegularQueue(orderIndex)` (jump inside regular queue)
+- `playNext()`, `playPrevious()`
 - `toggleShuffle()`, `cycleRepeat()`
 
 Example usage:
@@ -113,7 +124,7 @@ const playNext = usePlaybackStore((state) => state.playNext);
 const isPlaying = usePlaybackStore((state) => state.isPlaying);
 ```
 
-Example: play a specific song object immediately (without clearing queue):
+Example: play a specific song object immediately (replacing regular queue):
 ```ts
 import { playSong } from "../utils/playbackActions";
 
@@ -121,11 +132,11 @@ await playSong(song); // song is a SubsonicSong
 ```
 
 Queue order note:
-- `queue` holds items in original order.
-- `queueOrder` is an array of indexes (used when shuffle is enabled).
-- `queuePosition` is the current index within `queueOrder`.
+- `queue`/`queueOrder` are the **priority queue** (explicit user “play next / add to queue” actions).
+- `regularQueue`/`regularQueueOrder` are the **regular queue** (filled by `play*` actions).
+- Playback always drains priority queue first, then resumes regular queue.
 
-To render “up next” in playback order:
+To render priority queue entries in playback order:
 
 ```ts
 const ordered = queueOrder.map((queueIndex) => queue[queueIndex]).filter(Boolean);
@@ -140,7 +151,7 @@ const { addToQueue, addToQueueFront, moveQueueItem, removeFromQueue } = usePlayb
 // append items to the end of the queue
 addToQueue(newItems);
 
-// insert items to play next (right after current song)
+// insert items at the front of the priority queue
 addToQueueFront(nextUpItems);
 
 // reorder items by their position in queueOrder
