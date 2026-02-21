@@ -206,17 +206,17 @@ const AppShell = () => {
   const rightSidebarWidth = effectiveRightOpen ? rightWidth : 0;
 
   return (
-    <div className="flex flex-col h-screen font-sans bg-(--surface0) text-(--text)">
+    <div className="flex h-screen min-w-0 flex-col bg-(--surface0) font-sans text-(--text)">
       <TopBar />
       <Sonner />
-      <div className="flex flex-1 overflow-hidden">
+      <div className="flex min-w-0 flex-1 overflow-hidden">
         <LeftSideBar
           width={sidebarWidth}
           isIconOnly={isIconOnly}
           isResizing={isResizing}
           onResizeStart={handleResizeStart}
         />
-        <main className="flex-1 overflow-y-auto p-6">
+        <main className="min-w-0 flex-1 overflow-x-hidden overflow-y-auto p-4 sm:p-6">
           <Outlet />
         </main>
         {!isRightCompact && (

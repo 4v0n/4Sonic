@@ -77,8 +77,8 @@ const Select = ({
     setCalculatedWidth(Math.ceil(Math.max(...widths)));
   }, [normalized, size, leftIcon, icon, placeholder]);
 
-  const wrapper = cn("relative", fullWidth ? "w-full" : "inline-block", className);
-  const triggerWidthStyle = !fullWidth && calculatedWidth ? { minWidth: `${calculatedWidth}px` } : undefined;
+  const wrapper = cn("relative max-w-full", fullWidth ? "w-full" : "inline-block", className);
+  const triggerWidthStyle = !fullWidth && calculatedWidth ? { width: `${calculatedWidth}px`, maxWidth: "100%" } : undefined;
 
   return (
     <div className={wrapper}>
@@ -103,18 +103,18 @@ const Select = ({
       <SelectPrimitive.Root value={value} defaultValue={defaultValue} onValueChange={onValueChange} disabled={disabled}>
         <SelectPrimitive.Trigger
           className={cn(
-            "inline-flex items-center gap-2 rounded-full border border-transparent bg-(--surface0) shadow-sm",
+            "inline-flex min-w-0 max-w-full items-center gap-2 rounded-full border border-transparent bg-(--surface0) shadow-sm",
             "hover:bg-(--surface1) transition-colors outline-none whitespace-nowrap",
             "cursor-pointer disabled:cursor-not-allowed disabled:opacity-50",
             sizeStyles.height,
             sizeStyles.text,
             sizeStyles.padding,
-            fullWidth ? "w-full justify-between" : "w-fit",
+            fullWidth ? "w-full justify-between" : "w-auto max-w-full",
           )}
           style={triggerWidthStyle}
         >
           {leftIcon ? <span className={iconClasses}>{leftIcon}</span> : null}
-          <SelectPrimitive.Value placeholder={placeholder} />
+          <SelectPrimitive.Value className="min-w-0 truncate" placeholder={placeholder} />
           <SelectPrimitive.Icon className={cn(iconClasses, "ml-auto")}>
             <span className="opacity-70">{icon}</span>
           </SelectPrimitive.Icon>

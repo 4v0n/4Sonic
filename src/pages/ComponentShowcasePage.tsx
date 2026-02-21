@@ -28,14 +28,14 @@ import { playAlbum, playArtist, playSongById } from "../utils/playbackActions";
 import { getAlbumCoverUrl, getArtistImageUrl, getSongCoverUrl } from "../utils/mediaImages";
 
 const Section: React.FC<{ title: string; description?: string; children: React.ReactNode }> = ({ title, description, children }) => (
-  <section className="rounded-2xl border border-(--surface2) bg-(--surface0) p-5 shadow-sm space-y-4">
+  <section className="min-w-0 space-y-4 rounded-2xl border border-(--surface2) bg-(--surface0) p-5 shadow-sm">
     <div className="flex items-start justify-between gap-3">
       <div>
         <h2 className="text-xl font-semibold text-(--text)">{title}</h2>
         {description ? <p className="text-sm text-(--text-grey)">{description}</p> : null}
       </div>
     </div>
-    <div className="space-y-4">{children}</div>
+    <div className="min-w-0 space-y-4">{children}</div>
   </section>
 );
 
@@ -406,7 +406,7 @@ const ComponentShowcasePage = () => {
   ];
 
   return (
-    <div className="space-y-10 p-6">
+    <div className="min-w-0 max-w-full space-y-10">
       <div className="flex flex-col gap-3">
         <h1 className="text-3xl font-extrabold text-(--text)">Component Showcase</h1>
         <p className="text-(--text-grey) max-w-3xl">
@@ -414,8 +414,8 @@ const ComponentShowcasePage = () => {
         </p>
       </div>
 
-      <div className="grid gap-6 xl:grid-cols-12">
-        <div className="xl:col-span-7 space-y-6">
+      <div className="grid min-w-0 gap-6 xl:grid-cols-12">
+        <div className="min-w-0 space-y-6 xl:col-span-7">
           <Section
             title="Media Cards"
             description="Artist, album, and song presentations with hover play affordances."
@@ -500,7 +500,7 @@ const ComponentShowcasePage = () => {
             <div className="space-y-8">
               {paletteSections.map((section) => (
                 <div key={section.title} className="space-y-3">
-                  <div className="flex items-center justify-between gap-2">
+                  <div className="flex flex-wrap items-start justify-between gap-2">
                     <h3 className="text-lg font-semibold text-(--text)">{section.title}</h3>
                     <p className="text-sm text-(--text-grey)">{section.description}</p>
                   </div>
@@ -638,7 +638,7 @@ const ComponentShowcasePage = () => {
               <Button variant="destructive">Destructive</Button>
               <Button variant="link">Link</Button>
             </div>
-            <div className="flex items-center gap-3">
+            <div className="flex flex-wrap items-center gap-3">
               <Dropdown
                 buttonAriaLabel="User menu"
                 triggerContent={<><PersonIcon className="h-5 w-5" />Menu</>}
@@ -694,7 +694,7 @@ const ComponentShowcasePage = () => {
           </Section>
         </div>
 
-        <div className="xl:col-span-5 space-y-6">
+        <div className="min-w-0 space-y-6 xl:col-span-5">
           <Section title="Toasts" description="Sonner-powered notifications that follow the current theme.">
             <div className="space-y-4">
               <div className="flex flex-wrap gap-3">
