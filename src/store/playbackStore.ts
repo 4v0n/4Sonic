@@ -29,6 +29,7 @@ interface PlaybackState {
   queueOrder: number[];
   queuePosition: number;
   // Regular queue: full replacement queue from "Play" actions.
+  playTargetItem?: string;
   regularQueue: QueueItem[];
   regularQueueOrder: number[];
   regularQueuePosition: number;
@@ -47,7 +48,11 @@ interface PlaybackState {
   toggleShuffle: () => void;
   cycleRepeat: () => void;
   setEq: (bands: ParametricEqBand[]) => void;
-  setQueue: (items: QueueItem[], startIndex?: number) => Promise<void>;
+  setQueue: (
+    items: QueueItem[],
+    startIndex?: number,
+    options?: { playTargetItem?: string },
+  ) => Promise<void>;
   addToQueue: (items: QueueItem[]) => void;
   addToQueueFront: (items: QueueItem[]) => void;
   moveQueueItem: (fromOrderIndex: number, toOrderIndex: number) => void;
@@ -223,6 +228,7 @@ export const usePlaybackStore = create<PlaybackState>()(
         isMuted: false,
         isScrubbing: false,
         error: undefined,
+        playTargetItem: undefined,
         queue: [],
         queueOrder: [],
         queuePosition: -1,
@@ -463,7 +469,7 @@ export const usePlaybackStore = create<PlaybackState>()(
           player.setParametricEq(bands);
         },
 
-        setQueue: async (items: QueueItem[], startIndex = 0) => {
+        setQueue: async (items: QueueItem[], startIndex = 0, options) => {
           if (items.length === 0) {
             player.stop();
             releaseCurrentSource?.();
@@ -473,6 +479,7 @@ export const usePlaybackStore = create<PlaybackState>()(
               queue: [],
               queueOrder: [],
               queuePosition: -1,
+              playTargetItem: undefined,
               regularQueue: [],
               regularQueueOrder: [],
               regularQueuePosition: -1,
@@ -497,6 +504,7 @@ export const usePlaybackStore = create<PlaybackState>()(
             queue: [],
             queueOrder: [],
             queuePosition: -1,
+            playTargetItem: options?.playTargetItem,
             regularQueue: items,
             regularQueueOrder: order,
             regularQueuePosition: nextPosition >= 0 ? nextPosition : 0,
@@ -672,7 +680,7 @@ export const usePlaybackStore = create<PlaybackState>()(
 
           if (state.regularQueueOrder.length === 0) {
             player.pause();
-            set({ isPlaying: false, currentSource: null });
+            set({ isPlaying: false, currentSource: null, playTargetItem: undefined });
             return;
           }
 
@@ -681,7 +689,7 @@ export const usePlaybackStore = create<PlaybackState>()(
             if (state.repeat === "all") {
               await get().playFromRegularQueue(0);
             } else {
-              set({ isPlaying: false, position: 0, currentSource: null });
+              set({ isPlaying: false, position: 0, currentSource: null, playTargetItem: undefined });
             }
             return;
           }

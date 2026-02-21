@@ -10,6 +10,11 @@ type PrepareSongsOptions = {
   sort?: boolean;
 };
 
+type ReplaceRegularQueueOptions = {
+  sort?: boolean;
+  playTargetItem?: string;
+};
+
 type ArtistResolutionOptions = {
   fallbackSongs?: SubsonicSong[];
 };
@@ -53,11 +58,15 @@ const toQueueItems = (songs: SubsonicSong[], options?: PrepareSongsOptions) => {
 const replaceRegularQueueAndPlay = async (
   songs: SubsonicSong[],
   startIndex = 0,
-  options?: PrepareSongsOptions,
+  options?: ReplaceRegularQueueOptions,
 ): Promise<void> => {
-  const { queueItems } = toQueueItems(songs, options);
+  const { queueItems } = toQueueItems(songs, { sort: options?.sort });
   const targetIndex = Math.min(Math.max(startIndex, 0), queueItems.length - 1);
-  await usePlaybackStore.getState().setQueue(queueItems, targetIndex);
+  await usePlaybackStore.getState().setQueue(
+    queueItems,
+    targetIndex,
+    { playTargetItem: options?.playTargetItem },
+  );
 };
 
 const queuePriority = (
@@ -74,28 +83,43 @@ const queuePriority = (
   }
 };
 
-const resolveAlbumSongs = async (album: SubsonicAlbumDetail | string): Promise<SubsonicSong[]> => {
+const resolveAlbumDetail = async (album: SubsonicAlbumDetail | string): Promise<SubsonicAlbumDetail> => {
   const client = ensureClient();
-  const albumDetail = typeof album === "string" ? (await client.getAlbum(album)).album : album;
+  return typeof album === "string" ? (await client.getAlbum(album)).album : album;
+};
+
+const resolveAlbumSongs = async (album: SubsonicAlbumDetail | string): Promise<SubsonicSong[]> => {
+  const albumDetail = await resolveAlbumDetail(album);
   return albumDetail.song ?? [];
 };
 
 const resolveArtistSongs = async (
   artist: SubsonicArtistDetail | string,
   options?: ArtistResolutionOptions,
-): Promise<SubsonicSong[]> => {
+): Promise<{ songs: SubsonicSong[]; artistName?: string }> => {
   const artistId = typeof artist === "string" ? artist : artist.id;
   const client = ensureClient();
+  const knownArtistName = typeof artist === "string"
+    ? useLibraryStore.getState().artists.find((entry) => entry.id === artistId)?.name
+    : artist.name;
+  let artistName = knownArtistName;
 
   const libraryTracks = useLibraryStore.getState().tracks.filter((track) => track.artistId === artistId);
   let songs: SubsonicSong[] = libraryTracks.length > 0 ? libraryTracks.map(trackToSong) : [];
+  if (!artistName && songs.length > 0) {
+    artistName = songs[0].artist;
+  }
 
   if (!songs.length && options?.fallbackSongs?.length) {
     songs = options.fallbackSongs;
+    if (!artistName && songs.length > 0) {
+      artistName = songs[0].artist;
+    }
   }
 
   if (!songs.length) {
     const artistDetail = typeof artist === "string" ? (await client.getArtist(artistId)).artist : artist;
+    artistName = artistName ?? artistDetail.name;
     if (artistDetail.album?.length) {
       const albumSongs = await Promise.all(
         artistDetail.album.map(async (album) => {
@@ -111,7 +135,7 @@ const resolveArtistSongs = async (
     }
   }
 
-  return songs;
+  return { songs, artistName };
 };
 
 export const playSongById = async (songId: string): Promise<void> => {
@@ -131,24 +155,28 @@ export const playAlbum = async (
   album: SubsonicAlbumDetail | string,
   options?: { startSongId?: string },
 ): Promise<void> => {
-  const songs = await resolveAlbumSongs(album);
+  const albumDetail = await resolveAlbumDetail(album);
+  const songs = albumDetail.song ?? [];
   const normalized = prepareSongs(songs, { sort: true });
   const startIndex = options?.startSongId
     ? normalized.findIndex((song) => song.id === options.startSongId)
     : 0;
 
-  await replaceRegularQueueAndPlay(normalized, startIndex >= 0 ? startIndex : 0, { sort: false });
+  await replaceRegularQueueAndPlay(normalized, startIndex >= 0 ? startIndex : 0, {
+    sort: false,
+    playTargetItem: albumDetail.name,
+  });
 };
 
 export const playArtist = async (
   artist: SubsonicArtistDetail | string,
   options?: ArtistResolutionOptions,
 ): Promise<void> => {
-  const songs = await resolveArtistSongs(artist, options);
+  const { songs, artistName } = await resolveArtistSongs(artist, options);
   if (!songs.length) {
     throw new Error("No songs available for this artist.");
   }
-  await replaceRegularQueueAndPlay(songs, 0, { sort: true });
+  await replaceRegularQueueAndPlay(songs, 0, { sort: true, playTargetItem: artistName });
 };
 
 export const queueSongNext = async (song: SubsonicSong): Promise<void> => {
@@ -191,7 +219,7 @@ export const queueArtistNext = async (
   artist: SubsonicArtistDetail | string,
   options?: ArtistResolutionOptions,
 ): Promise<void> => {
-  const songs = await resolveArtistSongs(artist, options);
+  const { songs } = await resolveArtistSongs(artist, options);
   if (!songs.length) {
     throw new Error("No songs available for this artist.");
   }
@@ -202,7 +230,7 @@ export const addArtistToQueue = async (
   artist: SubsonicArtistDetail | string,
   options?: ArtistResolutionOptions,
 ): Promise<void> => {
-  const songs = await resolveArtistSongs(artist, options);
+  const { songs } = await resolveArtistSongs(artist, options);
   if (!songs.length) {
     throw new Error("No songs available for this artist.");
   }
