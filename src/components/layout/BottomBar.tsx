@@ -10,6 +10,7 @@ import BackgroundAreaVisualizer from "../visualizer/BackgroundAreaVisualizer";
 import useAudioVisualizerData from "../../hooks/useAudioVisualizerData";
 import { formatTime } from "../../utils/time";
 import CoverImage from "../ui/CoverImage";
+import Slider from "../ui/Slider";
 
 type BottomBarProps = { isRightCompact?: boolean };
 
@@ -122,7 +123,6 @@ interface VolumeControlProps {
 }
 
 const VolumeControl = ({ volume, isMuted, onChange, onToggleMute, onScroll }: VolumeControlProps) => {
-  const sliderRef = useRef<HTMLDivElement>(null);
   const [isHovering, setIsHovering] = useState(false);
   const [isDragging, setIsDragging] = useState(false);
   const [isOverPopup, setIsOverPopup] = useState(false);
@@ -134,13 +134,6 @@ const VolumeControl = ({ volume, isMuted, onChange, onToggleMute, onScroll }: Vo
     if (effectiveVolume < 0.33) return <VolumeMuteIcon />;
     if (effectiveVolume < 0.66) return <VolumeDownIcon />;
     return <VolumeUpIcon />;
-  };
-
-  const getVolumeFromY = (clientY: number): number => {
-    if (!sliderRef.current) return effectiveVolume;
-    const rect = sliderRef.current.getBoundingClientRect();
-    const ratio = 1 - Math.min(Math.max((clientY - rect.top) / rect.height, 0), 1);
-    return ratio;
   };
 
   const clearHideTimeout = () => {
@@ -158,33 +151,6 @@ const VolumeControl = ({ volume, isMuted, onChange, onToggleMute, onScroll }: Vo
       }
     }, 200);
   };
-
-  const handlePointerDown = (event: React.PointerEvent<HTMLDivElement>) => {
-    setIsDragging(true);
-    const next = getVolumeFromY(event.clientY);
-    onChange(next);
-    event.preventDefault();
-    event.stopPropagation();
-  };
-
-  useEffect(() => {
-    if (!isDragging) return;
-    const handleMove = (event: PointerEvent) => {
-      const next = getVolumeFromY(event.clientY);
-      onChange(next);
-    };
-    const handleUp = () => {
-      setIsDragging(false);
-      setIsOverPopup(false);
-      setIsHovering(false);
-    };
-    window.addEventListener("pointermove", handleMove);
-    window.addEventListener("pointerup", handleUp);
-    return () => {
-      window.removeEventListener("pointermove", handleMove);
-      window.removeEventListener("pointerup", handleUp);
-    };
-  }, [isDragging, onChange, getVolumeFromY]);
 
   useEffect(() => () => clearHideTimeout(), []);
 
@@ -222,20 +188,22 @@ const VolumeControl = ({ volume, isMuted, onChange, onToggleMute, onScroll }: Vo
         }}
       >
         <div className="flex h-28 w-10 items-center justify-center rounded-lg border border-(--surface2) bg-(--surface1) p-2 shadow-lg">
-          <div
-            ref={sliderRef}
-            className="relative h-full w-2 cursor-pointer rounded-full bg-(--surface2)"
-            onPointerDown={handlePointerDown}
-          >
-            <div
-              className="absolute bottom-0 left-0 right-0 rounded-full bg-(--primary0)"
-              style={{ height: `${effectiveVolume * 100}%` }}
-            />
-            <div
-              className="absolute left-1/2 h-3 w-3 -translate-x-1/2 rounded-full border border-(--surface3) bg-white shadow"
-              style={{ bottom: `${effectiveVolume * 100}%` }}
-            />
-          </div>
+          <Slider
+            orientation="vertical"
+            min={0}
+            max={1}
+            step={0.01}
+            value={[effectiveVolume]}
+            onValueChange={(value) => onChange(value[0] ?? effectiveVolume)}
+            onValueCommit={() => {
+              setIsDragging(false);
+              setIsOverPopup(false);
+              setIsHovering(false);
+            }}
+            onPointerDown={() => setIsDragging(true)}
+            className="h-full"
+            aria-label="Volume"
+          />
         </div>
       </div>
     </div>

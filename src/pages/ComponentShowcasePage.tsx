@@ -703,7 +703,7 @@ const ComponentShowcasePage = () => {
                 <Button variant="destructive" onClick={() => toast.error("Connection lost", { description: "We will retry shortly." })}>Error</Button>
               </div>
               <div className="space-y-2">
-                <p className="text-sm text-(--text-grey)">Toast position (persisted for future settings)</p>
+                <p className="text-sm text-(--text-grey)">Toast position (also available in Settings)</p>
                 <Select
                   size="small"
                   value={toastPosition}
