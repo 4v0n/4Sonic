@@ -6,6 +6,7 @@ import BottomBar from "./BottomBar";
 import RightSideBar from "./RightSideBar";
 import { useLibraryBootstrap } from "../../hooks/useLibrary";
 import { useMediaSession } from "../../hooks/useMediaSession";
+import useEqPlaybackSync from "../../hooks/useEqPlaybackSync";
 import { useRightSidebarStore } from "../../store/rightSidebarStore";
 import Sonner from "../ui/Sonner";
 
@@ -29,6 +30,7 @@ const getStoredLeftWidth = () => {
 const AppShell = () => {
   useLibraryBootstrap();
   useMediaSession();
+  useEqPlaybackSync();
 
   const [viewportWidth, setViewportWidth] = useState(
     typeof window !== "undefined" ? window.innerWidth : MIN_MAIN_CONTENT + DEFAULT_WIDTH + RIGHT_DEFAULT_WIDTH,

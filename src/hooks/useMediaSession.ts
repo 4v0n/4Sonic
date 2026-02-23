@@ -104,12 +104,14 @@ export const useMediaSession = (): void => {
       toast.success(`Liked ${title}`);
     };
 
+    type ExtendedMediaSessionAction = MediaSessionAction | "like" | "favorite";
+
     const setHandler = (
-      action: MediaSessionAction,
+      action: ExtendedMediaSessionAction,
       handler: MediaSessionActionHandler | null,
     ) => {
       try {
-        mediaSession.setActionHandler(action, handler);
+        mediaSession.setActionHandler(action as MediaSessionAction, handler);
       } catch (error) {
         console.debug(`Unable to attach media session handler for ${action}`, error);
       }

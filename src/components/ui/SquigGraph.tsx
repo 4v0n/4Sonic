@@ -1,6 +1,9 @@
 import * as d3Shape from "d3-shape";
 import * as d3Scale from "d3-scale";
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useId, useMemo, useRef, useState } from "react";
+import useAudioVisualizerData from "../../hooks/useAudioVisualizerData";
+import { usePlaybackStore } from "../../store/playbackStore";
+import { useUiPreferencesStore } from "../../store/uiPreferencesStore";
 import { getBiquadMagnitude, interpolateSPL } from "../../utils/squig";
 import type { DataPoint } from "../../utils/fr";
 
@@ -46,10 +49,19 @@ const SquigGraph = ({
   preamp,
   measurementData,
 }: SquigGraphProps) => {
+  const graphId = useId().replace(/:/g, "-");
   const containerRef = useRef<HTMLDivElement>(null);
   const [width, setWidth] = useState(0);
   const height = 400;
   const padding = { top: 20, right: 20, bottom: 40, left: 50 };
+  const visualizerData = useAudioVisualizerData();
+  const visualizerColor = useUiPreferencesStore((state) => state.visualizerColor);
+  const visualizerOpacity = useUiPreferencesStore((state) => state.visualizerOpacity);
+  const visualizerBlur = useUiPreferencesStore((state) => state.visualizerBlur);
+  const visualizerHeight = useUiPreferencesStore((state) => state.visualizerHeight);
+  const volume = usePlaybackStore((state) => state.volume);
+  const isMuted = usePlaybackStore((state) => state.isMuted);
+  const effectiveVolume = isMuted ? 0 : volume;
 
   useEffect(() => {
     if (!containerRef.current) return;
@@ -171,12 +183,76 @@ const SquigGraph = ({
   // 4. Axis ticks
   const xTicks = [20, 50, 100, 200, 500, 1000, 2000, 5000, 10000, 20000];
   const yTicks = yScale.ticks(8);
+  const plotBottomY = height - padding.bottom;
+
+  const totalResponseProfile = useMemo(
+    () => graphData.map((point) => ({ freq: point.freq, spl: point.total })),
+    [graphData],
+  );
+
+  const visualizerGain = Math.min(1, Math.max(0, visualizerHeight * effectiveVolume));
+
+  const visualizerPoints = useMemo(() => {
+    if (!visualizerData.length || !totalResponseProfile.length || visualizerGain <= 0) return [];
+
+    return visualizerData.map((point) => {
+      const freq = Math.max(MIN_FREQ, Math.min(MAX_FREQ, point.fCenter));
+      const x = xScale(freq);
+      const responseDb = interpolateSPL(freq, totalResponseProfile);
+      const responseY = yScale(responseDb);
+      const maxBandHeight = Math.max(0, plotBottomY - responseY);
+      const ratio = Math.pow(Math.max(0, Math.min(1, point.normalizedPeakRatio)), 1.2) * visualizerGain;
+      const y = plotBottomY - ratio * maxBandHeight;
+
+      return { x, y };
+    });
+  }, [plotBottomY, totalResponseProfile, visualizerData, visualizerGain, xScale, yScale]);
+
+  const visualizerAreaPath = useMemo(() => {
+    if (visualizerPoints.length < 2) return "";
+
+    return (
+      d3Shape.area<{ x: number; y: number }>()
+        .x((point) => point.x)
+        .y0(plotBottomY)
+        .y1((point) => point.y)
+        .curve(d3Shape.curveMonotoneX)(visualizerPoints) ?? ""
+    );
+  }, [plotBottomY, visualizerPoints]);
+
+  const visualizerLinePath = useMemo(() => {
+    if (visualizerPoints.length < 2) return "";
+
+    return (
+      d3Shape.line<{ x: number; y: number }>()
+        .x((point) => point.x)
+        .y((point) => point.y)
+        .curve(d3Shape.curveMonotoneX)(visualizerPoints) ?? ""
+    );
+  }, [visualizerPoints]);
+
+  const visualizerClipPath = useMemo(() => {
+    if (graphData.length < 2) return "";
+
+    return (
+      d3Shape.area<ProcessedGraphData>()
+        .x((point) => xScale(point.freq))
+        .y0(plotBottomY)
+        .y1((point) => yScale(point.total))
+        .curve(d3Shape.curveMonotoneX)(graphData) ?? ""
+    );
+  }, [graphData, plotBottomY, xScale, yScale]);
+
+  const totalFillGradientId = `squig-total-fill-${graphId}`;
+  const visualizerFillGradientId = `squig-viz-fill-${graphId}`;
+  const visualizerClipPathId = `squig-viz-clip-${graphId}`;
+  const visualizerBlurFilterId = `squig-viz-blur-${graphId}`;
 
   if (!width) {
     return (
       <div
         ref={containerRef}
-        className="w-full overflow-hidden rounded-2xl border border-(--surface2) bg-(--surface0)"
+        className="w-full overflow-hidden rounded-2xl bg-(--surface0)"
         style={{ height }}
       />
     );
@@ -185,14 +261,26 @@ const SquigGraph = ({
   return (
     <div
       ref={containerRef}
-      className="relative w-full select-none overflow-hidden rounded-2xl border border-(--surface2) bg-(--surface0)"
+      className="relative w-full select-none overflow-hidden rounded-2xl bg-(--surface0)"
     >
       <svg width={width} height={height}>
         <defs>
-          <linearGradient id="squig-total-fill" x1="0" x2="0" y1="0" y2="1">
+          <linearGradient id={totalFillGradientId} x1="0" x2="0" y1="0" y2="1">
             <stop offset="0%" stopColor="var(--primary0)" stopOpacity="0.24" />
             <stop offset="100%" stopColor="var(--primary0)" stopOpacity="0" />
           </linearGradient>
+          <linearGradient id={visualizerFillGradientId} x1="0" x2="0" y1="0" y2="1">
+            <stop offset="0%" stopColor={visualizerColor} stopOpacity="0.55" />
+            <stop offset="100%" stopColor={visualizerColor} stopOpacity="0" />
+          </linearGradient>
+          <clipPath id={visualizerClipPathId}>
+            <path d={visualizerClipPath} />
+          </clipPath>
+          {visualizerBlur > 0 ? (
+            <filter id={visualizerBlurFilterId} x="-20%" y="-20%" width="140%" height="140%">
+              <feGaussianBlur stdDeviation={visualizerBlur / 2} />
+            </filter>
+          ) : null}
         </defs>
 
         {/* Axes Labels */}
@@ -218,6 +306,29 @@ const SquigGraph = ({
             </text>
           ))}
         </g>
+
+        {/* Live visualizer constrained below the resulting FR line */}
+        {visualizerAreaPath && visualizerClipPath ? (
+          <g
+            clipPath={`url(#${visualizerClipPathId})`}
+            opacity={visualizerOpacity}
+            className="theme-transition"
+          >
+            <path
+              d={visualizerAreaPath}
+              fill={`url(#${visualizerFillGradientId})`}
+              filter={visualizerBlur > 0 ? `url(#${visualizerBlurFilterId})` : undefined}
+            />
+            <path
+              d={visualizerLinePath}
+              fill="none"
+              stroke={visualizerColor}
+              strokeWidth={1.5}
+              strokeOpacity={0.85}
+              filter={visualizerBlur > 0 ? `url(#${visualizerBlurFilterId})` : undefined}
+            />
+          </g>
+        ) : null}
 
         {/* Baseline */}
         <path
@@ -278,7 +389,7 @@ const SquigGraph = ({
           {/* Total Fill Area */}
           <path
             d={createFillPath(d => d.total, d => d.baseline)}
-            fill="url(#squig-total-fill)"
+            fill={`url(#${totalFillGradientId})`}
             className="theme-transition"
           />
           {/* Total Line */}

@@ -1,4 +1,6 @@
-import { ReactNode, useMemo } from "react";
+import { ReactNode, useMemo, useState } from "react";
+import EqModal from "../components/eq/EqModal";
+import Button from "../components/ui/Button";
 import Select from "../components/ui/Select";
 import TextInput from "../components/ui/TextInput";
 import Slider from "../components/ui/Slider";
@@ -42,6 +44,7 @@ const SettingRow = ({ name, description, children, align = "center" }: SettingRo
 );
 
 const SettingsPage = () => {
+  const [isEqModalOpen, setIsEqModalOpen] = useState(false);
   const { theme, setTheme, themes } = useThemeContext();
   const toastPosition = useUiPreferencesStore((state) => state.toastPosition);
   const visualizerColor = useUiPreferencesStore((state) => state.visualizerColor);
@@ -118,6 +121,22 @@ const SettingsPage = () => {
               fullWidth
               aria-label="Toast position"
             />
+          </div>
+        </SettingRow>
+      </SettingsSection>
+
+      <SettingsSection
+        title="Playback"
+        description="Configure equalizer behavior."
+      >
+        <SettingRow
+          name="Equalizer"
+          description="Open the EQ editor for profiles, FR baselines, and graph preview."
+        >
+          <div className="flex w-full md:justify-end">
+            <Button variant="outline" onClick={() => setIsEqModalOpen(true)}>
+              Open EQ
+            </Button>
           </div>
         </SettingRow>
       </SettingsSection>
@@ -216,6 +235,8 @@ const SettingsPage = () => {
           </div>
         </SettingRow>
       </SettingsSection>
+
+      <EqModal open={isEqModalOpen} onOpenChange={setIsEqModalOpen} />
     </div>
   );
 };
