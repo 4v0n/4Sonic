@@ -129,7 +129,7 @@ const EqModal = ({ open, onOpenChange }: EqModalProps) => {
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-h-[92vh] max-w-[min(1200px,95vw)] overflow-hidden p-0 sm:rounded-2xl">
+      <DialogContent className="max-h-[92dvh] max-w-[min(1200px,95vw)] p-0 sm:rounded-2xl">
         <div className="grid h-full min-h-[640px] grid-cols-1 lg:grid-cols-[340px_minmax(0,1fr)]">
           <div className="min-h-0 overflow-y-auto border-b border-(--surface2) p-5 lg:border-b-0 lg:border-r">
             <DialogHeader className="mb-4 pr-10 text-left">
@@ -248,8 +248,8 @@ const EqModal = ({ open, onOpenChange }: EqModalProps) => {
                       </p>
                     </div>
 
-                    <div className="grid grid-cols-3 gap-3 sm:grid-cols-4 md:grid-cols-6 lg:grid-cols-11">
-                      <div className="flex flex-col items-center rounded-xl bg-(--surface0) px-2 py-3">
+                    <div className="flex flex-nowrap gap-3 overflow-x-auto pb-2">
+                      <div className="flex shrink-0 flex-col items-center rounded-xl bg-(--surface0) px-2 py-3">
                         <span className="text-xs text-(--text-grey)">{activeProfile.preampMode === "auto" ? "Auto" : "Manual"}</span>
                         <span className="mb-2 text-xs font-semibold text-(--text)">{effectivePreamp.toFixed(1)} dB</span>
                         <div className="h-40">
@@ -268,7 +268,7 @@ const EqModal = ({ open, onOpenChange }: EqModalProps) => {
                       </div>
 
                       {activeProfile.bands.map((band) => (
-                        <div key={band.freq} className="flex flex-col items-center px-2 py-3">
+                        <div key={band.freq} className="flex shrink-0 flex-col items-center px-2 py-3">
                           <span className="mb-2 text-xs font-semibold text-(--text)">{band.gain.toFixed(1)}</span>
                           <div className="h-40">
                             <Slider
