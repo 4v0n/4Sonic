@@ -41,12 +41,14 @@ export type ProcessedGraphData = {
 type SquigGraphProps = {
   filters: eqFilter[];
   preamp: number;
+  applyPreampOffset?: boolean;
   measurementData: DataPoint[] | null;
 };
 
 const SquigGraph = ({
   filters,
   preamp,
+  applyPreampOffset = true,
   measurementData,
 }: SquigGraphProps) => {
   const graphId = useId().replace(/:/g, "-");
@@ -101,7 +103,7 @@ const SquigGraph = ({
 
       const individualFilterResponses = filters.map(f => getBiquadMagnitude(f, freq));
       const totalFilterResponse = individualFilterResponses.reduce((a, b) => a + b, 0);
-      const total = baseline + preamp + totalFilterResponse;
+      const total = baseline + (applyPreampOffset ? preamp : 0) + totalFilterResponse;
 
       points.push({
         freq,
@@ -112,7 +114,7 @@ const SquigGraph = ({
       });
     }
     return points;
-  }, [filters, preamp, measurementData]);
+  }, [filters, preamp, measurementData, applyPreampOffset]);
 
   // 2. Scales
   const xScale = useMemo(() => {

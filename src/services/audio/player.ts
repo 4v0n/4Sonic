@@ -23,16 +23,18 @@ interface PlayerCallbacks {
 /**
  * Thin Web Audio based wrapper around an HTMLAudioElement. Streams directly from
  * Navidrome/Subsonic endpoints (hi-res capable when the server provides it) and
- * keeps the graph PEQ-ready by routing through a GainNode and an optional chain
- * of peaking filters.
+ * keeps the graph PEQ-ready by routing through an optional filter chain, a
+ * dedicated EQ preamp stage, and the user volume gain node.
  */
 export class HiResAudioPlayer {
   private readonly audio: HTMLAudioElement;
   private audioContext: AudioContext | null = null;
   private sourceNode: MediaElementAudioSourceNode | null = null;
+  private preampNode: GainNode | null = null;
   private gainNode: GainNode | null = null;
   private analyserNode: AnalyserNode | null = null;
   private filterNodes: BiquadFilterNode[] = [];
+  private preampDb = 0;
   private callbacks: PlayerCallbacks;
   private progressRaf: number | null = null;
   private hintedDuration = 0;
@@ -119,7 +121,7 @@ export class HiResAudioPlayer {
     }
   }
 
-  public setParametricEq(bands: ParametricEqBand[]): void {
+  public setParametricEq(bands: ParametricEqBand[], preampDb: number = 0): void {
     this.ensureContext();
     if (!this.audioContext) {
       return;
@@ -134,6 +136,8 @@ export class HiResAudioPlayer {
       node.gain.value = band.gain;
       return node;
     });
+    this.preampDb = preampDb;
+    this.applyPreamp();
 
     this.needsGraphRebuild = true;
     this.rebuildGraph();
@@ -169,6 +173,10 @@ export class HiResAudioPlayer {
       this.gainNode = this.audioContext.createGain();
       graphChanged = true;
     }
+    if (!this.preampNode && this.audioContext) {
+      this.preampNode = this.audioContext.createGain();
+      graphChanged = true;
+    }
     if (!this.analyserNode && this.audioContext) {
       this.analyserNode = this.audioContext.createAnalyser();
       this.analyserNode.fftSize = 2048;
@@ -187,22 +195,24 @@ export class HiResAudioPlayer {
       this.rebuildGraph();
       this.needsGraphRebuild = false;
     }
+    this.applyPreamp();
   }
 
   private rebuildGraph(): void {
-    if (!this.audioContext || !this.sourceNode || !this.gainNode) {
+    if (!this.audioContext || !this.sourceNode || !this.gainNode || !this.preampNode) {
       return;
     }
 
     this.sourceNode.disconnect();
     this.filterNodes.forEach((node) => node.disconnect());
+    this.preampNode.disconnect();
     this.gainNode.disconnect();
     if (this.analyserNode) {
       this.analyserNode.disconnect();
     }
 
     let head: AudioNode = this.sourceNode;
-    const chain: AudioNode[] = [...this.filterNodes, this.gainNode];
+    const chain: AudioNode[] = [...this.filterNodes, this.preampNode, this.gainNode];
     if (this.analyserNode) {
       chain.push(this.analyserNode);
     }
@@ -211,6 +221,15 @@ export class HiResAudioPlayer {
       head.connect(node);
       head = node;
     });
+  }
+
+  private applyPreamp(): void {
+    if (!this.preampNode || !this.audioContext) {
+      return;
+    }
+    const linearGain = Math.pow(10, this.preampDb / 20);
+    this.preampNode.gain.cancelScheduledValues(this.audioContext.currentTime);
+    this.preampNode.gain.setTargetAtTime(linearGain, this.audioContext.currentTime, 0.01);
   }
 
   private ensureProgressLoop(): void {

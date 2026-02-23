@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState, type CSSProperties } from "react";
 import { toast } from "sonner";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "../ui/Dialog";
 import Button from "../ui/Button";
@@ -7,7 +7,17 @@ import Slider from "../ui/Slider";
 import TextInput from "../ui/TextInput";
 import SquigGraph, { FilterType, eqFilter } from "../ui/SquigGraph";
 import { parseFRFile, smoothData } from "../../utils/fr";
-import { EqMode, EqPreampMode, resolveProfilePreamp, useEqStore } from "../../store/eqStore";
+import cn from "../../utils/cn";
+import {
+  EqFilterType,
+  EqMode,
+  EqPreampMode,
+  SIMPLE_EQ_CONTROLS,
+  SIMPLE_EQ_GAIN_LIMIT,
+  resolveProfileBands,
+  resolveProfilePreamp,
+  useEqStore,
+} from "../../store/eqStore";
 
 type EqModalProps = {
   open: boolean;
@@ -30,6 +40,41 @@ const formatFrequency = (frequency: number): string => {
   return `${frequency}`;
 };
 
+const toGraphFilterType = (type: EqFilterType): FilterType => {
+  if (type === "lowshelf") return FilterType.LOW_SHELF;
+  if (type === "highshelf") return FilterType.HIGH_SHELF;
+  return FilterType.PEAK;
+};
+
+const clampUnit = (value: number): number => Math.max(-1, Math.min(1, value));
+
+const getSimpleSliderAccentColor = (gain: number): string => {
+  const normalized = clampUnit(gain / SIMPLE_EQ_GAIN_LIMIT);
+  const intensity = Math.abs(normalized);
+  if (intensity <= 0.02) {
+    return "hsl(0 0% 55%)";
+  }
+
+  if (normalized > 0) {
+    const hue = 112 + intensity * 28;
+    const saturation = 62 + intensity * 18;
+    const lightness = 46 - intensity * 8;
+    return `hsl(${hue} ${saturation}% ${lightness}%)`;
+  }
+
+  const hue = 20 - intensity * 14;
+  const saturation = 78 + intensity * 10;
+  const lightness = 52 - intensity * 10;
+  return `hsl(${hue} ${saturation}% ${lightness}%)`;
+};
+
+const simpleSliderToneClasses = [
+  "[&_[data-slot=slider-track]]:bg-[linear-gradient(90deg,hsl(6_86%_52%)_0%,hsl(0_0%_44%)_50%,hsl(140_72%_45%)_100%)]",
+  "[&_[data-slot=slider-range]]:bg-[var(--eq-simple-accent)]",
+  "[&_[data-slot=slider-thumb]]:border-[var(--eq-simple-accent)]",
+  "[&_[data-slot=slider-thumb]]:shadow-[0_0_0_1px_var(--eq-simple-accent)]",
+].join(" ");
+
 const EqModal = ({ open, onOpenChange }: EqModalProps) => {
   const profiles = useEqStore((state) => state.profiles);
   const activeProfileId = useEqStore((state) => state.activeProfileId);
@@ -41,6 +86,7 @@ const EqModal = ({ open, onOpenChange }: EqModalProps) => {
   const setActiveProfilePreampMode = useEqStore((state) => state.setActiveProfilePreampMode);
   const setActiveProfilePreamp = useEqStore((state) => state.setActiveProfilePreamp);
   const setActiveProfileBandGain = useEqStore((state) => state.setActiveProfileBandGain);
+  const setActiveProfileSimpleControlGain = useEqStore((state) => state.setActiveProfileSimpleControlGain);
   const setActiveProfileMeasurement = useEqStore((state) => state.setActiveProfileMeasurement);
   const clearActiveProfileMeasurement = useEqStore((state) => state.clearActiveProfileMeasurement);
   const resetActiveProfileBands = useEqStore((state) => state.resetActiveProfileBands);
@@ -61,18 +107,23 @@ const EqModal = ({ open, onOpenChange }: EqModalProps) => {
     [profiles],
   );
 
+  const effectiveBands = useMemo(
+    () => (activeProfile ? resolveProfileBands(activeProfile) : []),
+    [activeProfile],
+  );
+
   const graphFilters = useMemo<eqFilter[]>(
     () => (
-      activeProfile?.bands.map((band) => ({
-        id: `${activeProfile.id}-${band.freq}`,
-        type: FilterType.PEAK,
+      activeProfile ? effectiveBands.map((band, index) => ({
+        id: `${activeProfile.id}-${activeProfile.mode}-${band.freq}-${index}`,
+        type: toGraphFilterType(band.type),
         freq: band.freq,
         gain: band.gain,
         q: band.q,
         enabled: band.enabled,
-      })) ?? []
+      })) : []
     ),
-    [activeProfile],
+    [activeProfile, effectiveBands],
   );
   const effectivePreamp = useMemo(
     () => (activeProfile ? resolveProfilePreamp(activeProfile) : 0),
@@ -217,6 +268,7 @@ const EqModal = ({ open, onOpenChange }: EqModalProps) => {
                 <SquigGraph
                   filters={graphFilters}
                   preamp={effectivePreamp}
+                  applyPreampOffset={activeProfile.preampMode !== "auto"}
                   measurementData={activeProfile.measurementData}
                 />
               </div>
@@ -244,28 +296,29 @@ const EqModal = ({ open, onOpenChange }: EqModalProps) => {
                         </div>
                       </div>
                       <p className="text-xs text-(--text-grey)">
-                        Auto preamp follows peak boost; manual preamp uses the dedicated slider.
+                        Auto preamp follows the highest active boost; manual preamp uses the dedicated slider.
                       </p>
                     </div>
 
                     <div className="flex flex-nowrap gap-3 overflow-x-auto pb-2">
-                      <div className="flex shrink-0 flex-col items-center rounded-xl bg-(--surface0) px-2 py-3">
-                        <span className="text-xs text-(--text-grey)">{activeProfile.preampMode === "auto" ? "Auto" : "Manual"}</span>
-                        <span className="mb-2 text-xs font-semibold text-(--text)">{effectivePreamp.toFixed(1)} dB</span>
-                        <div className="h-40">
-                          <Slider
-                            orientation="vertical"
-                            min={-24}
-                            max={24}
-                            step={0.1}
-                            value={[activeProfile.preamp]}
-                            onValueChange={(value) => setActiveProfilePreamp(value[0] ?? activeProfile.preamp)}
-                            className="h-full"
-                            disabled={activeProfile.preampMode === "auto"}
-                          />
+                      {activeProfile.preampMode === "manual" ? (
+                        <div className="flex shrink-0 flex-col items-center rounded-xl bg-(--surface0) px-2 py-3">
+                          <span className="text-xs text-(--text-grey)">Manual</span>
+                          <span className="mb-2 text-xs font-semibold text-(--text)">{activeProfile.preamp.toFixed(1)} dB</span>
+                          <div className="h-40">
+                            <Slider
+                              orientation="vertical"
+                              min={-24}
+                              max={24}
+                              step={0.1}
+                              value={[activeProfile.preamp]}
+                              onValueChange={(value) => setActiveProfilePreamp(value[0] ?? activeProfile.preamp)}
+                              className="h-full"
+                            />
+                          </div>
+                          <span className="mt-2 text-xs font-semibold text-(--text)">Preamp</span>
                         </div>
-                        <span className="mt-2 text-xs font-semibold text-(--text)">Preamp</span>
-                      </div>
+                      ) : null}
 
                       {activeProfile.bands.map((band) => (
                         <div key={band.freq} className="flex shrink-0 flex-col items-center px-2 py-3">
@@ -287,14 +340,87 @@ const EqModal = ({ open, onOpenChange }: EqModalProps) => {
                     </div>
 
                     <div className="flex justify-end">
-                      <Button size="small" variant="ghost" onClick={resetActiveProfileBands}>Reset Bands</Button>
+                      <Button size="small" variant="ghost" onClick={resetActiveProfileBands}>Reset</Button>
+                    </div>
+                  </div>
+                ) : activeProfile.mode === "simple" ? (
+                  <div className="space-y-4">
+                    <div className="space-y-3">
+                      <div className="flex flex-wrap items-center justify-between gap-2 text-sm">
+                        <span className="text-(--text-grey)">
+                          Preamp: <span className="font-semibold text-(--text)">{effectivePreamp.toFixed(1)} dB</span>
+                        </span>
+                        <div className="grid grid-cols-2 gap-2">
+                          {PREAMP_MODE_OPTIONS.map((option) => (
+                            <Button
+                              key={option.id}
+                              size="small"
+                              variant={activeProfile.preampMode === option.id ? "primary" : "outline"}
+                              onClick={() => setActiveProfilePreampMode(option.id)}
+                              className="rounded-xl"
+                            >
+                              {option.label}
+                            </Button>
+                          ))}
+                        </div>
+                      </div>
+                    </div>
+
+                    {activeProfile.preampMode === "manual" ? (
+                      <div className="space-y-2 rounded-xl bg-(--surface0) p-2">
+                        <div className="flex flex-wrap items-center justify-between gap-2 text-sm">
+                          <span className="text-(--text-grey)">
+                            Manual Preamp: <span className="font-semibold text-(--text)">{activeProfile.preamp.toFixed(1)} dB</span>
+                          </span>
+                        </div>
+                        <Slider
+                          orientation="horizontal"
+                          min={-24}
+                          max={24}
+                          step={0.1}
+                          value={[activeProfile.preamp]}
+                          onValueChange={(value) => setActiveProfilePreamp(value[0] ?? activeProfile.preamp)}
+                          className="w-full"
+                        />
+                      </div>
+                    ) : null}
+
+                    <div className="space-y-2">
+                      {SIMPLE_EQ_CONTROLS.map((control) => {
+                        const gain = activeProfile.simpleControls[control.id];
+                        const accentColor = getSimpleSliderAccentColor(gain);
+                        const sliderStyle = { "--eq-simple-accent": accentColor } as CSSProperties;
+
+                        return (
+                          <div
+                            key={control.id}
+                            className="flex items-center gap-3 rounded-lg bg-(--surface0) px-2 py-2"
+                          >
+                            <span className="w-24 text-[11px] text-(--text-grey)">{control.minLabel}</span>
+                            <Slider
+                              aria-label={control.label}
+                              orientation="horizontal"
+                              min={-12}
+                              max={12}
+                              step={0.1}
+                              value={[gain]}
+                              onValueChange={(value) => setActiveProfileSimpleControlGain(control.id, value[0] ?? gain)}
+                              className={cn("w-full", simpleSliderToneClasses)}
+                              style={sliderStyle}
+                            />
+                            <span className="w-24 text-right text-[11px] text-(--text-grey)">{control.maxLabel}</span>
+                          </div>
+                        );
+                      })}
+                    </div>
+
+                    <div className="flex justify-end">
+                      <Button size="small" variant="ghost" onClick={resetActiveProfileBands}>Reset</Button>
                     </div>
                   </div>
                 ) : (
                   <div className="flex min-h-[220px] items-center justify-center rounded-xl border border-dashed border-(--surface3) bg-(--surface0) p-6 text-center text-sm text-(--text-grey)">
-                    {activeProfile.mode === "simple"
-                      ? "Simple mode is planned but not implemented yet."
-                      : "Advanced mode is planned but not implemented yet."}
+                    Advanced mode is planned but not implemented yet.
                   </div>
                 )}
               </div>

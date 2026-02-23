@@ -3,6 +3,56 @@ import { persist } from "zustand/middleware";
 import type { DataPoint } from "../utils/fr";
 
 export const TEN_BAND_FREQUENCIES = [31, 62, 125, 250, 500, 1000, 2000, 4000, 8000, 16000] as const;
+export const SIMPLE_EQ_GAIN_LIMIT = 12;
+const SIMPLE_EQ_BYPASS_EPSILON = 0.05;
+const DEFAULT_SIMPLE_Q = 0.71;
+
+export const SIMPLE_EQ_CONTROLS = [
+  {
+    id: "bass",
+    label: "Bass",
+    minLabel: "Less bass",
+    maxLabel: "More bass",
+    description: "Slides from less bass to more bass.",
+    frequency: 150,
+    q: DEFAULT_SIMPLE_Q,
+    type: "lowshelf",
+  },
+  {
+    id: "warmth",
+    label: "Warmth",
+    minLabel: "Clean",
+    maxLabel: "Rich",
+    description: "Slides from clean to rich.",
+    frequency: 250,
+    q: DEFAULT_SIMPLE_Q,
+    type: "peaking",
+  },
+  {
+    id: "intimacy",
+    label: "Intimacy",
+    minLabel: "Spacious",
+    maxLabel: "Intimate",
+    description: "Slides from large/spacious to intimate.",
+    frequency: 1500,
+    q: DEFAULT_SIMPLE_Q,
+    type: "peaking",
+  },
+  {
+    id: "treble",
+    label: "Treble",
+    minLabel: "Laid back",
+    maxLabel: "Resolute",
+    description: "Slides from laid back to resolute.",
+    frequency: 6000,
+    q: DEFAULT_SIMPLE_Q,
+    type: "highshelf",
+  },
+] as const;
+
+export type EqSimpleControlId = (typeof SIMPLE_EQ_CONTROLS)[number]["id"];
+export type EqSimpleControls = Record<EqSimpleControlId, number>;
+export type EqFilterType = "peaking" | "lowshelf" | "highshelf";
 
 export type EqMode = "simple" | "ten-band" | "advanced";
 export type EqPreampMode = "auto" | "manual";
@@ -12,6 +62,7 @@ export type EqBandSetting = {
   gain: number;
   q: number;
   enabled: boolean;
+  type: EqFilterType;
 };
 
 export type EqProfile = {
@@ -21,6 +72,7 @@ export type EqProfile = {
   preampMode: EqPreampMode;
   preamp: number;
   bands: EqBandSetting[];
+  simpleControls: EqSimpleControls;
   measurementData: DataPoint[] | null;
   measurementFileName?: string;
   createdAt: number;
@@ -38,6 +90,7 @@ type EqState = {
   setActiveProfilePreampMode: (mode: EqPreampMode) => void;
   setActiveProfilePreamp: (preamp: number) => void;
   setActiveProfileBandGain: (frequency: number, gain: number) => void;
+  setActiveProfileSimpleControlGain: (control: EqSimpleControlId, gain: number) => void;
   setActiveProfileMeasurement: (data: DataPoint[], fileName?: string) => void;
   clearActiveProfileMeasurement: () => void;
   resetActiveProfileBands: () => void;
@@ -45,12 +98,57 @@ type EqState = {
 
 const DEFAULT_Q = 1.4;
 const DEFAULT_PROFILE_NAME = "Default";
-const MIN_GAIN = -12;
-const MAX_GAIN = 12;
+const MIN_GAIN = -SIMPLE_EQ_GAIN_LIMIT;
+const MAX_GAIN = SIMPLE_EQ_GAIN_LIMIT;
 const MIN_PREAMP = -24;
 const MAX_PREAMP = 24;
 
 const clamp = (value: number, min: number, max: number) => Math.min(Math.max(value, min), max);
+
+const normalizeFilterType = (type: unknown): EqFilterType => {
+  if (type === "lowshelf" || type === "highshelf" || type === "peaking") {
+    return type;
+  }
+  return "peaking";
+};
+
+const createDefaultSimpleControls = (): EqSimpleControls => ({
+  bass: 0,
+  warmth: 0,
+  intimacy: 0,
+  treble: 0,
+});
+
+const normalizeSimpleControls = (controls: Partial<Record<EqSimpleControlId, number>> | undefined): EqSimpleControls => ({
+  bass: clamp(controls?.bass ?? 0, MIN_GAIN, MAX_GAIN),
+  warmth: clamp(controls?.warmth ?? 0, MIN_GAIN, MAX_GAIN),
+  intimacy: clamp(controls?.intimacy ?? 0, MIN_GAIN, MAX_GAIN),
+  treble: clamp(controls?.treble ?? 0, MIN_GAIN, MAX_GAIN),
+});
+
+const createSimpleModeBands = (simpleControls: EqSimpleControls): EqBandSetting[] => (
+  SIMPLE_EQ_CONTROLS.map((control) => {
+    const gain = clamp(simpleControls[control.id], MIN_GAIN, MAX_GAIN);
+    return {
+      freq: control.frequency,
+      gain,
+      q: control.q,
+      enabled: Math.abs(gain) > SIMPLE_EQ_BYPASS_EPSILON,
+      type: control.type,
+    };
+  })
+);
+
+const cloneBands = (bands: EqBandSetting[]): EqBandSetting[] => bands.map((band) => ({ ...band }));
+
+const cloneSimpleControls = (controls: EqSimpleControls): EqSimpleControls => ({ ...controls });
+
+export const resolveProfileBands = (profile: EqProfile): EqBandSetting[] => {
+  if (profile.mode === "simple") {
+    return createSimpleModeBands(profile.simpleControls);
+  }
+  return cloneBands(profile.bands);
+};
 
 export const calculateAutoPreamp = (bands: EqBandSetting[]): number => {
   const enabledBands = bands.filter((band) => band.enabled);
@@ -60,7 +158,7 @@ export const calculateAutoPreamp = (bands: EqBandSetting[]): number => {
 };
 
 export const resolveProfilePreamp = (profile: EqProfile): number => (
-  profile.preampMode === "auto" ? calculateAutoPreamp(profile.bands) : profile.preamp
+  profile.preampMode === "auto" ? calculateAutoPreamp(resolveProfileBands(profile)) : profile.preamp
 );
 
 const createId = (): string => {
@@ -76,10 +174,9 @@ const createDefaultBands = (): EqBandSetting[] => (
     gain: 0,
     q: DEFAULT_Q,
     enabled: true,
+    type: "peaking",
   }))
 );
-
-const cloneBands = (bands: EqBandSetting[]): EqBandSetting[] => bands.map((band) => ({ ...band }));
 
 const cloneMeasurement = (data: DataPoint[] | null): DataPoint[] | null => (
   data ? data.map((point) => ({ ...point })) : null
@@ -94,6 +191,7 @@ const createProfile = (name: string, baseProfile?: EqProfile): EqProfile => {
       id: createId(),
       name,
       bands: cloneBands(baseProfile.bands),
+      simpleControls: cloneSimpleControls(baseProfile.simpleControls),
       measurementData: cloneMeasurement(baseProfile.measurementData),
       createdAt: now,
       updatedAt: now,
@@ -107,6 +205,7 @@ const createProfile = (name: string, baseProfile?: EqProfile): EqProfile => {
     preampMode: "auto",
     preamp: 0,
     bands: createDefaultBands(),
+    simpleControls: createDefaultSimpleControls(),
     measurementData: null,
     measurementFileName: undefined,
     createdAt: now,
@@ -224,6 +323,19 @@ export const useEqStore = create<EqState>()(
         }));
       },
 
+      setActiveProfileSimpleControlGain: (control, gain) => {
+        set((state) => ({
+          profiles: updateActiveProfileInList(state.profiles, state.activeProfileId, (profile) => ({
+            ...profile,
+            simpleControls: {
+              ...profile.simpleControls,
+              [control]: clamp(gain, MIN_GAIN, MAX_GAIN),
+            },
+            updatedAt: Date.now(),
+          })),
+        }));
+      },
+
       setActiveProfileMeasurement: (data, fileName) => {
         set((state) => ({
           profiles: updateActiveProfileInList(state.profiles, state.activeProfileId, (profile) => ({
@@ -251,6 +363,7 @@ export const useEqStore = create<EqState>()(
           profiles: updateActiveProfileInList(state.profiles, state.activeProfileId, (profile) => ({
             ...profile,
             bands: createDefaultBands(),
+            simpleControls: createDefaultSimpleControls(),
             preamp: 0,
             updatedAt: Date.now(),
           })),
@@ -259,16 +372,32 @@ export const useEqStore = create<EqState>()(
     }),
     {
       name: "eq-profiles",
-      version: 2,
+      version: 3,
       migrate: (persistedState: unknown) => {
         const state = persistedState as {
-          profiles?: EqProfile[];
+          profiles?: Array<Partial<EqProfile>>;
           activeProfileId?: string;
         };
 
-        const profiles = (state?.profiles ?? [initialProfile]).map((profile) => ({
-          ...profile,
+        const fallbackProfiles = state?.profiles && state.profiles.length > 0 ? state.profiles : [initialProfile];
+        const profiles = fallbackProfiles.map((profile) => ({
+          id: profile.id ?? createId(),
+          name: profile.name ?? DEFAULT_PROFILE_NAME,
+          mode: profile.mode ?? "ten-band",
           preampMode: profile.preampMode ?? "auto",
+          preamp: clamp(profile.preamp ?? 0, MIN_PREAMP, MAX_PREAMP),
+          bands: (profile.bands ?? createDefaultBands()).map((band) => ({
+            freq: band.freq ?? 1000,
+            gain: clamp(band.gain ?? 0, MIN_GAIN, MAX_GAIN),
+            q: band.q ?? DEFAULT_Q,
+            enabled: band.enabled ?? true,
+            type: normalizeFilterType(band.type),
+          })),
+          simpleControls: normalizeSimpleControls(profile.simpleControls),
+          measurementData: cloneMeasurement(profile.measurementData ?? null),
+          measurementFileName: profile.measurementFileName,
+          createdAt: profile.createdAt ?? Date.now(),
+          updatedAt: profile.updatedAt ?? Date.now(),
         }));
 
         const activeProfileId = profiles.some((profile) => profile.id === state?.activeProfileId)

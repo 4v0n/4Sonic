@@ -47,7 +47,7 @@ interface PlaybackState {
   toggleMute: () => void;
   toggleShuffle: () => void;
   cycleRepeat: () => void;
-  setEq: (bands: ParametricEqBand[]) => void;
+  setEq: (eq: { bands: ParametricEqBand[]; preampDb?: number }) => void;
   setQueue: (
     items: QueueItem[],
     startIndex?: number,
@@ -465,8 +465,8 @@ export const usePlaybackStore = create<PlaybackState>()(
           });
         },
 
-        setEq: (bands: ParametricEqBand[]) => {
-          player.setParametricEq(bands);
+        setEq: (eq) => {
+          player.setParametricEq(eq.bands, eq.preampDb ?? 0);
         },
 
         setQueue: async (items: QueueItem[], startIndex = 0, options) => {

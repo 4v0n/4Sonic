@@ -1,5 +1,5 @@
 import { useEffect, useMemo } from "react";
-import { useEqStore } from "../store/eqStore";
+import { resolveProfileBands, resolveProfilePreamp, useEqStore } from "../store/eqStore";
 import { usePlaybackStore } from "../store/playbackStore";
 
 export const useEqPlaybackSync = (): void => {
@@ -13,21 +13,24 @@ export const useEqPlaybackSync = (): void => {
   );
 
   useEffect(() => {
-    if (!activeProfile || activeProfile.mode !== "ten-band") {
-      setEq([]);
+    if (!activeProfile || activeProfile.mode === "advanced") {
+      setEq({ bands: [], preampDb: 0 });
       return;
     }
 
-    const activeBands = activeProfile.bands
+    const activeBands = resolveProfileBands(activeProfile)
       .filter((band) => band.enabled)
       .map((band) => ({
         frequency: band.freq,
         q: band.q,
         gain: band.gain,
-        type: "peaking" as BiquadFilterType,
+        type: band.type,
       }));
 
-    setEq(activeBands);
+    setEq({
+      bands: activeBands,
+      preampDb: resolveProfilePreamp(activeProfile),
+    });
   }, [activeProfile, setEq]);
 };
 
