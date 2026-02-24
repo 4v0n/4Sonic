@@ -27,10 +27,11 @@ export const RightSidebarContent = ({ view }: { view: RightSidebarView }) => {
   const regularQueuePosition = usePlaybackStore((state) => state.regularQueuePosition);
   const playFromQueue = usePlaybackStore((state) => state.playFromQueue);
   const playFromRegularQueue = usePlaybackStore((state) => state.playFromRegularQueue);
+  const playTarget = usePlaybackStore((state) => state.playTargetItem);
 
   const nowPlaying = (
     <div className="space-y-2">
-      <div className="text-sm text-(--text-grey)">Now Playing</div>
+      <div className="text-xs font-extrabold tracking-wide text-(--text-grey)">Now Playing</div>
       <div className="flex gap-3 rounded-xl border border-(--surface2) bg-(--surface1) p-3">
         <div className="h-14 w-14 flex-shrink-0 overflow-hidden rounded-lg border border-(--surface2) bg-(--surface2)">
           <CoverImage
@@ -74,7 +75,6 @@ export const RightSidebarContent = ({ view }: { view: RightSidebarView }) => {
     return (
       <div className="space-y-3">
         {nowPlaying}
-        <div className="text-sm text-(--text-grey)">Up Next</div>
         {!hasUpcoming ? (
           <div className="rounded-lg border border-(--surface1) p-4 text-(--text-grey)">
             No more tracks in the queue.
@@ -83,7 +83,7 @@ export const RightSidebarContent = ({ view }: { view: RightSidebarView }) => {
           <div className="space-y-2">
             {priorityUpcoming.length > 0 ? (
               <div className="space-y-2">
-                <p className="text-xs font-semibold uppercase tracking-wide text-(--text-grey)">Priority queue</p>
+                <p className="text-xs font-extrabold tracking-wide text-(--text-grey)">Queue</p>
                 {priorityUpcoming.map(({ item, orderIndex }) => (
                   <button
                     key={`priority-${item.id}-${orderIndex}`}
@@ -113,7 +113,7 @@ export const RightSidebarContent = ({ view }: { view: RightSidebarView }) => {
 
             {regularUpcoming.length > 0 ? (
               <div className="space-y-2">
-                <p className="text-xs font-semibold uppercase tracking-wide text-(--text-grey)">Regular queue</p>
+                {playTarget && (<p className="text-xs font-extrabold tracking-wide text-(--text-grey)">Next From: {playTarget}</p>)}
                 {regularUpcoming.map(({ item, orderIndex }) => (
                   <button
                     key={`regular-${item.id}-${orderIndex}`}
@@ -171,7 +171,7 @@ const RightSideBar = ({ width, view, isOpen, isResizing, onResizeStart, onClose 
       />
 
       <div className="flex items-center justify-between px-4 py-3 sticky top-0 bg-(--surface0) z-10 border-b border-(--surface1)">
-        <div className="flex items-center gap-2 text-lg font-semibold">
+        <div className="flex items-center gap-2 text-lg font-extrabold tracking-wide text-(--text-grey)">
           {view === "queue" && <QueueMusicRoundedIcon fontSize="small" />}
           <span className="truncate capitalize">{view}</span>
         </div>

@@ -49,7 +49,7 @@ const BackgroundAreaVisualizer = ({ frequencyData, color, opacity, blur }: Backg
         if (isArea) {
           ctx.moveTo(0, height);
           if (numPoints === 1) {
-            const y = height - Math.pow(frequencyData[0].normalizedPeakRatio, 1.2) * height;
+            const y = height - frequencyData[0].normalizedPeakRatio * height;
             ctx.lineTo(0, y);
             ctx.lineTo(width, y);
           }
@@ -61,7 +61,7 @@ const BackgroundAreaVisualizer = ({ frequencyData, color, opacity, blur }: Backg
 
       const points = frequencyData.map((point, index) => ({
         x: (index / (numPoints - 1)) * width,
-        y: height - Math.pow(point.normalizedPeakRatio, 1.2) * height,
+        y: height - point.normalizedPeakRatio * height,
       }));
 
       if (isArea) {

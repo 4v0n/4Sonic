@@ -29,24 +29,24 @@ const AlbumSongsTable: React.FC<AlbumSongsTableProps> = ({ album, onSongClick })
 
   return (
     <div>
-      <div className="p-2 space-x-2 flex">
-        <div>
+      <div className="flex flex-wrap items-start gap-3 p-2">
+        <div className="h-32 w-32 flex-shrink-0 sm:h-40 sm:w-40">
           <CoverImage
             src={coverUrl}
             alt={album?.name ?? "Album cover"}
-            className="w-50 h-50 rounded border border-(--surface2)"
+            className="h-full w-full rounded border border-(--surface2)"
             placeholder={<CoverFallback rounded className="rounded" />}
             fallback={<CoverFallback rounded className="rounded" />}
           />
         </div>
-        <div>
-          <h1 className="text-4xl font-extrabold leading-tight text-(--text)">
+        <div className="min-w-0 flex-1">
+          <h1 className="break-words text-3xl font-extrabold leading-tight text-(--text) sm:text-4xl">
             {album?.name}
           </h1>
         </div>
       </div>
-      <div className="px-4">
-        <table className="w-full">
+      <div className="overflow-x-auto px-4">
+        <table className="w-full min-w-[560px]">
           <thead>
             <tr className="text-left">
               <th>#</th>

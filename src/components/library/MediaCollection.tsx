@@ -260,7 +260,7 @@ function MediaCollection<T>({
       ) : viewMode === "grid" ? (
         <div
           ref={setGridNode}
-          className="grid grid-cols-[repeat(auto-fill,minmax(180px,1fr))] gap-4"
+          className="grid grid-cols-[repeat(auto-fill,minmax(min(180px,100%),1fr))] gap-4"
         >
           {itemsToRender.map((item) => (
             <MediaCard

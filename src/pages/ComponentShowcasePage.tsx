@@ -16,7 +16,6 @@ import TextInput from "../components/ui/TextInput";
 import { Popover, PopoverClose, PopoverContent, PopoverTrigger } from "../components/ui/Popover";
 import Select from "../components/ui/Select";
 import Switch from "../components/ui/Switch";
-import GraphicEQ, { BaselinePoint, EqBand } from "../components/ui/GraphicEQ";
 import AlbumSongsTable from "../components/library/AlbumSongsTable";
 import { useThemeContext } from "../context/ThemeContext";
 import { ToastPosition, useUiPreferencesStore } from "../store/uiPreferencesStore";
@@ -24,18 +23,21 @@ import MediaCard from "../components/ui/MediaCard";
 import Carousel, { CarouselItem } from "../components/ui/Carousel";
 import { useAuthStore } from "../store/authStore";
 import { SubsonicAlbumDetail, SubsonicArtistDetail, SubsonicSong } from "../types/subsonic";
+import type { DataPoint } from "../utils/fr";
 import { playAlbum, playArtist, playSongById } from "../utils/playbackActions";
 import { getAlbumCoverUrl, getArtistImageUrl, getSongCoverUrl } from "../utils/mediaImages";
+import { parseFRFile, smoothData } from "../utils/fr";
+import SquigGraph, { eqFilter, FilterType } from "../components/ui/SquigGraph";
 
 const Section: React.FC<{ title: string; description?: string; children: React.ReactNode }> = ({ title, description, children }) => (
-  <section className="rounded-2xl border border-(--surface2) bg-(--surface0) p-5 shadow-sm space-y-4">
+  <section className="min-w-0 space-y-4 rounded-2xl border border-(--surface2) bg-(--surface0) p-5 shadow-sm">
     <div className="flex items-start justify-between gap-3">
       <div>
         <h2 className="text-xl font-semibold text-(--text)">{title}</h2>
         {description ? <p className="text-sm text-(--text-grey)">{description}</p> : null}
       </div>
     </div>
-    <div className="space-y-4">{children}</div>
+    <div className="min-w-0 space-y-4">{children}</div>
   </section>
 );
 
@@ -76,21 +78,6 @@ const ComponentShowcasePage = () => {
   const [keybind, setKeybind] = useState("⌘ + K");
   const [textValue, setTextValue] = useState("Navidrome server");
   const [mediaSamples, setMediaSamples] = useState<MediaSamplesState>({ loading: true });
-  const DEFAULT_EQ_BANDS: EqBand[] = useMemo(() => ([
-    { freq: 31, gain: 0 },
-    { freq: 62, gain: 0 },
-    { freq: 125, gain: 0 },
-    { freq: 250, gain: 0 },
-    { freq: 500, gain: 0 },
-    { freq: 1000, gain: 0 },
-    { freq: 2000, gain: 0 },
-    { freq: 4000, gain: 0 },
-    { freq: 8000, gain: 0 },
-    { freq: 16000, gain: 0 },
-  ]), []);
-  const [eqBands, setEqBands] = useState<EqBand[]>(DEFAULT_EQ_BANDS);
-  const [eqBaseline, setEqBaseline] = useState<BaselinePoint[] | undefined>(undefined);
-  const [eqPreampDb, setEqPreampDb] = useState(0);
   const toastPosition = useUiPreferencesStore((state) => state.toastPosition);
   const setToastPosition = useUiPreferencesStore((state) => state.setToastPosition);
   const activeThemeLabel = useMemo(
@@ -130,67 +117,42 @@ const ComponentShowcasePage = () => {
       tokens: ["success0", "success1", "success2", "warning0", "warning1", "warning2", "danger0", "danger1", "danger2", "info0", "info1", "info2"],
     },
   ]), []);
+  const filters = useMemo<eqFilter[]>(() => ([
+    { id: "1", type: FilterType.LOW_SHELF, freq: 105, gain: 2.5, q: 0.7, enabled: true },
+    { id: "2", type: FilterType.PEAK, freq: 2400, gain: -3.0, q: 1.5, enabled: true },
+    { id: "3", type: FilterType.HIGH_SHELF, freq: 10000, gain: 4.0, q: 0.7, enabled: true },
+  ]), []);
+  const preamp = 0;
+  const [measurementData, setMeasurementData] = useState<DataPoint[] | null>(null);
+  const [measurementFilename, setMeasurementFilename] = useState<string | null>(null);
 
-  const eqFilters = useMemo(() => eqBands.map((band) => ({
-    type: "Peaking",
-    frequency: band.freq,
-    gain: band.gain,
-    q: 1.4,
-  })), [eqBands]);
-
-  const maxGain = useMemo(
-    () => (eqBands.length ? eqBands.reduce((max, band) => Math.max(max, band.gain), eqBands[0].gain) : 0),
-    [eqBands],
-  );
-  useEffect(() => {
-    setEqPreampDb(-maxGain);
-  }, [maxGain]);
-
-  const formatEqFrequency = (freq: number) => {
-    if (freq >= 1000) {
-      return `${(freq / 1000).toFixed(freq >= 10000 ? 0 : 1)} kHz`;
-    }
-    return `${freq} Hz`;
-  };
-
-  const handleBaselineUpload: React.ChangeEventHandler<HTMLInputElement> = async (event) => {
+  const handleMeasurementUpload: React.ChangeEventHandler<HTMLInputElement> = async (event) => {
     const file = event.target.files?.[0];
     if (!file) return;
+
     try {
       const text = await file.text();
-      const points = text
-        .split(/\r?\n/)
-        .map((line) => line.trim())
-        .filter(Boolean)
-        .map((line) => {
-          const [freqStr, splStr] = line.split(/\s+/);
-          const freq = Number.parseFloat(freqStr);
-          const spl = Number.parseFloat(splStr);
-          if (!Number.isFinite(freq) || !Number.isFinite(spl) || freq <= 0) return null;
-          return { freq, spl };
-        })
-        .filter((point): point is BaselinePoint => Boolean(point));
-
-      if (points.length < 10) {
-        toast.error("Unable to load baseline", { description: "Need at least 10 rows of freq/SPL data." });
-        event.target.value = "";
+      const parsed = parseFRFile(text);
+      if (parsed.length < 2) {
+        toast.error("Unable to load FR file", { description: "Need at least 2 valid freq/SPL rows." });
         return;
       }
 
-      setEqBaseline(points);
-      toast.success(`Loaded baseline with ${points.length} points`);
+      const smoothed = smoothData(parsed);
+      setMeasurementData(smoothed);
+      setMeasurementFilename(file.name);
+      toast.success(`Loaded ${smoothed.length} FR points`);
     } catch (error) {
       const description = error instanceof Error ? error.message : undefined;
-      toast.error("Failed to parse baseline file", description ? { description } : undefined);
+      toast.error("Failed to parse FR file", description ? { description } : undefined);
     } finally {
       event.target.value = "";
     }
   };
 
-  const handleEqReset = () => {
-    setEqBands(DEFAULT_EQ_BANDS);
-    setEqBaseline(undefined);
-    setEqPreampDb(0);
+  const clearMeasurementData = () => {
+    setMeasurementData(null);
+    setMeasurementFilename(null);
   };
 
   useEffect(() => {
@@ -406,7 +368,7 @@ const ComponentShowcasePage = () => {
   ];
 
   return (
-    <div className="space-y-10 p-6">
+    <div className="min-w-0 max-w-full space-y-10">
       <div className="flex flex-col gap-3">
         <h1 className="text-3xl font-extrabold text-(--text)">Component Showcase</h1>
         <p className="text-(--text-grey) max-w-3xl">
@@ -414,8 +376,8 @@ const ComponentShowcasePage = () => {
         </p>
       </div>
 
-      <div className="grid gap-6 xl:grid-cols-12">
-        <div className="xl:col-span-7 space-y-6">
+      <div className="grid min-w-0 gap-6 xl:grid-cols-12">
+        <div className="min-w-0 space-y-6 xl:col-span-7">
           <Section
             title="Media Cards"
             description="Artist, album, and song presentations with hover play affordances."
@@ -500,7 +462,7 @@ const ComponentShowcasePage = () => {
             <div className="space-y-8">
               {paletteSections.map((section) => (
                 <div key={section.title} className="space-y-3">
-                  <div className="flex items-center justify-between gap-2">
+                  <div className="flex flex-wrap items-start justify-between gap-2">
                     <h3 className="text-lg font-semibold text-(--text)">{section.title}</h3>
                     <p className="text-sm text-(--text-grey)">{section.description}</p>
                   </div>
@@ -638,7 +600,7 @@ const ComponentShowcasePage = () => {
               <Button variant="destructive">Destructive</Button>
               <Button variant="link">Link</Button>
             </div>
-            <div className="flex items-center gap-3">
+            <div className="flex flex-wrap items-center gap-3">
               <Dropdown
                 buttonAriaLabel="User menu"
                 triggerContent={<><PersonIcon className="h-5 w-5" />Menu</>}
@@ -694,7 +656,7 @@ const ComponentShowcasePage = () => {
           </Section>
         </div>
 
-        <div className="xl:col-span-5 space-y-6">
+        <div className="min-w-0 space-y-6 xl:col-span-5">
           <Section title="Toasts" description="Sonner-powered notifications that follow the current theme.">
             <div className="space-y-4">
               <div className="flex flex-wrap gap-3">
@@ -703,7 +665,7 @@ const ComponentShowcasePage = () => {
                 <Button variant="destructive" onClick={() => toast.error("Connection lost", { description: "We will retry shortly." })}>Error</Button>
               </div>
               <div className="space-y-2">
-                <p className="text-sm text-(--text-grey)">Toast position (persisted for future settings)</p>
+                <p className="text-sm text-(--text-grey)">Toast position (also available in Settings)</p>
                 <Select
                   size="small"
                   value={toastPosition}
@@ -758,49 +720,32 @@ const ComponentShowcasePage = () => {
             <AlbumSongsTable album={mediaSamples.album} />
           </Section>
 
-          <Section title="Graphic EQ" description="10-band graphic EQ with draggable handles and live response curve.">
-            <GraphicEQ bands={eqBands} onChange={setEqBands} baseline={eqBaseline} />
+          <Section title="Squig Graph" description="IEM/Headphone FR squig">
             <div className="flex flex-wrap items-center gap-3 text-sm text-(--text-grey)">
-              <Button size="small" variant="outline" onClick={() => document.getElementById("eq-baseline-upload")?.click()}>
-                Upload baseline
+              <Button size="small" variant="outline" onClick={() => document.getElementById("fr-upload-input")?.click()}>
+                Upload FR
               </Button>
-              <Button size="small" variant="ghost" onClick={handleEqReset}>
-                Reset
+              <Button size="small" variant="ghost" onClick={clearMeasurementData} disabled={!measurementData}>
+                Clear
               </Button>
               <input
-                id="eq-baseline-upload"
+                id="fr-upload-input"
                 type="file"
-                accept=".txt,.frd,text/plain"
+                accept=".txt,.frd,.csv,text/plain"
                 className="hidden"
-                onChange={handleBaselineUpload}
+                onChange={handleMeasurementUpload}
               />
               <span className="text-xs text-(--text-grey)">
-                Baseline becomes the new centerline; EQ uses Q=1.4. Suggested preamp: {eqPreampDb.toFixed(1)} dB.
+                {measurementFilename
+                  ? `Loaded: ${measurementFilename} (${measurementData?.length ?? 0} points, smoothed)`
+                  : "Upload a two-column frequency response file: freq spl"}
               </span>
             </div>
-            <div className="overflow-x-auto">
-              <table className="w-full text-sm text-(--text)">
-                <thead>
-                  <tr>
-                    <th className="text-left py-2">Type</th>
-                    <th className="text-left py-2">Frequency</th>
-                    <th className="text-left py-2">Gain</th>
-                    <th className="text-left py-2">Q</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {eqFilters.map((filter, index) => (
-                    <tr key={`${filter.frequency}-${index}`}>
-                      <td className="py-1">Peaking</td>
-                      <td className="py-1">{formatEqFrequency(filter.frequency)}</td>
-                      <td className="py-1">{filter.gain.toFixed(1)} dB</td>
-                      <td className="py-1">{filter.q.toFixed(1)}</td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-            <p className="text-xs text-(--text-grey)">Demo only: values are not saved or applied.</p>
+            <SquigGraph
+              filters={filters}
+              preamp={preamp}
+              measurementData={measurementData}
+            />
           </Section>
         </div>
       </div>

@@ -106,8 +106,10 @@ export const useMediaSession = (): void => {
       toast.success(`Liked ${title}`);
     };
 
+    type ExtendedMediaSessionAction = MediaSessionAction | "like" | "favorite";
+
     const setHandler = (
-      action: MediaSessionAction | OptionalMediaSessionAction,
+      action: ExtendedMediaSessionAction,
       handler: MediaSessionActionHandler | null,
     ) => {
       try {
