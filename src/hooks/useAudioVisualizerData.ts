@@ -52,11 +52,12 @@ export const useAudioVisualizerData = (): VisualizerPoint[] => {
       const mapped = bands.map((band, index) => {
         const nextBand = index < bands.length - 1 ? bands[index + 1].fCenter : MAX_FREQ;
         const previousBand = index > 0 ? bands[index - 1].fCenter : MIN_FREQ;
-        const fMin = (previousBand + band.fCenter) / 2;
-        const fMax = (band.fCenter + nextBand) / 2;
+        // Use geometric mean for logarithmic frequency bands
+        const fMin = Math.sqrt(previousBand * band.fCenter);
+        const fMax = Math.sqrt(band.fCenter * nextBand);
 
-        const startBin = Math.max(0, Math.floor((fMin / nyquist) * binCount));
-        const endBin = Math.min(binCount - 1, Math.ceil((fMax / nyquist) * binCount));
+        const startBin = Math.max(0, Math.round((fMin / nyquist) * binCount));
+        const endBin = Math.min(binCount - 1, Math.round((fMax / nyquist) * binCount));
 
         let sum = 0;
         for (let bin = startBin; bin <= endBin; bin++) {
