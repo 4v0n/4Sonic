@@ -39,6 +39,7 @@ export class HiResAudioPlayer {
   private progressRaf: number | null = null;
   private hintedDuration = 0;
   private frequencyData: Uint8Array | null = null;
+  private timeDomainData: Float32Array | null = null;
   private needsGraphRebuild = false;
   private lastProgressEmit = 0;
   private readonly progressIntervalMs = 80;
@@ -184,6 +185,7 @@ export class HiResAudioPlayer {
       this.analyserNode.maxDecibels = -10;
       this.analyserNode.smoothingTimeConstant = 0.85;
       this.frequencyData = new Uint8Array(this.analyserNode.frequencyBinCount);
+      this.timeDomainData = new Float32Array(this.analyserNode.fftSize);
       graphChanged = true;
     }
     if (!this.sourceNode && this.audioContext) {
@@ -306,6 +308,18 @@ export class HiResAudioPlayer {
     }
     this.analyserNode.getByteFrequencyData(this.frequencyData);
     return this.frequencyData;
+  }
+
+  public getTimeDomainData(): Float32Array | null {
+    this.ensureContext();
+    if (!this.analyserNode) {
+      return null;
+    }
+    if (!this.timeDomainData || this.timeDomainData.length !== this.analyserNode.fftSize) {
+      this.timeDomainData = new Float32Array(this.analyserNode.fftSize);
+    }
+    this.analyserNode.getFloatTimeDomainData(this.timeDomainData);
+    return this.timeDomainData;
   }
 
   public getSampleRate(): number | null {

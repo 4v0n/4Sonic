@@ -288,8 +288,7 @@ const BottomBar = ({ isRightCompact = false }: BottomBarProps) => {
     void playNext();
   };
 
-  const effectiveVolume = isMuted ? 0 : volume;
-  const visualizerHeightPercent = Math.min(1, Math.max(0, visualizerHeight * effectiveVolume));
+  const visualizerHeightPercent = Math.min(1, Math.max(0, visualizerHeight));
 
   return (
     <footer className="sticky bottom-0 z-30 h-24 p-4 border-t border-(--surface1) bg-(--surface0) shadow">

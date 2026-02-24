@@ -61,9 +61,8 @@ const SquigGraph = ({
   const visualizerOpacity = useUiPreferencesStore((state) => state.visualizerOpacity);
   const visualizerBlur = useUiPreferencesStore((state) => state.visualizerBlur);
   const visualizerHeight = useUiPreferencesStore((state) => state.visualizerHeight);
-  const volume = usePlaybackStore((state) => state.volume);
-  const isMuted = usePlaybackStore((state) => state.isMuted);
-  const effectiveVolume = isMuted ? 0 : volume;
+  const getSampleRate = usePlaybackStore((state) => state.getSampleRate);
+  const sampleRate = getSampleRate() ?? 48000;
 
   useEffect(() => {
     if (!containerRef.current) return;
@@ -101,7 +100,7 @@ const SquigGraph = ({
         baseline = interpolateSPL(freq, normalizedMeasurement);
       }
 
-      const individualFilterResponses = filters.map(f => getBiquadMagnitude(f, freq));
+      const individualFilterResponses = filters.map(f => getBiquadMagnitude(f, freq, sampleRate));
       const totalFilterResponse = individualFilterResponses.reduce((a, b) => a + b, 0);
       const total = baseline + (applyPreampOffset ? preamp : 0) + totalFilterResponse;
 
@@ -114,7 +113,7 @@ const SquigGraph = ({
       });
     }
     return points;
-  }, [filters, preamp, measurementData, applyPreampOffset]);
+  }, [applyPreampOffset, filters, measurementData, preamp, sampleRate]);
 
   // 2. Scales
   const xScale = useMemo(() => {
@@ -192,7 +191,7 @@ const SquigGraph = ({
     [graphData],
   );
 
-  const visualizerGain = Math.min(1, Math.max(0, visualizerHeight * effectiveVolume));
+  const visualizerGain = Math.min(1, Math.max(0, visualizerHeight));
 
   const visualizerPoints = useMemo(() => {
     if (!visualizerData.length || !totalResponseProfile.length || visualizerGain <= 0) return [];
@@ -203,7 +202,7 @@ const SquigGraph = ({
       const responseDb = interpolateSPL(freq, totalResponseProfile);
       const responseY = yScale(responseDb);
       const maxBandHeight = Math.max(0, plotBottomY - responseY);
-      const ratio = Math.pow(Math.max(0, Math.min(1, point.normalizedPeakRatio)), 1.2) * visualizerGain;
+      const ratio = Math.max(0, Math.min(1, point.normalizedPeakRatio)) * visualizerGain;
       const y = plotBottomY - ratio * maxBandHeight;
 
       return { x, y };
