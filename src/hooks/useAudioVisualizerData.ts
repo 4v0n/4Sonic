@@ -1,11 +1,11 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { usePlaybackStore } from "../store/playbackStore";
+import { useUiPreferencesStore } from "../store/uiPreferencesStore";
 import type { VisualizerPoint } from "../types/visualizer";
 
 const MIN_FREQ = 20;
 const MAX_FREQ = 20000;
 const BAND_COUNT = 48;
-const DECAY_RATE = 0.9;
 const PEAK_DECAY = 0.995;
 
 const createBands = (count: number): VisualizerPoint[] => {
@@ -30,6 +30,8 @@ export const useAudioVisualizerData = (): VisualizerPoint[] => {
   const isPlaying = usePlaybackStore((state) => state.isPlaying);
   const getFrequencyData = usePlaybackStore((state) => state.getFrequencyData);
   const getSampleRate = usePlaybackStore((state) => state.getSampleRate);
+  const visualizerResponse = useUiPreferencesStore((state) => state.visualizerResponse);
+  const visualizerFps = useUiPreferencesStore((state) => state.visualizerFps);
 
   const bands = useMemo(() => createBands(BAND_COUNT), []);
   const emptyData = useMemo(() => createEmptyData(bands), [bands]);
@@ -43,6 +45,8 @@ export const useAudioVisualizerData = (): VisualizerPoint[] => {
 
   useEffect(() => {
     let raf: number | null = null;
+    let lastFrameTs = 0;
+    const frameIntervalMs = 1000 / Math.max(15, visualizerFps);
 
     const mapFrequencyData = (rawData: Uint8Array, sampleRate: number): VisualizerPoint[] => {
       const binCount = rawData.length;
@@ -81,19 +85,41 @@ export const useAudioVisualizerData = (): VisualizerPoint[] => {
       }));
     };
 
-    const tick = () => {
+    const tick = (ts: number) => {
+      if (lastFrameTs > 0 && ts - lastFrameTs < frameIntervalMs) {
+        const shouldContinue = isPlaying || lastDataRef.current.some((point) => point.normalizedPeakRatio > 0.01);
+        if (shouldContinue) {
+          raf = requestAnimationFrame(tick);
+        } else {
+          raf = null;
+        }
+        return;
+      }
+      lastFrameTs = ts;
+
       const rawData = getFrequencyData ? getFrequencyData() : null;
       const sampleRate = getSampleRate ? getSampleRate() : null;
 
       if (rawData && rawData.length > 0) {
-        const nextData = mapFrequencyData(rawData, sampleRate ?? 44100);
+        const mapped = mapFrequencyData(rawData, sampleRate ?? 44100);
+        const nextData = mapped.map((point, index) => {
+          const previous = lastDataRef.current[index];
+          if (!previous) {
+            return point;
+          }
+          return {
+            ...point,
+            normalizedPeakRatio: previous.normalizedPeakRatio + (point.normalizedPeakRatio - previous.normalizedPeakRatio) * visualizerResponse,
+          };
+        });
         lastDataRef.current = nextData;
         setData(nextData);
       } else {
         peakRef.current = Math.max(peakRef.current * PEAK_DECAY, 1);
+        const decayRate = 0.84 + (1 - visualizerResponse) * 0.13;
         const decayed = lastDataRef.current.map((point) => ({
           ...point,
-          normalizedPeakRatio: Math.max(0, point.normalizedPeakRatio * DECAY_RATE),
+          normalizedPeakRatio: Math.max(0, point.normalizedPeakRatio * decayRate),
         }));
         lastDataRef.current = decayed;
         setData(decayed);
@@ -117,7 +143,7 @@ export const useAudioVisualizerData = (): VisualizerPoint[] => {
         cancelAnimationFrame(raf);
       }
     };
-  }, [bands, getFrequencyData, getSampleRate, isPlaying]);
+  }, [bands, getFrequencyData, getSampleRate, isPlaying, visualizerFps, visualizerResponse]);
 
   return data;
 };

@@ -13,7 +13,7 @@ export const useEqPlaybackSync = (): void => {
   );
 
   useEffect(() => {
-    if (!activeProfile || activeProfile.mode === "advanced") {
+    if (!activeProfile) {
       setEq({ bands: [], preampDb: 0 });
       return;
     }
