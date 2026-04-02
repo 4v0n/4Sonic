@@ -34,6 +34,7 @@ export type eqFilter = {
 export type ProcessedGraphData = {
   freq: number;
   baseline: number;
+  reference: number;
   total: number;
   filters: number[];
 };
@@ -43,6 +44,20 @@ type SquigGraphProps = {
   preamp: number;
   applyPreampOffset?: boolean;
   measurementData: DataPoint[] | null;
+  referenceData?: DataPoint[] | null;
+  flattenReference?: boolean;
+};
+
+const normalizeCurveTo500Hz = (curve: DataPoint[] | null | undefined): DataPoint[] => {
+  if (!curve || curve.length === 0) {
+    return [];
+  }
+
+  const spl500 = interpolateSPL(500, curve);
+  return curve.map((point) => ({
+    freq: point.freq,
+    spl: point.spl - spl500,
+  }));
 };
 
 const SquigGraph = ({
@@ -50,6 +65,8 @@ const SquigGraph = ({
   preamp,
   applyPreampOffset = true,
   measurementData,
+  referenceData = null,
+  flattenReference = false,
 }: SquigGraphProps) => {
   const graphId = useId().replace(/:/g, "-");
   const containerRef = useRef<HTMLDivElement>(null);
@@ -63,6 +80,18 @@ const SquigGraph = ({
   const visualizerHeight = useUiPreferencesStore((state) => state.visualizerHeight);
   const getSampleRate = usePlaybackStore((state) => state.getSampleRate);
   const sampleRate = getSampleRate() ?? 48000;
+  const volume = usePlaybackStore((state) => state.volume);
+  const isMuted = usePlaybackStore((state) => state.isMuted);
+  const effectiveVolume = isMuted ? 0 : volume;
+  const normalizedMeasurement = useMemo(
+    () => normalizeCurveTo500Hz(measurementData),
+    [measurementData],
+  );
+  const normalizedReference = useMemo(
+    () => normalizeCurveTo500Hz(referenceData),
+    [referenceData],
+  );
+  const hasReferenceData = normalizedReference.length > 0;
 
   useEffect(() => {
     if (!containerRef.current) return;
@@ -80,17 +109,6 @@ const SquigGraph = ({
     const logMin = Math.log10(MIN_FREQ);
     const logMax = Math.log10(MAX_FREQ);
 
-    // Normalize measurement data if exists
-    let normalizedMeasurement: DataPoint[] = [];
-    if (measurementData && measurementData.length > 0) {
-      // Find 500Hz SPL 0 point
-      const spl500 = interpolateSPL(500, measurementData);
-      normalizedMeasurement = measurementData.map(d => ({
-        freq: d.freq,
-        spl: d.spl - spl500,
-      }));
-    }
-
     for (let i = 0; i < GRAPH_POINTS; i++) {
       const logFreq = logMin + (i / (GRAPH_POINTS - 1)) * (logMax - logMin);
       const freq = Math.pow(10, logFreq);
@@ -100,20 +118,37 @@ const SquigGraph = ({
         baseline = interpolateSPL(freq, normalizedMeasurement);
       }
 
+      let reference = 0;
+      if (normalizedReference.length > 0) {
+        reference = interpolateSPL(freq, normalizedReference);
+      }
+
+      const flattenOffset = flattenReference && normalizedReference.length > 0 ? reference : 0;
       const individualFilterResponses = filters.map(f => getBiquadMagnitude(f, freq, sampleRate));
       const totalFilterResponse = individualFilterResponses.reduce((a, b) => a + b, 0);
-      const total = baseline + (applyPreampOffset ? preamp : 0) + totalFilterResponse;
+      const displayedBaseline = baseline - flattenOffset;
+      const displayedReference = reference - flattenOffset;
+      const total = displayedBaseline + (applyPreampOffset ? preamp : 0) + totalFilterResponse;
 
       points.push({
         freq,
-        baseline,
+        baseline: displayedBaseline,
+        reference: displayedReference,
         total,
         // Visualized on top of baseline
-        filters: individualFilterResponses.map(r => baseline + r),
+        filters: individualFilterResponses.map(r => displayedBaseline + r),
       });
     }
     return points;
-  }, [applyPreampOffset, filters, measurementData, preamp, sampleRate]);
+  }, [
+    filters,
+    preamp,
+    normalizedMeasurement,
+    normalizedReference,
+    applyPreampOffset,
+    flattenReference,
+    sampleRate,
+  ]);
 
   // 2. Scales
   const xScale = useMemo(() => {
@@ -130,8 +165,8 @@ const SquigGraph = ({
     let maxdB = 20;
 
     graphData.forEach(d => {
-      mindB = Math.min(mindB, d.baseline, d.total, ...d.filters);
-      maxdB = Math.max(maxdB, d.baseline, d.total, ...d.filters);
+      mindB = Math.min(mindB, d.baseline, d.reference, d.total, ...d.filters);
+      maxdB = Math.max(maxdB, d.baseline, d.reference, d.total, ...d.filters);
     });
 
     // Add headroom
@@ -160,6 +195,11 @@ const SquigGraph = ({
   const baselineGenerator = d3Shape.line<ProcessedGraphData>()
     .x(d => xScale(d.freq))
     .y(d => yScale(d.baseline))
+    .curve(d3Shape.curveMonotoneX);
+
+  const referenceGenerator = d3Shape.line<ProcessedGraphData>()
+    .x(d => xScale(d.freq))
+    .y(d => yScale(d.reference))
     .curve(d3Shape.curveMonotoneX);
 
   // Area generators (Custom Polygon Logic for correct filling)
@@ -191,7 +231,7 @@ const SquigGraph = ({
     [graphData],
   );
 
-  const visualizerGain = Math.min(1, Math.max(0, visualizerHeight));
+  const visualizerGain = Math.min(1, Math.max(0, visualizerHeight * effectiveVolume));
 
   const visualizerPoints = useMemo(() => {
     if (!visualizerData.length || !totalResponseProfile.length || visualizerGain <= 0) return [];
@@ -202,7 +242,7 @@ const SquigGraph = ({
       const responseDb = interpolateSPL(freq, totalResponseProfile);
       const responseY = yScale(responseDb);
       const maxBandHeight = Math.max(0, plotBottomY - responseY);
-      const ratio = Math.max(0, Math.min(1, point.normalizedPeakRatio)) * visualizerGain;
+      const ratio = Math.pow(Math.max(0, Math.min(1, point.normalizedPeakRatio)), 1.2) * visualizerGain;
       const y = plotBottomY - ratio * maxBandHeight;
 
       return { x, y };
@@ -339,6 +379,33 @@ const SquigGraph = ({
           strokeWidth={2}
           className="opacity-85"
         />
+
+        {/* Optional target/reference curve */}
+        {hasReferenceData ? (
+          <g>
+            <path
+              d={referenceGenerator(graphData) || ""}
+              fill="none"
+              stroke="#f8fafc"
+              strokeWidth={2}
+              strokeDasharray="7 7"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              opacity={0.9}
+            />
+            <path
+              d={referenceGenerator(graphData) || ""}
+              fill="none"
+              stroke="#9ca3af"
+              strokeWidth={2}
+              strokeDasharray="7 7"
+              strokeDashoffset="7"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              opacity={0.95}
+            />
+          </g>
+        ) : null}
 
         {/* Individual Filters */}
         {filters.map((filter, index) => {

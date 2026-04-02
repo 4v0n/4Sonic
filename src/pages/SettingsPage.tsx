@@ -51,11 +51,15 @@ const SettingsPage = () => {
   const visualizerOpacity = useUiPreferencesStore((state) => state.visualizerOpacity);
   const visualizerBlur = useUiPreferencesStore((state) => state.visualizerBlur);
   const visualizerHeight = useUiPreferencesStore((state) => state.visualizerHeight);
+  const visualizerResponse = useUiPreferencesStore((state) => state.visualizerResponse);
+  const visualizerFps = useUiPreferencesStore((state) => state.visualizerFps);
   const setToastPosition = useUiPreferencesStore((state) => state.setToastPosition);
   const setVisualizerColor = useUiPreferencesStore((state) => state.setVisualizerColor);
   const setVisualizerOpacity = useUiPreferencesStore((state) => state.setVisualizerOpacity);
   const setVisualizerBlur = useUiPreferencesStore((state) => state.setVisualizerBlur);
   const setVisualizerHeight = useUiPreferencesStore((state) => state.setVisualizerHeight);
+  const setVisualizerResponse = useUiPreferencesStore((state) => state.setVisualizerResponse);
+  const setVisualizerFps = useUiPreferencesStore((state) => state.setVisualizerFps);
   const toastPositionOptions = useMemo(
     () => ([
       { label: "Top left", value: "top-left" as ToastPosition },
@@ -231,6 +235,50 @@ const SettingsPage = () => {
               value={[visualizerHeight]}
               onValueChange={(value) => setVisualizerHeight(value[0] ?? visualizerHeight)}
               aria-label="Visualizer height"
+            />
+          </div>
+        </SettingRow>
+
+        <SettingRow
+          name="Visualizer response"
+          description="Lower values smooth motion and make peaks rise/fall less abruptly."
+          align="start"
+        >
+          <div className="w-full rounded-xl border border-(--surface2) bg-(--surface1) p-4 md:w-[340px]">
+            <div className="mb-2 flex items-center justify-between text-xs text-(--text-grey)">
+              <span>Smooth</span>
+              <span className="font-semibold text-(--text)">{Math.round(visualizerResponse * 100)}%</span>
+              <span>Reactive</span>
+            </div>
+            <Slider
+              min={0.05}
+              max={1}
+              step={0.05}
+              value={[visualizerResponse]}
+              onValueChange={(value) => setVisualizerResponse(value[0] ?? visualizerResponse)}
+              aria-label="Visualizer response"
+            />
+          </div>
+        </SettingRow>
+
+        <SettingRow
+          name="Visualizer frame rate"
+          description="Caps animation FPS to avoid overly fast-looking movement."
+          align="start"
+        >
+          <div className="w-full rounded-xl border border-(--surface2) bg-(--surface1) p-4 md:w-[340px]">
+            <div className="mb-2 flex items-center justify-between text-xs text-(--text-grey)">
+              <span>Calm</span>
+              <span className="font-semibold text-(--text)">{visualizerFps} FPS</span>
+              <span>Fluid</span>
+            </div>
+            <Slider
+              min={15}
+              max={120}
+              step={5}
+              value={[visualizerFps]}
+              onValueChange={(value) => setVisualizerFps(value[0] ?? visualizerFps)}
+              aria-label="Visualizer frame rate"
             />
           </div>
         </SettingRow>
