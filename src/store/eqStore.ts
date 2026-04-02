@@ -90,6 +90,8 @@ export type EqProfile = {
 };
 
 type EqState = {
+  eqEnabled: boolean;
+  setEqEnabled: (enabled: boolean) => void;
   profiles: EqProfile[];
   activeProfileId: string;
   setActiveProfile: (id: string) => void;
@@ -282,8 +284,13 @@ const initialProfile = createProfile(DEFAULT_PROFILE_NAME);
 export const useEqStore = create<EqState>()(
   persist(
     (set) => ({
+      eqEnabled: true,
       profiles: [initialProfile],
       activeProfileId: initialProfile.id,
+
+      setEqEnabled: (enabled) => {
+        set({ eqEnabled: enabled });
+      },
 
       setActiveProfile: (id) => {
         set((state) => {
@@ -526,9 +533,10 @@ export const useEqStore = create<EqState>()(
     }),
     {
       name: "eq-profiles",
-      version: 5,
+      version: 6,
       migrate: (persistedState: unknown) => {
         const state = persistedState as {
+          eqEnabled?: boolean;
           profiles?: PersistedEqProfile[];
           activeProfileId?: string;
         };
@@ -574,11 +582,13 @@ export const useEqStore = create<EqState>()(
 
         return {
           ...state,
+          eqEnabled: state?.eqEnabled ?? true,
           profiles,
           activeProfileId,
         };
       },
       partialize: (state) => ({
+        eqEnabled: state.eqEnabled,
         profiles: state.profiles,
         activeProfileId: state.activeProfileId,
       }),

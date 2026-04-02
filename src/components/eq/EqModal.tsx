@@ -94,6 +94,8 @@ const toFiniteOrFallback = (value: string, fallback: number): number => {
 };
 
 const EqModal = ({ open, onOpenChange }: EqModalProps) => {
+  const eqEnabled = useEqStore((state) => state.eqEnabled);
+  const setEqEnabled = useEqStore((state) => state.setEqEnabled);
   const profiles = useEqStore((state) => state.profiles);
   const activeProfileId = useEqStore((state) => state.activeProfileId);
   const setActiveProfile = useEqStore((state) => state.setActiveProfile);
@@ -308,6 +310,20 @@ const EqModal = ({ open, onOpenChange }: EqModalProps) => {
                     </Button>
                   ))}
                 </div>
+              </div>
+
+              <div className="flex items-center justify-between rounded-xl border border-(--surface2) bg-(--surface0) px-3 py-2">
+                <div>
+                  <p className="text-xs font-semibold uppercase tracking-wide text-(--text-grey)">EQ</p>
+                  <p className="text-xs text-(--text-grey)">
+                    {eqEnabled ? "On (processing active)" : "Off (playback bypassed)"}
+                  </p>
+                </div>
+                <Switch
+                  checked={eqEnabled}
+                  onCheckedChange={setEqEnabled}
+                  aria-label="Toggle equalizer on or off"
+                />
               </div>
 
               <div className="space-y-2">
