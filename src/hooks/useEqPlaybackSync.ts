@@ -3,6 +3,7 @@ import { resolveProfileBands, resolveProfilePreamp, useEqStore } from "../store/
 import { usePlaybackStore } from "../store/playbackStore";
 
 export const useEqPlaybackSync = (): void => {
+  const eqEnabled = useEqStore((state) => state.eqEnabled);
   const profiles = useEqStore((state) => state.profiles);
   const activeProfileId = useEqStore((state) => state.activeProfileId);
   const setEq = usePlaybackStore((state) => state.setEq);
@@ -13,7 +14,7 @@ export const useEqPlaybackSync = (): void => {
   );
 
   useEffect(() => {
-    if (!activeProfile || activeProfile.mode === "advanced") {
+    if (!eqEnabled || !activeProfile) {
       setEq({ bands: [], preampDb: 0 });
       return;
     }
@@ -31,7 +32,7 @@ export const useEqPlaybackSync = (): void => {
       bands: activeBands,
       preampDb: resolveProfilePreamp(activeProfile),
     });
-  }, [activeProfile, setEq]);
+  }, [activeProfile, eqEnabled, setEq]);
 };
 
 export default useEqPlaybackSync;

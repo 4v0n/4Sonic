@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { usePlaybackStore } from "../store/playbackStore";
+import { useUiPreferencesStore } from "../store/uiPreferencesStore";
 import type { VisualizerPoint } from "../types/visualizer";
 import { RealFft, applyHannWindow } from "../utils/fft";
 
@@ -10,7 +11,6 @@ const DISPLAY_DB_FLOOR = -96;
 const DISPLAY_DB_CEILING = 0;
 const ATTACK_ALPHA = 0.45;
 const RELEASE_ALPHA = 0.2;
-const DECAY_RATE = 0.88;
 
 type VisualizerBand = VisualizerPoint & {
   fMin: number;
@@ -78,6 +78,8 @@ export const useAudioVisualizerData = (): VisualizerPoint[] => {
   const isPlaying = usePlaybackStore((state) => state.isPlaying);
   const getTimeDomainData = usePlaybackStore((state) => state.getTimeDomainData);
   const getSampleRate = usePlaybackStore((state) => state.getSampleRate);
+  const visualizerResponse = useUiPreferencesStore((state) => state.visualizerResponse);
+  const visualizerFps = useUiPreferencesStore((state) => state.visualizerFps);
 
   const bands = useMemo(() => createBands(BAND_COUNT), []);
   const emptyData = useMemo(() => createEmptyData(bands), [bands]);
@@ -99,6 +101,9 @@ export const useAudioVisualizerData = (): VisualizerPoint[] => {
 
   useEffect(() => {
     let raf: number | null = null;
+    let lastFrameTs = 0;
+    const frameIntervalMs = 1000 / Math.max(15, visualizerFps);
+    const response = Math.max(0.05, Math.min(1, visualizerResponse));
 
     const initializeFftState = (fftSize: number): void => {
       if (fftSizeRef.current === fftSize && fftRef.current) {
@@ -164,7 +169,8 @@ export const useAudioVisualizerData = (): VisualizerPoint[] => {
         const targetRatio = clampUnit((dbfs - DISPLAY_DB_FLOOR) / (DISPLAY_DB_CEILING - DISPLAY_DB_FLOOR));
 
         const previous = lastDataRef.current[index]?.normalizedPeakRatio ?? 0;
-        const alpha = targetRatio >= previous ? ATTACK_ALPHA : RELEASE_ALPHA;
+        const baseAlpha = targetRatio >= previous ? ATTACK_ALPHA : RELEASE_ALPHA;
+        const alpha = Math.max(0.05, Math.min(1, baseAlpha * (0.5 + response)));
         const smoothed = previous + (targetRatio - previous) * alpha;
 
         return {
@@ -175,7 +181,18 @@ export const useAudioVisualizerData = (): VisualizerPoint[] => {
       });
     };
 
-    const tick = () => {
+    const tick = (ts: number) => {
+      if (lastFrameTs > 0 && ts - lastFrameTs < frameIntervalMs) {
+        const shouldContinue = isPlaying || lastDataRef.current.some((point) => point.normalizedPeakRatio > 0.003);
+        if (shouldContinue) {
+          raf = requestAnimationFrame(tick);
+        } else {
+          raf = null;
+        }
+        return;
+      }
+      lastFrameTs = ts;
+
       const timeDomainData = getTimeDomainData ? getTimeDomainData() : null;
       const sampleRate = getSampleRate ? getSampleRate() : null;
 
@@ -184,9 +201,10 @@ export const useAudioVisualizerData = (): VisualizerPoint[] => {
         lastDataRef.current = nextData;
         setData(nextData);
       } else {
+        const decayRate = 0.84 + (1 - response) * 0.13;
         const decayed = lastDataRef.current.map((point) => ({
           ...point,
-          normalizedPeakRatio: Math.max(0, point.normalizedPeakRatio * DECAY_RATE),
+          normalizedPeakRatio: Math.max(0, point.normalizedPeakRatio * decayRate),
         }));
         lastDataRef.current = decayed;
         setData(decayed);
@@ -210,7 +228,7 @@ export const useAudioVisualizerData = (): VisualizerPoint[] => {
         cancelAnimationFrame(raf);
       }
     };
-  }, [bands, getSampleRate, getTimeDomainData, isPlaying]);
+  }, [bands, getSampleRate, getTimeDomainData, isPlaying, visualizerFps, visualizerResponse]);
 
   return data;
 };

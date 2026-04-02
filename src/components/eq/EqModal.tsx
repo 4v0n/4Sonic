@@ -4,14 +4,21 @@ import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } f
 import Button from "../ui/Button";
 import Select from "../ui/Select";
 import Slider from "../ui/Slider";
+import Switch from "../ui/Switch";
 import TextInput from "../ui/TextInput";
 import SquigGraph, { FilterType, eqFilter } from "../ui/SquigGraph";
 import { parseFRFile, smoothData } from "../../utils/fr";
+import { parseSquiglinkEqText } from "../../utils/eqImport";
 import cn from "../../utils/cn";
 import {
+  ADVANCED_EQ_GAIN_LIMIT,
   EqFilterType,
   EqMode,
   EqPreampMode,
+  EQ_MAX_FREQUENCY,
+  EQ_MAX_Q,
+  EQ_MIN_FREQUENCY,
+  EQ_MIN_Q,
   SIMPLE_EQ_CONTROLS,
   SIMPLE_EQ_GAIN_LIMIT,
   resolveProfileBands,
@@ -33,6 +40,12 @@ const MODE_OPTIONS: { id: EqMode; label: string }[] = [
 const PREAMP_MODE_OPTIONS: { id: EqPreampMode; label: string }[] = [
   { id: "auto", label: "Auto" },
   { id: "manual", label: "Manual" },
+];
+
+const FILTER_TYPE_OPTIONS: { label: string; value: EqFilterType }[] = [
+  { label: "Peak", value: "peaking" },
+  { label: "Low shelf", value: "lowshelf" },
+  { label: "High shelf", value: "highshelf" },
 ];
 
 const formatFrequency = (frequency: number): string => {
@@ -75,7 +88,14 @@ const simpleSliderToneClasses = [
   "[&_[data-slot=slider-thumb]]:shadow-[0_0_0_1px_var(--eq-simple-accent)]",
 ].join(" ");
 
+const toFiniteOrFallback = (value: string, fallback: number): number => {
+  const parsed = Number.parseFloat(value);
+  return Number.isFinite(parsed) ? parsed : fallback;
+};
+
 const EqModal = ({ open, onOpenChange }: EqModalProps) => {
+  const eqEnabled = useEqStore((state) => state.eqEnabled);
+  const setEqEnabled = useEqStore((state) => state.setEqEnabled);
   const profiles = useEqStore((state) => state.profiles);
   const activeProfileId = useEqStore((state) => state.activeProfileId);
   const setActiveProfile = useEqStore((state) => state.setActiveProfile);
@@ -86,21 +106,34 @@ const EqModal = ({ open, onOpenChange }: EqModalProps) => {
   const setActiveProfilePreampMode = useEqStore((state) => state.setActiveProfilePreampMode);
   const setActiveProfilePreamp = useEqStore((state) => state.setActiveProfilePreamp);
   const setActiveProfileBandGain = useEqStore((state) => state.setActiveProfileBandGain);
+  const setActiveProfileAdvancedBand = useEqStore((state) => state.setActiveProfileAdvancedBand);
+  const addActiveProfileAdvancedBand = useEqStore((state) => state.addActiveProfileAdvancedBand);
+  const removeActiveProfileAdvancedBand = useEqStore((state) => state.removeActiveProfileAdvancedBand);
+  const replaceActiveProfileAdvancedBands = useEqStore((state) => state.replaceActiveProfileAdvancedBands);
   const setActiveProfileSimpleControlGain = useEqStore((state) => state.setActiveProfileSimpleControlGain);
   const setActiveProfileMeasurement = useEqStore((state) => state.setActiveProfileMeasurement);
   const clearActiveProfileMeasurement = useEqStore((state) => state.clearActiveProfileMeasurement);
+  const setActiveProfileReference = useEqStore((state) => state.setActiveProfileReference);
+  const clearActiveProfileReference = useEqStore((state) => state.clearActiveProfileReference);
+  const setActiveProfileFlattenReference = useEqStore((state) => state.setActiveProfileFlattenReference);
   const resetActiveProfileBands = useEqStore((state) => state.resetActiveProfileBands);
 
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const referenceFileInputRef = useRef<HTMLInputElement>(null);
   const activeProfile = useMemo(
     () => profiles.find((profile) => profile.id === activeProfileId) ?? profiles[0],
     [activeProfileId, profiles],
   );
   const [profileNameDraft, setProfileNameDraft] = useState(activeProfile?.name ?? "");
+  const [squigImportDraft, setSquigImportDraft] = useState("");
 
   useEffect(() => {
     setProfileNameDraft(activeProfile?.name ?? "");
   }, [activeProfile?.id, activeProfile?.name]);
+
+  useEffect(() => {
+    setSquigImportDraft("");
+  }, [activeProfile?.id]);
 
   const profileOptions = useMemo(
     () => profiles.map((profile) => ({ label: profile.name, value: profile.id })),
@@ -115,7 +148,7 @@ const EqModal = ({ open, onOpenChange }: EqModalProps) => {
   const graphFilters = useMemo<eqFilter[]>(
     () => (
       activeProfile ? effectiveBands.map((band, index) => ({
-        id: `${activeProfile.id}-${activeProfile.mode}-${band.freq}-${index}`,
+        id: `${activeProfile.id}-${activeProfile.mode}-${band.id}-${index}`,
         type: toGraphFilterType(band.type),
         freq: band.freq,
         gain: band.gain,
@@ -178,6 +211,54 @@ const EqModal = ({ open, onOpenChange }: EqModalProps) => {
     }
   };
 
+  const handleUploadReference: React.ChangeEventHandler<HTMLInputElement> = async (event) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+
+    try {
+      const text = await file.text();
+      const parsed = parseFRFile(text);
+      if (parsed.length < 2) {
+        toast.error("Unable to load reference curve", { description: "Need at least 2 valid freq/SPL rows." });
+        return;
+      }
+      const smoothed = smoothData(parsed);
+      setActiveProfileReference(smoothed, file.name);
+      toast.success(`Loaded ${smoothed.length} reference points`);
+    } catch (error) {
+      const description = error instanceof Error ? error.message : undefined;
+      toast.error("Failed to parse reference file", description ? { description } : undefined);
+    } finally {
+      event.target.value = "";
+    }
+  };
+
+  const handleImportSquiglink = () => {
+    try {
+      const parsed = parseSquiglinkEqText(squigImportDraft);
+      replaceActiveProfileAdvancedBands(parsed.filters);
+      if (parsed.preamp !== null) {
+        setActiveProfilePreampMode("manual");
+        setActiveProfilePreamp(parsed.preamp);
+      }
+      toast.success(`Imported ${parsed.filters.length} filters`);
+    } catch (error) {
+      const message = error instanceof Error ? error.message : "Invalid import format";
+      toast.error("Failed to import EQ", { description: message });
+    }
+  };
+
+  const updateAdvancedBandNumber = (
+    bandId: string,
+    field: "freq" | "q" | "gain",
+    rawValue: string,
+    fallback: number,
+  ) => {
+    const value = toFiniteOrFallback(rawValue, fallback);
+    const updates: Partial<Record<"freq" | "q" | "gain", number>> = { [field]: value };
+    setActiveProfileAdvancedBand(bandId, updates);
+  };
+
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-h-[92dvh] max-w-[min(1200px,95vw)] p-0 sm:rounded-2xl">
@@ -231,6 +312,20 @@ const EqModal = ({ open, onOpenChange }: EqModalProps) => {
                 </div>
               </div>
 
+              <div className="flex items-center justify-between rounded-xl border border-(--surface2) bg-(--surface0) px-3 py-2">
+                <div>
+                  <p className="text-xs font-semibold uppercase tracking-wide text-(--text-grey)">EQ</p>
+                  <p className="text-xs text-(--text-grey)">
+                    {eqEnabled ? "On (processing active)" : "Off (playback bypassed)"}
+                  </p>
+                </div>
+                <Switch
+                  checked={eqEnabled}
+                  onCheckedChange={setEqEnabled}
+                  aria-label="Toggle equalizer on or off"
+                />
+              </div>
+
               <div className="space-y-2">
                 <p className="text-xs font-semibold uppercase tracking-wide text-(--text-grey)">FR Baseline</p>
                 <div className="flex flex-wrap gap-2">
@@ -259,6 +354,43 @@ const EqModal = ({ open, onOpenChange }: EqModalProps) => {
                     : "Upload a two-column file: freq spl"}
                 </p>
               </div>
+
+              <div className="space-y-2">
+                <p className="text-xs font-semibold uppercase tracking-wide text-(--text-grey)">Target / Reference</p>
+                <div className="flex flex-wrap gap-2">
+                  <Button size="small" variant="outline" onClick={() => referenceFileInputRef.current?.click()}>
+                    Upload Ref
+                  </Button>
+                  <Button
+                    size="small"
+                    variant="ghost"
+                    onClick={clearActiveProfileReference}
+                    disabled={!activeProfile.referenceData}
+                  >
+                    Clear
+                  </Button>
+                  <Button
+                    size="small"
+                    variant={activeProfile.flattenReference ? "primary" : "outline"}
+                    onClick={() => setActiveProfileFlattenReference(!activeProfile.flattenReference)}
+                    disabled={!activeProfile.referenceData}
+                  >
+                    {activeProfile.flattenReference ? "Flatten On" : "Flatten"}
+                  </Button>
+                  <input
+                    ref={referenceFileInputRef}
+                    type="file"
+                    accept=".txt,.frd,.csv,text/plain"
+                    className="hidden"
+                    onChange={handleUploadReference}
+                  />
+                </div>
+                <p className="text-xs text-(--text-grey)">
+                  {activeProfile.referenceFileName
+                    ? `Loaded: ${activeProfile.referenceFileName} (${activeProfile.referenceData?.length ?? 0} points, smoothed)`
+                    : "Upload optional reference curve (freq spl) for overlay/flattening"}
+                </p>
+              </div>
             </div>
           </div>
 
@@ -270,6 +402,8 @@ const EqModal = ({ open, onOpenChange }: EqModalProps) => {
                   preamp={effectivePreamp}
                   applyPreampOffset={activeProfile.preampMode !== "auto"}
                   measurementData={activeProfile.measurementData}
+                  referenceData={activeProfile.referenceData}
+                  flattenReference={activeProfile.flattenReference}
                 />
               </div>
 
@@ -320,8 +454,8 @@ const EqModal = ({ open, onOpenChange }: EqModalProps) => {
                         </div>
                       ) : null}
 
-                      {activeProfile.bands.map((band) => (
-                        <div key={band.freq} className="flex shrink-0 flex-col items-center px-2 py-3">
+                      {activeProfile.tenBandBands.map((band) => (
+                        <div key={band.id} className="flex shrink-0 flex-col items-center px-2 py-3">
                           <span className="mb-2 text-xs font-semibold text-(--text)">{band.gain.toFixed(1)}</span>
                           <div className="h-40">
                             <Slider
@@ -419,8 +553,180 @@ const EqModal = ({ open, onOpenChange }: EqModalProps) => {
                     </div>
                   </div>
                 ) : (
-                  <div className="flex min-h-[220px] items-center justify-center rounded-xl border border-dashed border-(--surface3) bg-(--surface0) p-6 text-center text-sm text-(--text-grey)">
-                    Advanced mode is planned but not implemented yet.
+                  <div className="space-y-4">
+                    <div className="space-y-3">
+                      <div className="flex flex-wrap items-center justify-between gap-2 text-sm">
+                        <span className="text-(--text-grey)">
+                          Preamp: <span className="font-semibold text-(--text)">{effectivePreamp.toFixed(1)} dB</span>
+                        </span>
+                        <div className="grid grid-cols-2 gap-2">
+                          {PREAMP_MODE_OPTIONS.map((option) => (
+                            <Button
+                              key={option.id}
+                              size="small"
+                              variant={activeProfile.preampMode === option.id ? "primary" : "outline"}
+                              onClick={() => setActiveProfilePreampMode(option.id)}
+                              className="rounded-xl"
+                            >
+                              {option.label}
+                            </Button>
+                          ))}
+                        </div>
+                      </div>
+                      <p className="text-xs text-(--text-grey)">
+                        Advanced mode supports any number of PEQ filters and Squiglink imports.
+                      </p>
+                    </div>
+
+                    {activeProfile.preampMode === "manual" ? (
+                      <div className="space-y-2 rounded-xl bg-(--surface0) p-2">
+                        <div className="flex flex-wrap items-center justify-between gap-2 text-sm">
+                          <span className="text-(--text-grey)">
+                            Manual Preamp: <span className="font-semibold text-(--text)">{activeProfile.preamp.toFixed(1)} dB</span>
+                          </span>
+                        </div>
+                        <Slider
+                          orientation="horizontal"
+                          min={-24}
+                          max={24}
+                          step={0.1}
+                          value={[activeProfile.preamp]}
+                          onValueChange={(value) => setActiveProfilePreamp(value[0] ?? activeProfile.preamp)}
+                          className="w-full"
+                        />
+                      </div>
+                    ) : null}
+
+                    <div className="space-y-2 rounded-xl border border-(--surface2) bg-(--surface0) p-3">
+                      <div className="flex flex-wrap items-center justify-between gap-2">
+                        <p className="text-xs font-semibold uppercase tracking-wide text-(--text-grey)">Import from Squiglink</p>
+                        <div className="flex gap-2">
+                          <Button
+                            size="small"
+                            variant="ghost"
+                            onClick={() => setSquigImportDraft("")}
+                            disabled={!squigImportDraft.trim()}
+                          >
+                            Clear
+                          </Button>
+                          <Button
+                            size="small"
+                            variant="outline"
+                            onClick={handleImportSquiglink}
+                            disabled={!squigImportDraft.trim()}
+                          >
+                            Import
+                          </Button>
+                        </div>
+                      </div>
+                      <textarea
+                        value={squigImportDraft}
+                        onChange={(event) => setSquigImportDraft(event.target.value)}
+                        rows={6}
+                        className="w-full resize-y rounded-xl border border-(--surface2) bg-(--surface1) p-3 text-xs text-(--text) outline-none focus:border-(--primary0)"
+                        placeholder={"Preamp: -7.5 dB\nFilter 1: ON PK Fc 20 Hz Gain 1.3 dB Q 2.000"}
+                      />
+                      <p className="text-xs text-(--text-grey)">
+                        Supports `PK`, `LS`, and `HS` filters. Preamp is optional.
+                      </p>
+                    </div>
+
+                    <div className="flex flex-wrap items-center justify-between gap-2">
+                      <p className="text-xs font-semibold uppercase tracking-wide text-(--text-grey)">
+                        Filters ({activeProfile.advancedBands.length})
+                      </p>
+                      <Button size="small" variant="outline" onClick={() => addActiveProfileAdvancedBand()}>
+                        Add filter
+                      </Button>
+                    </div>
+
+                    {activeProfile.advancedBands.length === 0 ? (
+                      <div className="rounded-xl border border-dashed border-(--surface3) bg-(--surface0) p-4 text-center text-sm text-(--text-grey)">
+                        No filters yet. Add one or import from Squiglink.
+                      </div>
+                    ) : (
+                      <div className="space-y-2">
+                        {activeProfile.advancedBands.map((band, index) => (
+                          <div key={band.id} className="space-y-3 rounded-xl border border-(--surface2) bg-(--surface0) p-3">
+                            <div className="flex flex-wrap items-center justify-between gap-2">
+                              <p className="text-sm font-semibold text-(--text)">Filter {index + 1}</p>
+                              <div className="flex items-center gap-2">
+                                <span className="text-xs text-(--text-grey)">Enabled</span>
+                                <Switch
+                                  size="sm"
+                                  checked={band.enabled}
+                                  onCheckedChange={(checked) => setActiveProfileAdvancedBand(band.id, { enabled: checked })}
+                                />
+                                <Button
+                                  size="small"
+                                  variant="ghost"
+                                  onClick={() => removeActiveProfileAdvancedBand(band.id)}
+                                >
+                                  Remove
+                                </Button>
+                              </div>
+                            </div>
+
+                            <div className="grid grid-cols-1 gap-2 sm:grid-cols-3">
+                              <div className="space-y-1">
+                                <p className="text-xs text-(--text-grey)">Type</p>
+                                <Select
+                                  size="small"
+                                  value={band.type}
+                                  onValueChange={(value) => setActiveProfileAdvancedBand(band.id, { type: value as EqFilterType })}
+                                  options={FILTER_TYPE_OPTIONS}
+                                  fullWidth
+                                />
+                              </div>
+                              <div className="space-y-1">
+                                <p className="text-xs text-(--text-grey)">Frequency (Hz)</p>
+                                <input
+                                  type="number"
+                                  min={EQ_MIN_FREQUENCY}
+                                  max={EQ_MAX_FREQUENCY}
+                                  step={1}
+                                  defaultValue={band.freq}
+                                  onBlur={(event) => updateAdvancedBandNumber(band.id, "freq", event.target.value, band.freq)}
+                                  className="h-8 w-full rounded-full border border-(--surface2) bg-(--surface1) px-3 text-sm text-(--text) outline-none focus:border-(--primary0)"
+                                />
+                              </div>
+                              <div className="space-y-1">
+                                <p className="text-xs text-(--text-grey)">Q</p>
+                                <input
+                                  type="number"
+                                  min={EQ_MIN_Q}
+                                  max={EQ_MAX_Q}
+                                  step={0.01}
+                                  defaultValue={band.q}
+                                  onBlur={(event) => updateAdvancedBandNumber(band.id, "q", event.target.value, band.q)}
+                                  className="h-8 w-full rounded-full border border-(--surface2) bg-(--surface1) px-3 text-sm text-(--text) outline-none focus:border-(--primary0)"
+                                />
+                              </div>
+                            </div>
+
+                            <div className="space-y-2">
+                              <div className="flex items-center justify-between text-xs text-(--text-grey)">
+                                <span>Gain</span>
+                                <span className="font-semibold text-(--text)">{band.gain.toFixed(1)} dB</span>
+                              </div>
+                              <Slider
+                                orientation="horizontal"
+                                min={-ADVANCED_EQ_GAIN_LIMIT}
+                                max={ADVANCED_EQ_GAIN_LIMIT}
+                                step={0.1}
+                                value={[band.gain]}
+                                onValueChange={(value) => setActiveProfileAdvancedBand(band.id, { gain: value[0] ?? band.gain })}
+                                className="w-full"
+                              />
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+
+                    <div className="flex justify-end">
+                      <Button size="small" variant="ghost" onClick={resetActiveProfileBands}>Reset</Button>
+                    </div>
                   </div>
                 )}
               </div>
