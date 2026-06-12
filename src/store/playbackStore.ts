@@ -37,7 +37,7 @@ interface PlaybackState {
   getFrequencyData: () => Uint8Array | null;
   getTimeDomainData: () => Float32Array | null;
   getSampleRate: () => number | null;
-  playSong: (songId: string, options?: { queueItem?: QueueItem; source?: QueueSource }) => Promise<void>;
+  playSong: (songId: string, options?: { queueItem?: QueueItem; source?: QueueSource }) => Promise<boolean>;
   togglePlayPause: () => Promise<void>;
   pause: () => void;
   seek: (time: number) => void;
@@ -58,20 +58,24 @@ interface PlaybackState {
   addToQueueFront: (items: QueueItem[]) => void;
   moveQueueItem: (fromOrderIndex: number, toOrderIndex: number) => void;
   removeFromQueue: (orderIndex: number) => void;
-  playFromQueue: (orderIndex: number) => Promise<void>;
-  playFromRegularQueue: (orderIndex: number) => Promise<void>;
+  playFromQueue: (orderIndex: number) => Promise<boolean>;
+  playFromRegularQueue: (orderIndex: number) => Promise<boolean>;
   playNext: () => Promise<void>;
   playPrevious: () => Promise<void>;
 }
 
 const DEFAULT_VOLUME = 0.85;
 const END_TOLERANCE_SECONDS = 1.5;
+const MAX_CONSECUTIVE_FAILURES = 3;
 const player = new HiResAudioPlayer();
 player.setVolume(DEFAULT_VOLUME);
 
 let activeRequestToken: symbol | null = null;
 let scrubWasPlaying = false;
 let releaseCurrentSource: (() => void) | null = null;
+let releaseNextSource: (() => void) | null = null;
+let preloadToken = 0;
+let consecutiveFailures = 0;
 
 const createQueueOrder = (count: number, shuffle: boolean, anchorIndex: number): number[] => {
   const indices = Array.from({ length: count }, (_, index) => index);
@@ -130,7 +134,127 @@ export const usePlaybackStore = create<PlaybackState>()(
         if (typeof nextRegularIndex === "number") {
           return state.regularQueue[nextRegularIndex] ?? null;
         }
+        if (state.repeat === "all" && state.regularQueueOrder.length > 0) {
+          const firstIndex = state.regularQueueOrder[0];
+          return state.regularQueue[firstIndex] ?? null;
+        }
         return null;
+      };
+
+      interface NextItemConsumption {
+        item: QueueItem;
+        source: QueueSource;
+        patch: Partial<PlaybackState>;
+      }
+
+      const consumeNextItem = (state: PlaybackState): NextItemConsumption | null => {
+        const priorityQueueIndex = state.queueOrder[0];
+        if (typeof priorityQueueIndex === "number" && state.queue[priorityQueueIndex]) {
+          const item = state.queue[priorityQueueIndex];
+          const nextQueue = state.queue.filter((_, index) => index !== priorityQueueIndex);
+          const nextOrder = state.queueOrder
+            .filter((_, index) => index !== 0)
+            .map((index) => (index > priorityQueueIndex ? index - 1 : index));
+          return {
+            item,
+            source: "priority",
+            patch: {
+              queue: nextQueue,
+              queueOrder: nextOrder,
+              queuePosition: -1,
+              currentSource: "priority",
+            },
+          };
+        }
+
+        const nextRegularOrderIndex = getNextRegularOrderIndex(state);
+        let targetOrderIndex = -1;
+        if (nextRegularOrderIndex < state.regularQueueOrder.length) {
+          targetOrderIndex = nextRegularOrderIndex;
+        } else if (state.repeat === "all" && state.regularQueueOrder.length > 0) {
+          targetOrderIndex = 0;
+        }
+        if (targetOrderIndex === -1) {
+          return null;
+        }
+
+        const queueIndex = state.regularQueueOrder[targetOrderIndex];
+        const item = state.regularQueue[queueIndex];
+        if (!item) {
+          return null;
+        }
+        return {
+          item,
+          source: "regular",
+          patch: {
+            regularQueuePosition: targetOrderIndex,
+            currentSource: "regular",
+          },
+        };
+      };
+
+      const buildStreamUrl = (songId: string): string | null => {
+        const session = useAuthStore.getState().session;
+        if (!session) return null;
+        return session.client.getStreamUrl(songId, {
+          maxBitRate: 0,
+          format: "flac",
+          estimateContentLength: true,
+        });
+      };
+
+      const syncGaplessPreload = async (): Promise<void> => {
+        const token = ++preloadToken;
+        const state = get();
+        let nextItem = state.repeat === "one" || !state.currentSong
+          ? null
+          : getNextPlayableItem(state);
+        if (nextItem && nextItem.id === state.currentSong?.id) {
+          nextItem = null;
+        }
+
+        if (!nextItem) {
+          player.clearPreload();
+          releaseNextSource?.();
+          releaseNextSource = null;
+          return;
+        }
+
+        if (player.getPreloadedTrackId() === nextItem.id) {
+          return;
+        }
+
+        const streamUrl = buildStreamUrl(nextItem.id);
+        if (!streamUrl) return;
+
+        try {
+          const playable = await audioCache.getPlayableSource(
+            { id: nextItem.id, url: streamUrl, duration: nextItem.duration },
+            { allowPrefetch: false },
+          );
+
+          if (token !== preloadToken) {
+            playable.cleanup?.();
+            return;
+          }
+
+          releaseNextSource?.();
+          releaseNextSource = playable.cleanup ?? null;
+          player.preloadNext({ id: nextItem.id, url: playable.url, duration: nextItem.duration });
+        } catch (error) {
+          console.debug("Gapless preload failed", error);
+        }
+      };
+
+      const startQueueIfIdle = (): void => {
+        const state = get();
+        const idle = !state.currentSong
+          || (!state.isPlaying && !state.isLoading && state.currentSource === null);
+        if (idle && state.queueOrder.length > 0) {
+          void state.playFromQueue(0);
+          return;
+        }
+        void syncGaplessPreload();
       };
 
       const prefetchNextInQueue = async (allowNetwork: boolean) => {
@@ -148,13 +272,11 @@ export const usePlaybackStore = create<PlaybackState>()(
             format: "flac",
             estimateContentLength: true,
           });
-          const playable = await audioCache.getPlayableSource({
+          await audioCache.ensureCached({
             id: nextItem.id,
             url: streamUrl,
             duration: nextItem.duration,
           });
-          playable.cachePromise?.catch(() => undefined);
-          playable.cleanup?.();
         } catch (error) {
           console.debug("Prefetch failed", error);
         }
@@ -199,11 +321,45 @@ export const usePlaybackStore = create<PlaybackState>()(
           set({ isPlaying: false, position: 0 });
           void state.playNext();
         },
+        onAutoAdvance: (trackId) => {
+          const consumption = consumeNextItem(get());
+          if (!consumption || consumption.item.id !== trackId) {
+            player.stop();
+            player.clearPreload();
+            void get().playNext();
+            return;
+          }
+
+          const session = useAuthStore.getState().session;
+          const { item, patch } = consumption;
+          releaseCurrentSource?.();
+          releaseCurrentSource = releaseNextSource;
+          releaseNextSource = null;
+          consecutiveFailures = 0;
+
+          set({
+            ...patch,
+            currentSong: queueItemToSong(item),
+            coverArtUrl: item.coverArtUrl
+              ?? (session ? getCoverArtUrl(session.client, item.coverArt) : undefined),
+            isPlaying: true,
+            isLoading: false,
+            error: undefined,
+            position: 0,
+            duration: item.duration ?? player.getDuration(),
+          });
+
+          void syncGaplessPreload();
+          void prefetchNextInQueue(releaseCurrentSource !== null);
+        },
         onCanPlay: (duration) => {
           set((state) => ({
             duration: resolveDuration(duration, state.duration),
             isLoading: false,
           }));
+        },
+        onWaiting: () => {
+          set({ isLoading: true });
         },
         onProgress: (time, duration) => {
           set((state) => ({
@@ -245,7 +401,7 @@ export const usePlaybackStore = create<PlaybackState>()(
           const session = useAuthStore.getState().session;
           if (!session) {
             set({ error: "Not authenticated", isLoading: false });
-            return;
+            return false;
           }
 
           const requestToken = Symbol(songId);
@@ -277,7 +433,7 @@ export const usePlaybackStore = create<PlaybackState>()(
               : { song: queuedSong!, coverArtUrl: queuedCover };
 
             if (activeRequestToken !== requestToken) {
-              return;
+              return true;
             }
 
             if (needsFreshMetadata && queueItem && options?.source === "regular" && get().regularQueue.length > 0) {
@@ -302,34 +458,42 @@ export const usePlaybackStore = create<PlaybackState>()(
               estimateContentLength: true,
             });
 
-            audioCache.cancelOtherPrefetches();
-            const playableSource = await audioCache.getPlayableSource(
-              {
-                id: streamSongId,
-                url: streamUrl,
-                duration: song.duration,
-              },
-              { allowPrefetch: false },
-            );
+            const usePreloaded = player.getPreloadedTrackId() === streamSongId;
+            if (usePreloaded) {
+              releaseCurrentSource?.();
+              releaseCurrentSource = releaseNextSource;
+              releaseNextSource = null;
+              player.setSource({ id: streamSongId, url: streamUrl, duration: song.duration });
+            } else {
+              audioCache.cancelOtherPrefetches();
+              const playableSource = await audioCache.getPlayableSource(
+                {
+                  id: streamSongId,
+                  url: streamUrl,
+                  duration: song.duration,
+                },
+                { allowPrefetch: false },
+              );
 
-            if (activeRequestToken !== requestToken) {
-              playableSource.cleanup?.();
-              return;
+              if (activeRequestToken !== requestToken) {
+                playableSource.cleanup?.();
+                return true;
+              }
+
+              releaseCurrentSource?.();
+              releaseCurrentSource = playableSource.cleanup ?? null;
+              player.stop();
+              player.setSource({ id: streamSongId, url: playableSource.url, duration: song.duration });
+              playableSource.cachePromise?.catch(() => undefined);
             }
 
-            releaseCurrentSource?.();
-            releaseCurrentSource = playableSource.cleanup ?? null;
-            player.stop();
-            player.setSource({ id: streamSongId, url: playableSource.url, duration: song.duration });
-            playableSource.cachePromise?.catch(() => undefined);
-
             if (activeRequestToken !== requestToken) {
-              return;
+              return true;
             }
 
             await player.play();
             if (activeRequestToken !== requestToken) {
-              return;
+              return true;
             }
 
             set({
@@ -342,21 +506,24 @@ export const usePlaybackStore = create<PlaybackState>()(
               position: 0,
               duration: song.duration ?? queueItem?.duration ?? player.getDuration(),
             });
-            // Avoid parallel stream prefetches that can interrupt current playback.
-            void prefetchNextInQueue(playableSource.fromCache);
+            consecutiveFailures = 0;
+            void syncGaplessPreload();
+            void prefetchNextInQueue(releaseCurrentSource !== null);
             activeRequestToken = null;
+            return true;
           } catch (error) {
-            if (activeRequestToken === requestToken) {
-              releaseCurrentSource?.();
-              releaseCurrentSource = null;
-              set({
-                isLoading: false,
-                isPlaying: false,
-                error: error instanceof Error ? error.message : "Unable to play song",
-              });
-              activeRequestToken = null;
+            if (activeRequestToken !== requestToken) {
+              return true;
             }
-            throw error;
+            releaseCurrentSource?.();
+            releaseCurrentSource = null;
+            set({
+              isLoading: false,
+              isPlaying: false,
+              error: error instanceof Error ? error.message : "Unable to play song",
+            });
+            activeRequestToken = null;
+            return false;
           }
         },
 
@@ -379,10 +546,20 @@ export const usePlaybackStore = create<PlaybackState>()(
               await player.play();
               set({ isPlaying: true, isLoading: false, error: undefined });
             } catch (error) {
-              set({
-                isPlaying: false,
-                error: error instanceof Error ? error.message : "Unable to resume playback",
+              const resumeAt = get().position;
+              const retried = await get().playSong(currentSong.id, {
+                queueItem: undefined,
+                source: get().currentSource ?? undefined,
               });
+              if (retried && resumeAt > 0) {
+                get().seek(resumeAt);
+              }
+              if (!retried) {
+                set({
+                  isPlaying: false,
+                  error: error instanceof Error ? error.message : "Unable to resume playback",
+                });
+              }
             }
           }
         },
@@ -457,6 +634,7 @@ export const usePlaybackStore = create<PlaybackState>()(
               regularQueuePosition: nextPosition >= 0 ? nextPosition : state.regularQueuePosition,
             };
           });
+          void syncGaplessPreload();
         },
 
         cycleRepeat: () => {
@@ -465,6 +643,7 @@ export const usePlaybackStore = create<PlaybackState>()(
             if (state.repeat === "all") return { repeat: "one" as RepeatMode };
             return { repeat: "off" as RepeatMode };
           });
+          void syncGaplessPreload();
         },
 
         setEq: (eq) => {
@@ -474,8 +653,11 @@ export const usePlaybackStore = create<PlaybackState>()(
         setQueue: async (items: QueueItem[], startIndex = 0, options) => {
           if (items.length === 0) {
             player.stop();
+            player.clearPreload();
             releaseCurrentSource?.();
             releaseCurrentSource = null;
+            releaseNextSource?.();
+            releaseNextSource = null;
             activeRequestToken = null;
             set({
               queue: [],
@@ -538,6 +720,7 @@ export const usePlaybackStore = create<PlaybackState>()(
               queuePosition: -1,
             };
           });
+          startQueueIfIdle();
         },
 
         addToQueueFront: (items: QueueItem[]) => {
@@ -565,6 +748,7 @@ export const usePlaybackStore = create<PlaybackState>()(
               queuePosition: -1,
             };
           });
+          startQueueIfIdle();
         },
 
         moveQueueItem: (fromOrderIndex: number, toOrderIndex: number) => {
@@ -587,6 +771,7 @@ export const usePlaybackStore = create<PlaybackState>()(
               queuePosition: -1,
             };
           });
+          void syncGaplessPreload();
         },
 
         removeFromQueue: (orderIndex: number) => {
@@ -607,13 +792,14 @@ export const usePlaybackStore = create<PlaybackState>()(
             queueOrder: nextOrder,
             queuePosition: -1,
           });
+          void syncGaplessPreload();
         },
 
         playFromQueue: async (orderIndex: number) => {
           const state = get();
           if (orderIndex < 0 || orderIndex >= state.queueOrder.length) {
             set({ isPlaying: false, isLoading: false });
-            return;
+            return false;
           }
           const queueIndex = state.queueOrder[orderIndex];
           const item = state.queue[queueIndex];
@@ -625,7 +811,7 @@ export const usePlaybackStore = create<PlaybackState>()(
               duration: 0,
               position: 0,
             });
-            return;
+            return false;
           }
 
           const nextQueue = state.queue.filter((_, index) => index !== queueIndex);
@@ -641,14 +827,14 @@ export const usePlaybackStore = create<PlaybackState>()(
             duration: item.duration ?? 0,
             position: 0,
           });
-          await get().playSong(item.id, { queueItem: item, source: "priority" });
+          return get().playSong(item.id, { queueItem: item, source: "priority" });
         },
 
         playFromRegularQueue: async (orderIndex: number) => {
           const state = get();
           if (orderIndex < 0 || orderIndex >= state.regularQueueOrder.length) {
             set({ isPlaying: false, isLoading: false });
-            return;
+            return false;
           }
 
           const queueIndex = state.regularQueueOrder[orderIndex];
@@ -661,7 +847,7 @@ export const usePlaybackStore = create<PlaybackState>()(
               duration: 0,
               position: 0,
             });
-            return;
+            return false;
           }
 
           set({
@@ -670,36 +856,42 @@ export const usePlaybackStore = create<PlaybackState>()(
             duration: item.duration ?? 0,
             position: 0,
           });
-          await get().playSong(item.id, { queueItem: item, source: "regular" });
+          return get().playSong(item.id, { queueItem: item, source: "regular" });
         },
 
         playNext: async () => {
-          const state = get();
-          if (state.queueOrder.length > 0) {
-            await get().playFromQueue(0);
-            return;
-          }
-
-          if (state.regularQueueOrder.length === 0) {
+          const consumption = consumeNextItem(get());
+          if (!consumption) {
             player.pause();
-            set({ isPlaying: false, currentSource: null, playTargetItem: undefined });
+            set({ isPlaying: false, position: 0, currentSource: null, playTargetItem: undefined });
+            void syncGaplessPreload();
             return;
           }
 
-          const nextRegularOrderIndex = getNextRegularOrderIndex(state);
-          if (nextRegularOrderIndex >= state.regularQueueOrder.length) {
-            if (state.repeat === "all") {
-              await get().playFromRegularQueue(0);
+          const { item, source, patch } = consumption;
+          set({
+            ...patch,
+            duration: item.duration ?? 0,
+            position: 0,
+          });
+          const ok = await get().playSong(item.id, { queueItem: item, source });
+          if (!ok && get().error !== "Not authenticated") {
+            consecutiveFailures += 1;
+            if (consecutiveFailures < MAX_CONSECUTIVE_FAILURES) {
+              await get().playNext();
             } else {
-              set({ isPlaying: false, position: 0, currentSource: null, playTargetItem: undefined });
+              consecutiveFailures = 0;
             }
-            return;
           }
-          await get().playFromRegularQueue(nextRegularOrderIndex);
         },
 
         playPrevious: async () => {
           const state = get();
+          if (state.currentSong && state.position > 3) {
+            player.seek(0);
+            set({ position: 0 });
+            return;
+          }
           if (state.currentSource !== "regular") {
             if (state.currentSong) {
               player.seek(0);

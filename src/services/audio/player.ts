@@ -15,21 +15,25 @@ interface PlayerCallbacks {
   onPlay?: () => void;
   onPause?: () => void;
   onEnded?: () => void;
+  onAutoAdvance?: (trackId: string) => void;
   onCanPlay?: (duration: number) => void;
   onProgress?: (time: number, duration: number) => void;
+  onWaiting?: () => void;
   onError?: (message: string) => void;
 }
 
-/**
- * Thin Web Audio based wrapper around an HTMLAudioElement. Streams directly from
- * Navidrome/Subsonic endpoints (hi-res capable when the server provides it) and
- * keeps the graph PEQ-ready by routing through an optional filter chain, a
- * dedicated EQ preamp stage, and the user volume gain node.
- */
+interface AudioSlot {
+  audio: HTMLAudioElement;
+  sourceNode: MediaElementAudioSourceNode | null;
+  trackId: string | null;
+  hintedDuration: number;
+  preloadFailed: boolean;
+}
+
 export class HiResAudioPlayer {
-  private readonly audio: HTMLAudioElement;
+  private readonly slots: [AudioSlot, AudioSlot];
+  private activeIndex: 0 | 1 = 0;
   private audioContext: AudioContext | null = null;
-  private sourceNode: MediaElementAudioSourceNode | null = null;
   private preampNode: GainNode | null = null;
   private gainNode: GainNode | null = null;
   private analyserNode: AnalyserNode | null = null;
@@ -37,7 +41,6 @@ export class HiResAudioPlayer {
   private preampDb = 0;
   private callbacks: PlayerCallbacks;
   private progressRaf: number | null = null;
-  private hintedDuration = 0;
   private frequencyData: Uint8Array | null = null;
   private timeDomainData: Float32Array | null = null;
   private needsGraphRebuild = false;
@@ -46,19 +49,41 @@ export class HiResAudioPlayer {
 
   public constructor(callbacks?: PlayerCallbacks) {
     this.callbacks = callbacks ?? {};
-    this.audio = new Audio();
-    this.audio.preload = "auto";
-    this.audio.crossOrigin = "anonymous";
-    this.audio.setAttribute("playsinline", "true");
-    this.audio.autoplay = false;
+    this.slots = [this.createSlot(0), this.createSlot(1)];
+  }
 
-    this.audio.addEventListener("play", this.handlePlay);
-    this.audio.addEventListener("pause", this.handlePause);
-    this.audio.addEventListener("ended", this.handleEnded);
-    this.audio.addEventListener("loadedmetadata", this.handleLoadedMetadata);
-    this.audio.addEventListener("canplay", this.handleCanPlay);
-    this.audio.addEventListener("timeupdate", this.handleTimeUpdate);
-    this.audio.addEventListener("error", this.handleError);
+  private createSlot(index: 0 | 1): AudioSlot {
+    const audio = new Audio();
+    audio.preload = "auto";
+    audio.crossOrigin = "anonymous";
+    audio.setAttribute("playsinline", "true");
+    audio.autoplay = false;
+
+    audio.addEventListener("play", () => this.handlePlay(index));
+    audio.addEventListener("pause", () => this.handlePause(index));
+    audio.addEventListener("ended", () => this.handleEnded(index));
+    audio.addEventListener("loadedmetadata", () => this.handleReadiness(index));
+    audio.addEventListener("canplay", () => this.handleReadiness(index));
+    audio.addEventListener("timeupdate", () => this.handleTimeUpdate(index));
+    audio.addEventListener("waiting", () => this.handleWaiting(index));
+    audio.addEventListener("playing", () => this.handlePlaying(index));
+    audio.addEventListener("error", () => this.handleError(index));
+
+    return {
+      audio,
+      sourceNode: null,
+      trackId: null,
+      hintedDuration: 0,
+      preloadFailed: false,
+    };
+  }
+
+  private get active(): AudioSlot {
+    return this.slots[this.activeIndex];
+  }
+
+  private get standby(): AudioSlot {
+    return this.slots[this.activeIndex === 0 ? 1 : 0];
   }
 
   public setCallbacks(callbacks: PlayerCallbacks): void {
@@ -66,16 +91,63 @@ export class HiResAudioPlayer {
   }
 
   public setSource(track: HiResTrack): void {
-    this.hintedDuration = track.duration ?? 0;
     this.stopProgressLoop();
-    this.audio.pause();
+    this.active.audio.pause();
 
-    if (this.audio.src !== track.url) {
-      this.audio.src = track.url;
+    const standby = this.standby;
+    if (standby.trackId === track.id && !standby.preloadFailed && standby.audio.src) {
+      this.activeIndex = this.activeIndex === 0 ? 1 : 0;
+      this.active.hintedDuration = track.duration ?? 0;
+      if (this.active.audio.currentTime !== 0) {
+        try {
+          this.active.audio.currentTime = 0;
+        } catch {
+          // Not seekable yet; it will start from 0 anyway.
+        }
+      }
+      return;
     }
 
-    this.audio.currentTime = 0;
-    this.audio.load();
+    const slot = this.active;
+    slot.trackId = track.id;
+    slot.hintedDuration = track.duration ?? 0;
+    slot.preloadFailed = false;
+
+    if (slot.audio.src !== track.url) {
+      slot.audio.src = track.url;
+    }
+    slot.audio.currentTime = 0;
+    slot.audio.load();
+  }
+
+  public preloadNext(track: HiResTrack): void {
+    const slot = this.standby;
+    if (slot.trackId === track.id && slot.audio.src === track.url && !slot.preloadFailed) {
+      return;
+    }
+    slot.trackId = track.id;
+    slot.hintedDuration = track.duration ?? 0;
+    slot.preloadFailed = false;
+    slot.audio.pause();
+    slot.audio.src = track.url;
+    slot.audio.load();
+  }
+
+  public clearPreload(): void {
+    const slot = this.standby;
+    if (!slot.trackId && !slot.audio.src) {
+      return;
+    }
+    slot.trackId = null;
+    slot.hintedDuration = 0;
+    slot.preloadFailed = false;
+    slot.audio.pause();
+    slot.audio.removeAttribute("src");
+  }
+
+  public getPreloadedTrackId(): string | null {
+    const slot = this.standby;
+    return slot.preloadFailed ? null : slot.trackId;
   }
 
   public async play(): Promise<void> {
@@ -84,28 +156,32 @@ export class HiResAudioPlayer {
       await this.audioContext.resume();
     }
 
-    const promise = this.audio.play();
+    const promise = this.active.audio.play();
     if (promise) {
       await promise;
     }
   }
 
   public pause(): void {
-    this.audio.pause();
+    this.active.audio.pause();
   }
 
   public stop(): void {
-    this.audio.pause();
-    this.audio.currentTime = 0;
+    this.active.audio.pause();
+    try {
+      this.active.audio.currentTime = 0;
+    } catch {
+      // Source may already be detached.
+    }
     this.stopProgressLoop();
   }
 
   public seek(time: number): void {
     const duration = this.getDuration();
     const bounded = Math.max(0, Math.min(time, Number.isFinite(duration) ? duration : Number.MAX_SAFE_INTEGER));
-    this.audio.currentTime = bounded;
+    this.active.audio.currentTime = bounded;
     this.emitProgress(true);
-    if (!this.audio.paused) {
+    if (!this.active.audio.paused) {
       this.ensureProgressLoop();
     }
   }
@@ -118,7 +194,9 @@ export class HiResAudioPlayer {
       this.gainNode.gain.cancelScheduledValues(this.audioContext.currentTime);
       this.gainNode.gain.setTargetAtTime(clamped, this.audioContext.currentTime, 0.01);
     } else {
-      this.audio.volume = clamped;
+      this.slots.forEach((slot) => {
+        slot.audio.volume = clamped;
+      });
     }
   }
 
@@ -145,14 +223,15 @@ export class HiResAudioPlayer {
   }
 
   public getDuration(): number {
-    if (Number.isFinite(this.audio.duration) && this.audio.duration > 0) {
-      return this.audio.duration;
+    const { audio, hintedDuration } = this.active;
+    if (Number.isFinite(audio.duration) && audio.duration > 0) {
+      return audio.duration;
     }
-    return this.hintedDuration;
+    return hintedDuration;
   }
 
   public getCurrentTime(): number {
-    return this.audio.currentTime;
+    return this.active.audio.currentTime;
   }
 
   private ensureContext(): void {
@@ -188,9 +267,13 @@ export class HiResAudioPlayer {
       this.timeDomainData = new Float32Array(this.analyserNode.fftSize);
       graphChanged = true;
     }
-    if (!this.sourceNode && this.audioContext) {
-      this.sourceNode = this.audioContext.createMediaElementSource(this.audio);
-      graphChanged = true;
+    if (this.audioContext) {
+      for (const slot of this.slots) {
+        if (!slot.sourceNode) {
+          slot.sourceNode = this.audioContext.createMediaElementSource(slot.audio);
+          graphChanged = true;
+        }
+      }
     }
 
     if (graphChanged || this.needsGraphRebuild) {
@@ -201,11 +284,11 @@ export class HiResAudioPlayer {
   }
 
   private rebuildGraph(): void {
-    if (!this.audioContext || !this.sourceNode || !this.gainNode || !this.preampNode) {
+    if (!this.audioContext || !this.gainNode || !this.preampNode) {
       return;
     }
 
-    this.sourceNode.disconnect();
+    this.slots.forEach((slot) => slot.sourceNode?.disconnect());
     this.filterNodes.forEach((node) => node.disconnect());
     this.preampNode.disconnect();
     this.gainNode.disconnect();
@@ -213,16 +296,17 @@ export class HiResAudioPlayer {
       this.analyserNode.disconnect();
     }
 
-    let head: AudioNode = this.sourceNode;
     const chain: AudioNode[] = [...this.filterNodes, this.preampNode, this.gainNode];
     if (this.analyserNode) {
       chain.push(this.analyserNode);
     }
     chain.push(this.audioContext.destination);
-    chain.forEach((node) => {
-      head.connect(node);
-      head = node;
-    });
+
+    const chainHead = chain[0];
+    this.slots.forEach((slot) => slot.sourceNode?.connect(chainHead));
+    for (let i = 0; i < chain.length - 1; i += 1) {
+      chain[i].connect(chain[i + 1]);
+    }
   }
 
   private applyPreamp(): void {
@@ -251,40 +335,98 @@ export class HiResAudioPlayer {
     }
   }
 
-  private handlePlay = () => {
+  private handlePlay = (index: 0 | 1) => {
+    if (index !== this.activeIndex) return;
     this.callbacks.onPlay?.();
     this.emitProgress(true);
     this.ensureProgressLoop();
   };
 
-  private handlePause = () => {
+  private handlePause = (index: 0 | 1) => {
+    if (index !== this.activeIndex) return;
+    // A "pause" event also fires as a track reaches its natural end; ignore it
+    // so the gapless swap is not reported as a pause.
+    if (this.active.audio.ended) return;
     this.callbacks.onPause?.();
     this.stopProgressLoop();
     this.emitProgress(true);
   };
 
-  private handleEnded = () => {
-    this.stopProgressLoop();
+  private handleEnded = (index: 0 | 1) => {
+    if (index !== this.activeIndex) return;
     this.emitProgress(true);
-    this.callbacks.onEnded?.();
+
+    const standby = this.standby;
+    const canAdvance = Boolean(
+      standby.trackId
+      && !standby.preloadFailed
+      && standby.audio.src
+      && standby.audio.readyState >= HTMLMediaElement.HAVE_METADATA,
+    );
+
+    if (!canAdvance) {
+      this.stopProgressLoop();
+      this.callbacks.onEnded?.();
+      return;
+    }
+
+    // Gapless handoff: swap to the preloaded element and start it in the same
+    // task as the "ended" event so the output never goes through a load cycle.
+    this.activeIndex = this.activeIndex === 0 ? 1 : 0;
+    const next = this.active;
+    if (next.audio.currentTime !== 0) {
+      try {
+        next.audio.currentTime = 0;
+      } catch {
+        // Not seekable yet; playback will begin at 0 regardless.
+      }
+    }
+
+    const trackId = next.trackId!;
+    const playPromise = next.audio.play();
+    this.callbacks.onAutoAdvance?.(trackId);
+    if (playPromise) {
+      playPromise.catch((error: unknown) => {
+        // onAutoAdvance already moved external state to this track, so report
+        // a recoverable error rather than re-running the ended flow (which
+        // would advance a second time).
+        this.stopProgressLoop();
+        const message = error instanceof Error ? error.message : "Unable to start next track";
+        this.callbacks.onError?.(message);
+      });
+    }
   };
 
-  private handleLoadedMetadata = () => {
+  private handleReadiness = (index: 0 | 1) => {
+    if (index !== this.activeIndex) return;
     this.emitProgress(true);
     this.callbacks.onCanPlay?.(this.getDuration());
   };
 
-  private handleCanPlay = () => {
-    this.emitProgress(true);
-    this.callbacks.onCanPlay?.(this.getDuration());
-  };
-
-  private handleTimeUpdate = () => {
+  private handleTimeUpdate = (index: 0 | 1) => {
+    if (index !== this.activeIndex) return;
     this.emitProgress();
   };
 
-  private handleError = () => {
-    const mediaError = this.audio.error;
+  private handleWaiting = (index: 0 | 1) => {
+    if (index !== this.activeIndex) return;
+    this.callbacks.onWaiting?.();
+  };
+
+  private handlePlaying = (index: 0 | 1) => {
+    if (index !== this.activeIndex) return;
+    this.callbacks.onPlay?.();
+  };
+
+  private handleError = (index: 0 | 1) => {
+    const slot = this.slots[index];
+    if (index !== this.activeIndex) {
+      // Preload failed: forget it so the ended handler and the store fall back
+      // to the regular (non-gapless) advance path.
+      slot.preloadFailed = true;
+      return;
+    }
+    const mediaError = slot.audio.error;
     const message = mediaError?.message ?? "Playback error";
     this.callbacks.onError?.(message);
   };
@@ -295,7 +437,7 @@ export class HiResAudioPlayer {
       return;
     }
     this.lastProgressEmit = now;
-    this.callbacks.onProgress?.(this.audio.currentTime, this.getDuration());
+    this.callbacks.onProgress?.(this.active.audio.currentTime, this.getDuration());
   }
 
   public getFrequencyData(): Uint8Array | null {
