@@ -40,6 +40,18 @@ class AudioCache {
     return { url: track.url, fromCache: false, cachePromise };
   }
 
+
+  public async ensureCached(track: { id: string; url: string; duration?: number }): Promise<void> {
+    if (typeof indexedDB === "undefined") {
+      return;
+    }
+    const existing = await audioCacheDb.tracks.get(track.id);
+    if (existing) {
+      return;
+    }
+    await this.prefetch(track);
+  }
+
   public cancelOtherPrefetches(keepId?: string): void {
     for (const [id, controller] of this.prefetchControllers.entries()) {
       if (id === keepId) continue;
