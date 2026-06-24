@@ -1,0 +1,6 @@
+{
+  "targets": [
+    { "id": "jm1", "label": "JM1", "file": "jm1.txt" }
+  ],
+  "responses": []
+}

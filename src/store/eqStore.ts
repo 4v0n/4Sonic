@@ -62,6 +62,12 @@ export type EqFilterType = "peaking" | "lowshelf" | "highshelf";
 export type EqMode = "simple" | "ten-band" | "advanced";
 export type EqPreampMode = "auto" | "manual";
 
+export type UploadedFR = {
+  id: string;
+  label: string;
+  data: DataPoint[];
+};
+
 export type EqBandSetting = {
   id: string;
   freq: number;
@@ -82,8 +88,10 @@ export type EqProfile = {
   simpleControls: EqSimpleControls;
   measurementData: DataPoint[] | null;
   measurementFileName?: string;
+  measurementTargetId: string | null;
   referenceData: DataPoint[] | null;
   referenceFileName?: string;
+  referenceTargetId: string | null;
   flattenReference: boolean;
   createdAt: number;
   updatedAt: number;
@@ -92,6 +100,12 @@ export type EqProfile = {
 type EqState = {
   eqEnabled: boolean;
   setEqEnabled: (enabled: boolean) => void;
+  uploadedResponses: UploadedFR[];
+  addUploadedResponse: (label: string, data: DataPoint[]) => string;
+  removeUploadedResponse: (id: string) => void;
+  uploadedTargets: UploadedFR[];
+  addUploadedTarget: (label: string, data: DataPoint[]) => string;
+  removeUploadedTarget: (id: string) => void;
   profiles: EqProfile[];
   activeProfileId: string;
   setActiveProfile: (id: string) => void;
@@ -107,9 +121,9 @@ type EqState = {
   removeActiveProfileAdvancedBand: (bandId: string) => void;
   replaceActiveProfileAdvancedBands: (bands: Array<Partial<Omit<EqBandSetting, "id">>>) => void;
   setActiveProfileSimpleControlGain: (control: EqSimpleControlId, gain: number) => void;
-  setActiveProfileMeasurement: (data: DataPoint[], fileName?: string) => void;
+  setActiveProfileMeasurement: (data: DataPoint[], fileName?: string, targetId?: string | null) => void;
   clearActiveProfileMeasurement: () => void;
-  setActiveProfileReference: (data: DataPoint[], fileName?: string) => void;
+  setActiveProfileReference: (data: DataPoint[], fileName?: string, targetId?: string | null) => void;
   clearActiveProfileReference: () => void;
   setActiveProfileFlattenReference: (flatten: boolean) => void;
   resetActiveProfileBands: () => void;
@@ -117,6 +131,8 @@ type EqState = {
 
 type PersistedEqProfile = Partial<EqProfile> & {
   bands?: Array<Partial<EqBandSetting>>;
+  measurementTargetId?: string | null;
+  referenceTargetId?: string | null;
 };
 
 const DEFAULT_Q = 1.4;
@@ -259,8 +275,10 @@ const createProfile = (name: string, baseProfile?: EqProfile): EqProfile => {
     simpleControls: createDefaultSimpleControls(),
     measurementData: null,
     measurementFileName: undefined,
+    measurementTargetId: null,
     referenceData: null,
     referenceFileName: undefined,
+    referenceTargetId: "jm1",
     flattenReference: false,
     createdAt: now,
     updatedAt: now,
@@ -285,11 +303,33 @@ export const useEqStore = create<EqState>()(
   persist(
     (set) => ({
       eqEnabled: true,
+      uploadedResponses: [],
+      uploadedTargets: [],
       profiles: [initialProfile],
       activeProfileId: initialProfile.id,
 
       setEqEnabled: (enabled) => {
         set({ eqEnabled: enabled });
+      },
+
+      addUploadedResponse: (label, data) => {
+        const id = createId();
+        set((state) => ({ uploadedResponses: [...state.uploadedResponses, { id, label, data }] }));
+        return id;
+      },
+
+      removeUploadedResponse: (id) => {
+        set((state) => ({ uploadedResponses: state.uploadedResponses.filter((r) => r.id !== id) }));
+      },
+
+      addUploadedTarget: (label, data) => {
+        const id = createId();
+        set((state) => ({ uploadedTargets: [...state.uploadedTargets, { id, label, data }] }));
+        return id;
+      },
+
+      removeUploadedTarget: (id) => {
+        set((state) => ({ uploadedTargets: state.uploadedTargets.filter((t) => t.id !== id) }));
       },
 
       setActiveProfile: (id) => {
@@ -445,12 +485,13 @@ export const useEqStore = create<EqState>()(
         }));
       },
 
-      setActiveProfileMeasurement: (data, fileName) => {
+      setActiveProfileMeasurement: (data, fileName, targetId = "custom") => {
         set((state) => ({
           profiles: updateActiveProfileInList(state.profiles, state.activeProfileId, (profile) => ({
             ...profile,
             measurementData: cloneMeasurement(data),
             measurementFileName: fileName,
+            measurementTargetId: targetId,
             updatedAt: Date.now(),
           })),
         }));
@@ -462,17 +503,19 @@ export const useEqStore = create<EqState>()(
             ...profile,
             measurementData: null,
             measurementFileName: undefined,
+            measurementTargetId: null,
             updatedAt: Date.now(),
           })),
         }));
       },
 
-      setActiveProfileReference: (data, fileName) => {
+      setActiveProfileReference: (data, fileName, targetId = "custom") => {
         set((state) => ({
           profiles: updateActiveProfileInList(state.profiles, state.activeProfileId, (profile) => ({
             ...profile,
             referenceData: cloneMeasurement(data),
             referenceFileName: fileName,
+            referenceTargetId: targetId,
             updatedAt: Date.now(),
           })),
         }));
@@ -484,6 +527,7 @@ export const useEqStore = create<EqState>()(
             ...profile,
             referenceData: null,
             referenceFileName: undefined,
+            referenceTargetId: null,
             flattenReference: false,
             updatedAt: Date.now(),
           })),
@@ -533,7 +577,7 @@ export const useEqStore = create<EqState>()(
     }),
     {
       name: "eq-profiles",
-      version: 6,
+      version: 8,
       migrate: (persistedState: unknown) => {
         const state = persistedState as {
           eqEnabled?: boolean;
@@ -568,8 +612,10 @@ export const useEqStore = create<EqState>()(
             simpleControls: normalizeSimpleControls(profile.simpleControls),
             measurementData: cloneMeasurement(profile.measurementData ?? null),
             measurementFileName: profile.measurementFileName,
+            measurementTargetId: profile.measurementTargetId ?? (profile.measurementData ? "custom" : null),
             referenceData: cloneMeasurement(profile.referenceData ?? null),
             referenceFileName: profile.referenceFileName,
+            referenceTargetId: profile.referenceTargetId ?? (profile.referenceData ? "custom" : null),
             flattenReference: profile.flattenReference ?? false,
             createdAt: profile.createdAt ?? Date.now(),
             updatedAt: profile.updatedAt ?? Date.now(),
@@ -589,6 +635,8 @@ export const useEqStore = create<EqState>()(
       },
       partialize: (state) => ({
         eqEnabled: state.eqEnabled,
+        uploadedResponses: state.uploadedResponses,
+        uploadedTargets: state.uploadedTargets,
         profiles: state.profiles,
         activeProfileId: state.activeProfileId,
       }),

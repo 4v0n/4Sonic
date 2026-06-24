@@ -9,6 +9,7 @@ import TextInput from "../ui/TextInput";
 import SquigGraph, { FilterType, eqFilter } from "../ui/SquigGraph";
 import { parseFRFile, smoothData } from "../../utils/fr";
 import { parseSquiglinkEqText } from "../../utils/eqImport";
+import { useMeasurementCatalog, fetchMeasurementFile } from "../../hooks/useMeasurementCatalog";
 import cn from "../../utils/cn";
 import {
   ADVANCED_EQ_GAIN_LIMIT,
@@ -115,11 +116,17 @@ const EqModal = ({ open, onOpenChange }: EqModalProps) => {
   const clearActiveProfileMeasurement = useEqStore((state) => state.clearActiveProfileMeasurement);
   const setActiveProfileReference = useEqStore((state) => state.setActiveProfileReference);
   const clearActiveProfileReference = useEqStore((state) => state.clearActiveProfileReference);
+  const uploadedResponses = useEqStore((state) => state.uploadedResponses);
+  const addUploadedResponse = useEqStore((state) => state.addUploadedResponse);
+  const uploadedTargets = useEqStore((state) => state.uploadedTargets);
+  const addUploadedTarget = useEqStore((state) => state.addUploadedTarget);
   const setActiveProfileFlattenReference = useEqStore((state) => state.setActiveProfileFlattenReference);
   const resetActiveProfileBands = useEqStore((state) => state.resetActiveProfileBands);
 
+  const catalog = useMeasurementCatalog();
+
   const fileInputRef = useRef<HTMLInputElement>(null);
-  const referenceFileInputRef = useRef<HTMLInputElement>(null);
+  const targetUploadRef = useRef<HTMLInputElement>(null);
   const activeProfile = useMemo(
     () => profiles.find((profile) => profile.id === activeProfileId) ?? profiles[0],
     [activeProfileId, profiles],
@@ -192,7 +199,6 @@ const EqModal = ({ open, onOpenChange }: EqModalProps) => {
   const handleUploadMeasurement: React.ChangeEventHandler<HTMLInputElement> = async (event) => {
     const file = event.target.files?.[0];
     if (!file) return;
-
     try {
       const text = await file.text();
       const parsed = parseFRFile(text);
@@ -201,8 +207,9 @@ const EqModal = ({ open, onOpenChange }: EqModalProps) => {
         return;
       }
       const smoothed = smoothData(parsed);
-      setActiveProfileMeasurement(smoothed, file.name);
-      toast.success(`Loaded ${smoothed.length} FR points`);
+      const id = addUploadedResponse(file.name, smoothed);
+      setActiveProfileMeasurement(smoothed, file.name, id);
+      toast.success(`Loaded ${file.name}`);
     } catch (error) {
       const description = error instanceof Error ? error.message : undefined;
       toast.error("Failed to parse FR file", description ? { description } : undefined);
@@ -211,25 +218,63 @@ const EqModal = ({ open, onOpenChange }: EqModalProps) => {
     }
   };
 
-  const handleUploadReference: React.ChangeEventHandler<HTMLInputElement> = async (event) => {
+  const handleUploadTarget: React.ChangeEventHandler<HTMLInputElement> = async (event) => {
     const file = event.target.files?.[0];
     if (!file) return;
-
     try {
       const text = await file.text();
       const parsed = parseFRFile(text);
       if (parsed.length < 2) {
-        toast.error("Unable to load reference curve", { description: "Need at least 2 valid freq/SPL rows." });
+        toast.error("Unable to load target curve", { description: "Need at least 2 valid freq/SPL rows." });
         return;
       }
       const smoothed = smoothData(parsed);
-      setActiveProfileReference(smoothed, file.name);
-      toast.success(`Loaded ${smoothed.length} reference points`);
+      const id = addUploadedTarget(file.name, smoothed);
+      setActiveProfileReference(smoothed, file.name, id);
+      toast.success(`Loaded ${file.name}`);
     } catch (error) {
       const description = error instanceof Error ? error.message : undefined;
-      toast.error("Failed to parse reference file", description ? { description } : undefined);
+      toast.error("Failed to parse target file", description ? { description } : undefined);
     } finally {
       event.target.value = "";
+    }
+  };
+
+  const handleSelectMeasurementTarget = async (value: string) => {
+    if (value === "none") { clearActiveProfileMeasurement(); return; }
+    const uploaded = uploadedResponses.find((r) => r.id === value);
+    if (uploaded) {
+      setActiveProfileMeasurement(uploaded.data, uploaded.label, value);
+      return;
+    }
+    const entry = catalog.responses.find((e) => e.id === value);
+    if (!entry) return;
+    try {
+      const text = await fetchMeasurementFile("responses", entry.file);
+      const parsed = parseFRFile(text);
+      if (parsed.length < 2) { toast.error("Built-in file has insufficient data"); return; }
+      setActiveProfileMeasurement(smoothData(parsed), entry.label, value);
+    } catch {
+      toast.error(`Failed to load ${entry.label}`);
+    }
+  };
+
+  const handleSelectReferenceTarget = async (value: string) => {
+    if (value === "none") { clearActiveProfileReference(); return; }
+    const uploaded = uploadedTargets.find((t) => t.id === value);
+    if (uploaded) {
+      setActiveProfileReference(uploaded.data, uploaded.label, value);
+      return;
+    }
+    const entry = catalog.targets.find((e) => e.id === value);
+    if (!entry) return;
+    try {
+      const text = await fetchMeasurementFile("targets", entry.file);
+      const parsed = parseFRFile(text);
+      if (parsed.length < 2) { toast.error("Built-in file has insufficient data"); return; }
+      setActiveProfileReference(smoothData(parsed), entry.label, value);
+    } catch {
+      toast.error(`Failed to load ${entry.label}`);
     }
   };
 
@@ -328,47 +373,57 @@ const EqModal = ({ open, onOpenChange }: EqModalProps) => {
 
               <div className="space-y-2">
                 <p className="text-xs font-semibold uppercase tracking-wide text-(--text-grey)">FR Baseline</p>
-                <div className="flex flex-wrap gap-2">
-                  <Button size="small" variant="outline" onClick={() => fileInputRef.current?.click()}>
-                    Upload FR
-                  </Button>
-                  <Button
+                <div className="flex gap-2">
+                  <Select
                     size="small"
-                    variant="ghost"
-                    onClick={clearActiveProfileMeasurement}
-                    disabled={!activeProfile.measurementData}
-                  >
-                    Clear
-                  </Button>
-                  <input
-                    ref={fileInputRef}
-                    type="file"
-                    accept=".txt,.frd,.csv,text/plain"
-                    className="hidden"
-                    onChange={handleUploadMeasurement}
+                    value={activeProfile.measurementTargetId ?? "none"}
+                    onValueChange={handleSelectMeasurementTarget}
+                    options={[
+                      { label: "None", value: "none" },
+                      ...catalog.responses.map((e) => ({ label: e.label, value: e.id })),
+                      ...uploadedResponses.map((r) => ({ label: r.label, value: r.id })),
+                    ]}
+                    fullWidth
                   />
+                  <Button size="small" variant="outline" onClick={() => fileInputRef.current?.click()}>
+                    Upload
+                  </Button>
                 </div>
-                <p className="text-xs text-(--text-grey)">
-                  {activeProfile.measurementFileName
-                    ? `Loaded: ${activeProfile.measurementFileName} (${activeProfile.measurementData?.length ?? 0} points, smoothed)`
-                    : "Upload a two-column file: freq spl"}
-                </p>
+                <input
+                  ref={fileInputRef}
+                  type="file"
+                  accept=".txt,.frd,.csv,text/plain"
+                  className="hidden"
+                  onChange={handleUploadMeasurement}
+                />
               </div>
 
               <div className="space-y-2">
-                <p className="text-xs font-semibold uppercase tracking-wide text-(--text-grey)">Target / Reference</p>
-                <div className="flex flex-wrap gap-2">
-                  <Button size="small" variant="outline" onClick={() => referenceFileInputRef.current?.click()}>
-                    Upload Ref
-                  </Button>
-                  <Button
+                <p className="text-xs font-semibold uppercase tracking-wide text-(--text-grey)">Target</p>
+                <div className="flex gap-2">
+                  <Select
                     size="small"
-                    variant="ghost"
-                    onClick={clearActiveProfileReference}
-                    disabled={!activeProfile.referenceData}
-                  >
-                    Clear
+                    value={activeProfile.referenceTargetId ?? "none"}
+                    onValueChange={handleSelectReferenceTarget}
+                    options={[
+                      { label: "None", value: "none" },
+                      ...catalog.targets.map((e) => ({ label: e.label, value: e.id })),
+                      ...uploadedTargets.map((t) => ({ label: t.label, value: t.id })),
+                    ]}
+                    fullWidth
+                  />
+                  <Button size="small" variant="outline" onClick={() => targetUploadRef.current?.click()}>
+                    Upload
                   </Button>
+                </div>
+                <input
+                  ref={targetUploadRef}
+                  type="file"
+                  accept=".txt,.frd,.csv,text/plain"
+                  className="hidden"
+                  onChange={handleUploadTarget}
+                />
+                {activeProfile.referenceTargetId && activeProfile.referenceTargetId !== "none" && (
                   <Button
                     size="small"
                     variant={activeProfile.flattenReference ? "primary" : "outline"}
@@ -377,19 +432,7 @@ const EqModal = ({ open, onOpenChange }: EqModalProps) => {
                   >
                     {activeProfile.flattenReference ? "Flatten On" : "Flatten"}
                   </Button>
-                  <input
-                    ref={referenceFileInputRef}
-                    type="file"
-                    accept=".txt,.frd,.csv,text/plain"
-                    className="hidden"
-                    onChange={handleUploadReference}
-                  />
-                </div>
-                <p className="text-xs text-(--text-grey)">
-                  {activeProfile.referenceFileName
-                    ? `Loaded: ${activeProfile.referenceFileName} (${activeProfile.referenceData?.length ?? 0} points, smoothed)`
-                    : "Upload optional reference curve (freq spl) for overlay/flattening"}
-                </p>
+                )}
               </div>
             </div>
           </div>
