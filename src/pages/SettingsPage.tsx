@@ -4,9 +4,11 @@ import Button from "../components/ui/Button";
 import Select from "../components/ui/Select";
 import TextInput from "../components/ui/TextInput";
 import Slider from "../components/ui/Slider";
+import Switch from "../components/ui/Switch";
 import { ThemeName } from "../constants/themes";
 import { useThemeContext } from "../context/ThemeContext";
 import { ToastPosition, useUiPreferencesStore } from "../store/uiPreferencesStore";
+import { MAX_CROSSFADE_SECONDS, usePlaybackSettingsStore } from "../store/playbackSettingsStore";
 
 interface SettingsSectionProps {
   title: string;
@@ -26,18 +28,20 @@ const SettingsSection = ({ title, description, children }: SettingsSectionProps)
 
 interface SettingRowProps {
   name: string;
-  description: string;
+  description?: string;
   children: ReactNode;
   align?: "center" | "start";
 }
 
-const SettingRow = ({ name, description, children, align = "center" }: SettingRowProps) => (
+const SettingRow = ({ name, description = undefined, children, align = "center" }: SettingRowProps) => (
   <div
     className={`grid gap-4 px-5 py-4 md:grid-cols-[minmax(0,1fr)_minmax(280px,360px)] ${align === "start" ? "md:items-start" : "md:items-center"}`}
   >
     <div className="min-w-0">
       <h3 className="text-sm font-semibold text-(--text)">{name}</h3>
-      <p className="mt-1 text-sm leading-5 text-(--text-grey)">{description}</p>
+      {description && (
+        <p className="mt-1 text-sm leading-5 text-(--text-grey)">{description}</p>
+      )}
     </div>
     <div className="w-full md:justify-self-end">{children}</div>
   </div>
@@ -60,6 +64,10 @@ const SettingsPage = () => {
   const setVisualizerHeight = useUiPreferencesStore((state) => state.setVisualizerHeight);
   const setVisualizerResponse = useUiPreferencesStore((state) => state.setVisualizerResponse);
   const setVisualizerFps = useUiPreferencesStore((state) => state.setVisualizerFps);
+  const gaplessEnabled = usePlaybackSettingsStore((state) => state.gaplessEnabled);
+  const crossfadeDuration = usePlaybackSettingsStore((state) => state.crossfadeDuration);
+  const setGaplessEnabled = usePlaybackSettingsStore((state) => state.setGaplessEnabled);
+  const setCrossfadeDuration = usePlaybackSettingsStore((state) => state.setCrossfadeDuration);
   const toastPositionOptions = useMemo(
     () => ([
       { label: "Top left", value: "top-left" as ToastPosition },
@@ -98,7 +106,6 @@ const SettingsPage = () => {
       >
         <SettingRow
           name="Theme"
-          description="Choose the app palette. Switching theme also updates the default visualizer colour."
         >
           <div className="w-full md:w-72">
             <Select
@@ -131,7 +138,7 @@ const SettingsPage = () => {
 
       <SettingsSection
         title="Playback"
-        description="Configure equalizer behavior."
+        description="Configure equalizer and track transitions."
       >
         <SettingRow
           name="Equalizer"
@@ -143,6 +150,45 @@ const SettingsPage = () => {
             </Button>
           </div>
         </SettingRow>
+
+        <SettingRow
+          name="Gapless playback"
+          description="Preloads the next track for a seamless, silence-free transition between songs."
+        >
+          <div className="flex w-full md:justify-end">
+            <Switch
+              checked={gaplessEnabled}
+              onCheckedChange={setGaplessEnabled}
+              aria-label="Gapless playback"
+            />
+          </div>
+        </SettingRow>
+
+        {gaplessEnabled && (
+          <SettingRow
+            name="Crossfade"
+            description="Overlaps the end of one track with the start of the next, fading evenly between them. Leave at 0 for an instant seamless cut."
+            align="start"
+          >
+            <div className="w-full rounded-xl border border-(--surface2) bg-(--surface1) p-4 md:w-[340px]">
+              <div className="mb-2 flex items-center justify-between text-xs text-(--text-grey)">
+                <span>Off</span>
+                <span className="font-semibold text-(--text)">
+                  {crossfadeDuration === 0 ? "Off" : `${crossfadeDuration.toFixed(1)}s`}
+                </span>
+                <span>{MAX_CROSSFADE_SECONDS}s</span>
+              </div>
+              <Slider
+                min={0}
+                max={MAX_CROSSFADE_SECONDS}
+                step={0.5}
+                value={[crossfadeDuration]}
+                onValueChange={(value) => setCrossfadeDuration(value[0] ?? crossfadeDuration)}
+                aria-label="Crossfade duration"
+              />
+            </div>
+          </SettingRow>
+        )}
       </SettingsSection>
 
       <SettingsSection

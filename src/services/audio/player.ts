@@ -25,12 +25,17 @@ interface PlayerCallbacks {
 interface AudioSlot {
   audio: HTMLAudioElement;
   sourceNode: MediaElementAudioSourceNode | null;
+  // per-slot gain for crossfading; 1 when not active
+  fadeGain: GainNode | null;
   trackId: string | null;
   hintedDuration: number;
   preloadFailed: boolean;
 }
 
 export class HiResAudioPlayer {
+  // ensures catch-up fades near track end blend smoothly rather than cut
+  private static readonly MIN_FADE_SECONDS = 0.12;
+
   private readonly slots: [AudioSlot, AudioSlot];
   private activeIndex: 0 | 1 = 0;
   private audioContext: AudioContext | null = null;
@@ -46,6 +51,13 @@ export class HiResAudioPlayer {
   private needsGraphRebuild = false;
   private lastProgressEmit = 0;
   private readonly progressIntervalMs = 80;
+  private crossfadeSeconds = 0;
+  private crossfading = false;
+  private retiringIndex: 0 | 1 | null = null;
+  private crossfadeStartCtxTime: number | null = null;
+  private crossfadeFadeSeconds = 0;
+  private pendingPreload: HiResTrack | null = null;
+  private scrubbing = false;
 
   public constructor(callbacks?: PlayerCallbacks) {
     this.callbacks = callbacks ?? {};
@@ -72,6 +84,7 @@ export class HiResAudioPlayer {
     return {
       audio,
       sourceNode: null,
+      fadeGain: null,
       trackId: null,
       hintedDuration: 0,
       preloadFailed: false,
@@ -91,6 +104,9 @@ export class HiResAudioPlayer {
   }
 
   public setSource(track: HiResTrack): void {
+    if (this.crossfading) {
+      this.cancelCrossfade();
+    }
     this.stopProgressLoop();
     this.active.audio.pause();
 
@@ -102,7 +118,7 @@ export class HiResAudioPlayer {
         try {
           this.active.audio.currentTime = 0;
         } catch {
-          // Not seekable yet; it will start from 0 anyway.
+          // not seekable yet; will start at 0 anyway
         }
       }
       return;
@@ -121,6 +137,11 @@ export class HiResAudioPlayer {
   }
 
   public preloadNext(track: HiResTrack): void {
+    // standby slot is the outgoing track mid-fade; defer until finalizeCrossfade frees it
+    if (this.crossfading) {
+      this.pendingPreload = track;
+      return;
+    }
     const slot = this.standby;
     if (slot.trackId === track.id && slot.audio.src === track.url && !slot.preloadFailed) {
       return;
@@ -134,6 +155,11 @@ export class HiResAudioPlayer {
   }
 
   public clearPreload(): void {
+    this.pendingPreload = null;
+    if (this.crossfading) {
+      // standby slot is in use mid-fade; finalizeCrossfade will clear it
+      return;
+    }
     const slot = this.standby;
     if (!slot.trackId && !slot.audio.src) {
       return;
@@ -146,8 +172,20 @@ export class HiResAudioPlayer {
   }
 
   public getPreloadedTrackId(): string | null {
+    if (this.crossfading) {
+      return this.pendingPreload?.id ?? null;
+    }
     const slot = this.standby;
     return slot.preloadFailed ? null : slot.trackId;
+  }
+
+  public setCrossfadeDuration(seconds: number): void {
+    this.crossfadeSeconds = Number.isFinite(seconds) ? Math.max(0, seconds) : 0;
+  }
+
+  // prevents crossfade triggering mid-drag; a seek into the fade window would swap the active element and corrupt subsequent seeks
+  public setScrubbing(active: boolean): void {
+    this.scrubbing = active;
   }
 
   public async play(): Promise<void> {
@@ -163,20 +201,30 @@ export class HiResAudioPlayer {
   }
 
   public pause(): void {
+    // settle crossfade first so resume starts a clean single track
+    if (this.crossfading) {
+      this.finalizeCrossfade();
+    }
     this.active.audio.pause();
   }
 
   public stop(): void {
+    if (this.crossfading) {
+      this.cancelCrossfade();
+    }
     this.active.audio.pause();
     try {
       this.active.audio.currentTime = 0;
     } catch {
-      // Source may already be detached.
+      // source may already be detached
     }
     this.stopProgressLoop();
   }
 
   public seek(time: number): void {
+    if (this.crossfading) {
+      this.finalizeCrossfade();
+    }
     const duration = this.getDuration();
     const bounded = Math.max(0, Math.min(time, Number.isFinite(duration) ? duration : Number.MAX_SAFE_INTEGER));
     this.active.audio.currentTime = bounded;
@@ -273,6 +321,11 @@ export class HiResAudioPlayer {
           slot.sourceNode = this.audioContext.createMediaElementSource(slot.audio);
           graphChanged = true;
         }
+        if (!slot.fadeGain) {
+          slot.fadeGain = this.audioContext.createGain();
+          slot.fadeGain.gain.value = 1;
+          graphChanged = true;
+        }
       }
     }
 
@@ -288,7 +341,10 @@ export class HiResAudioPlayer {
       return;
     }
 
-    this.slots.forEach((slot) => slot.sourceNode?.disconnect());
+    this.slots.forEach((slot) => {
+      slot.sourceNode?.disconnect();
+      slot.fadeGain?.disconnect();
+    });
     this.filterNodes.forEach((node) => node.disconnect());
     this.preampNode.disconnect();
     this.gainNode.disconnect();
@@ -302,8 +358,14 @@ export class HiResAudioPlayer {
     }
     chain.push(this.audioContext.destination);
 
+    // each slot's fadeGain lets both tracks overlap independently during a crossfade
     const chainHead = chain[0];
-    this.slots.forEach((slot) => slot.sourceNode?.connect(chainHead));
+    this.slots.forEach((slot) => {
+      if (slot.sourceNode && slot.fadeGain) {
+        slot.sourceNode.connect(slot.fadeGain);
+        slot.fadeGain.connect(chainHead);
+      }
+    });
     for (let i = 0; i < chain.length - 1; i += 1) {
       chain[i].connect(chain[i + 1]);
     }
@@ -322,6 +384,8 @@ export class HiResAudioPlayer {
     if (this.progressRaf !== null) return;
     this.emitProgress(true);
     const tick = () => {
+      this.maybeStartCrossfade();
+      this.tickCrossfade();
       this.emitProgress();
       this.progressRaf = requestAnimationFrame(tick);
     };
@@ -335,6 +399,191 @@ export class HiResAudioPlayer {
     }
   }
 
+  private maybeStartCrossfade(): void {
+    if (this.crossfadeSeconds <= 0 || this.crossfading || this.scrubbing) {
+      return;
+    }
+    const active = this.active;
+    if (active.audio.paused || active.audio.ended) {
+      return;
+    }
+    const duration = this.getDuration();
+    if (!Number.isFinite(duration) || duration <= 0) {
+      return;
+    }
+    const remaining = duration - active.audio.currentTime;
+    const fade = Math.min(this.crossfadeSeconds, duration);
+    if (remaining <= 0 || remaining > fade) {
+      return;
+    }
+
+    const standby = this.standby;
+    const ready = Boolean(
+      standby.trackId
+      && !standby.preloadFailed
+      && standby.audio.src
+      && standby.audio.readyState >= HTMLMediaElement.HAVE_CURRENT_DATA,
+    );
+    if (!ready) {
+      // next track not ready; fall back to ended-driven gapless handoff
+      return;
+    }
+
+    this.startCrossfade(remaining);
+  }
+
+  private startCrossfade(overlap: number): void {
+    this.ensureContext();
+    if (!this.audioContext) {
+      return;
+    }
+    const fromSlot = this.active;
+    const toSlot = this.standby;
+    if (!fromSlot.fadeGain || !toSlot.fadeGain || !toSlot.trackId) {
+      return;
+    }
+
+    const toIndex: 0 | 1 = this.activeIndex === 0 ? 1 : 0;
+    const fade = Math.max(HiResAudioPlayer.MIN_FADE_SECONDS, overlap);
+    const toTrackId = toSlot.trackId;
+
+    // set crossfading immediately so RAF can't re-enter before play() resolves; clock stays null until begin() so tickCrossfade is a no-op
+    this.crossfading = true;
+    this.retiringIndex = this.activeIndex;
+    this.crossfadeStartCtxTime = null;
+    this.crossfadeFadeSeconds = fade;
+
+    // pre-set gains so the incoming track stays muted through play-promise latency
+    fromSlot.fadeGain.gain.value = 1;
+    toSlot.fadeGain.gain.value = 0;
+
+    try {
+      toSlot.audio.currentTime = 0;
+    } catch {
+      // not seekable yet; will start at 0 anyway
+    }
+
+    const begin = () => {
+      const now = this.audioContext!.currentTime;
+      this.crossfadeStartCtxTime = now;
+      this.activeIndex = toIndex;
+
+      // staircase of setValueAtTime runs on the audio thread — avoids RAF jitter and WebKitGTK's unreliable setValueCurveAtTime
+      const STEPS = 64;
+      fromSlot.fadeGain!.gain.cancelScheduledValues(now);
+      fromSlot.fadeGain!.gain.setValueAtTime(1, now);
+      toSlot.fadeGain!.gain.cancelScheduledValues(now);
+      toSlot.fadeGain!.gain.setValueAtTime(0, now);
+      for (let i = 1; i <= STEPS; i++) {
+        const t = i / STEPS;
+        const stepTime = now + t * fade;
+        fromSlot.fadeGain!.gain.setValueAtTime(Math.cos((t * Math.PI) / 2), stepTime);
+        toSlot.fadeGain!.gain.setValueAtTime(Math.sin((t * Math.PI) / 2), stepTime);
+      }
+
+      this.callbacks.onAutoAdvance?.(toTrackId);
+    };
+
+    const playPromise = toSlot.audio.play();
+    if (playPromise) {
+      playPromise.then(begin).catch((error: unknown) => {
+        // next track failed to start; let current track finish and advance via the ended event
+        this.crossfading = false;
+        this.retiringIndex = null;
+        this.crossfadeStartCtxTime = null;
+        toSlot.fadeGain!.gain.value = 1;
+        toSlot.preloadFailed = true;
+        const message = error instanceof Error ? error.message : "Unable to start next track";
+        this.callbacks.onError?.(message);
+      });
+    } else {
+      begin();
+    }
+  }
+
+  // gains are driven by the audio-thread staircase scheduled in begin(); only check for completion here
+  private tickCrossfade(): void {
+    if (
+      !this.crossfading
+      || this.crossfadeStartCtxTime === null
+      || !this.audioContext
+      || this.retiringIndex === null
+    ) {
+      return;
+    }
+    const elapsed = this.audioContext.currentTime - this.crossfadeStartCtxTime;
+    const t = Math.min(1, Math.max(0, elapsed / this.crossfadeFadeSeconds));
+    if (t >= 1) {
+      this.finalizeCrossfade();
+    }
+  }
+
+  private finalizeCrossfade(): void {
+    this.crossfadeStartCtxTime = null;
+    if (!this.crossfading || this.retiringIndex === null) {
+      this.crossfading = false;
+      this.retiringIndex = null;
+      return;
+    }
+
+    const retiring = this.slots[this.retiringIndex];
+    retiring.audio.pause();
+    try {
+      retiring.audio.currentTime = 0;
+    } catch {
+      // element may already be at its end
+    }
+    retiring.trackId = null;
+    retiring.preloadFailed = false;
+
+    const now = this.audioContext?.currentTime ?? 0;
+    if (retiring.fadeGain) {
+      retiring.fadeGain.gain.cancelScheduledValues(now);
+      retiring.fadeGain.gain.value = 1;
+    }
+    if (this.active.fadeGain) {
+      this.active.fadeGain.gain.cancelScheduledValues(now);
+      this.active.fadeGain.gain.value = 1;
+    }
+
+    this.crossfading = false;
+    this.retiringIndex = null;
+
+    // slot is now free; apply any preload deferred during the fade
+    if (this.pendingPreload) {
+      const pending = this.pendingPreload;
+      this.pendingPreload = null;
+      this.preloadNext(pending);
+    }
+  }
+
+  private cancelCrossfade(): void {
+    this.crossfadeStartCtxTime = null;
+    this.pendingPreload = null;
+
+    const now = this.audioContext?.currentTime ?? 0;
+    this.slots.forEach((slot) => {
+      if (slot.fadeGain) {
+        slot.fadeGain.gain.cancelScheduledValues(now);
+        slot.fadeGain.gain.value = 1;
+      }
+    });
+
+    if (this.retiringIndex !== null) {
+      const retiring = this.slots[this.retiringIndex];
+      retiring.audio.pause();
+      try {
+        retiring.audio.currentTime = 0;
+      } catch {
+        // element may already be detached
+      }
+      retiring.trackId = null;
+    }
+
+    this.crossfading = false;
+    this.retiringIndex = null;
+  }
+
   private handlePlay = (index: 0 | 1) => {
     if (index !== this.activeIndex) return;
     this.callbacks.onPlay?.();
@@ -344,8 +593,7 @@ export class HiResAudioPlayer {
 
   private handlePause = (index: 0 | 1) => {
     if (index !== this.activeIndex) return;
-    // A "pause" event also fires as a track reaches its natural end; ignore it
-    // so the gapless swap is not reported as a pause.
+    // pause also fires at natural end; skip to avoid a false pause during gapless swap
     if (this.active.audio.ended) return;
     this.callbacks.onPause?.();
     this.stopProgressLoop();
@@ -353,6 +601,8 @@ export class HiResAudioPlayer {
   };
 
   private handleEnded = (index: 0 | 1) => {
+    // outgoing crossfade track reaching its end naturally is expected; incoming is already playing
+    if (this.crossfading && index === this.retiringIndex) return;
     if (index !== this.activeIndex) return;
     this.emitProgress(true);
 
@@ -361,7 +611,7 @@ export class HiResAudioPlayer {
       standby.trackId
       && !standby.preloadFailed
       && standby.audio.src
-      && standby.audio.readyState >= HTMLMediaElement.HAVE_METADATA,
+      && standby.audio.readyState >= HTMLMediaElement.HAVE_FUTURE_DATA,
     );
 
     if (!canAdvance) {
@@ -370,15 +620,14 @@ export class HiResAudioPlayer {
       return;
     }
 
-    // Gapless handoff: swap to the preloaded element and start it in the same
-    // task as the "ended" event so the output never goes through a load cycle.
+    // swap in the same task as "ended" so playback never stalls through a load cycle
     this.activeIndex = this.activeIndex === 0 ? 1 : 0;
     const next = this.active;
     if (next.audio.currentTime !== 0) {
       try {
         next.audio.currentTime = 0;
       } catch {
-        // Not seekable yet; playback will begin at 0 regardless.
+        // not seekable yet; will start at 0 anyway
       }
     }
 
@@ -387,9 +636,7 @@ export class HiResAudioPlayer {
     this.callbacks.onAutoAdvance?.(trackId);
     if (playPromise) {
       playPromise.catch((error: unknown) => {
-        // onAutoAdvance already moved external state to this track, so report
-        // a recoverable error rather than re-running the ended flow (which
-        // would advance a second time).
+        // onAutoAdvance already advanced external state; don't re-run ended or we'd double-advance
         this.stopProgressLoop();
         const message = error instanceof Error ? error.message : "Unable to start next track";
         this.callbacks.onError?.(message);
@@ -421,8 +668,7 @@ export class HiResAudioPlayer {
   private handleError = (index: 0 | 1) => {
     const slot = this.slots[index];
     if (index !== this.activeIndex) {
-      // Preload failed: forget it so the ended handler and the store fall back
-      // to the regular (non-gapless) advance path.
+      // preload failed; ended handler falls back to non-gapless advance
       slot.preloadFailed = true;
       return;
     }
@@ -466,5 +712,42 @@ export class HiResAudioPlayer {
 
   public getSampleRate(): number | null {
     return this.audioContext?.sampleRate ?? null;
+  }
+
+  /** RMS of the current mixed output — 0 means silence, ~0.3 is a typical music level. */
+  public getOutputRms(): number {
+    if (!this.analyserNode) return 0;
+    const data = new Float32Array(this.analyserNode.fftSize);
+    this.analyserNode.getFloatTimeDomainData(data);
+    let sum = 0;
+    for (let i = 0; i < data.length; i++) {
+      sum += data[i] * data[i];
+    }
+    return Math.sqrt(sum / data.length);
+  }
+
+  public getDebugState() {
+    return {
+      crossfading: this.crossfading,
+      retiringIndex: this.retiringIndex,
+      activeIndex: this.activeIndex,
+      crossfadeProgress: this.crossfadeStartCtxTime !== null && this.audioContext
+        ? Math.min(1, (this.audioContext.currentTime - this.crossfadeStartCtxTime) / (this.crossfadeFadeSeconds || 1))
+        : null,
+      crossfadeFadeSeconds: this.crossfadeFadeSeconds,
+      audioContextTime: this.audioContext?.currentTime ?? null,
+      audioContextState: this.audioContext?.state ?? null,
+      outputRms: this.getOutputRms(),
+      slots: this.slots.map((slot) => ({
+        trackId: slot.trackId,
+        readyState: slot.audio.readyState,
+        paused: slot.audio.paused,
+        ended: slot.audio.ended,
+        currentTime: slot.audio.currentTime,
+        duration: slot.audio.duration,
+        hasSrc: Boolean(slot.audio.src),
+        gain: slot.fadeGain?.gain.value ?? null,
+      })),
+    };
   }
 }

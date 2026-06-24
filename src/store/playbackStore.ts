@@ -7,6 +7,7 @@ import { HiResAudioPlayer, ParametricEqBand } from "../services/audio/player";
 import { audioCache } from "../services/audio/audioCache";
 import { queueItemToSong } from "../utils/playbackMapping";
 import { getCoverArtUrl } from "../utils/mediaImages";
+import { usePlaybackSettingsStore } from "./playbackSettingsStore";
 
 type RepeatMode = "off" | "one" | "all";
 type QueueSource = "priority" | "regular";
@@ -49,6 +50,7 @@ interface PlaybackState {
   toggleShuffle: () => void;
   cycleRepeat: () => void;
   setEq: (eq: { bands: ParametricEqBand[]; preampDb?: number }) => void;
+  applyGaplessSettings: () => void;
   setQueue: (
     items: QueueItem[],
     startIndex?: number,
@@ -65,6 +67,8 @@ interface PlaybackState {
 }
 
 const DEFAULT_VOLUME = 0.85;
+// when crossfade slider is 0 but gapless is on, a tiny overlap smooths the boundary instead of a hard cut
+const GAPLESS_MICRO_CROSSFADE_SECONDS = 0.25;
 const END_TOLERANCE_SECONDS = 1.5;
 const MAX_CONSECUTIVE_FAILURES = 3;
 const player = new HiResAudioPlayer();
@@ -206,7 +210,8 @@ export const usePlaybackStore = create<PlaybackState>()(
       const syncGaplessPreload = async (): Promise<void> => {
         const token = ++preloadToken;
         const state = get();
-        let nextItem = state.repeat === "one" || !state.currentSong
+        const { gaplessEnabled } = usePlaybackSettingsStore.getState();
+        let nextItem = !gaplessEnabled || state.repeat === "one" || !state.currentSong
           ? null
           : getNextPlayableItem(state);
         if (nextItem && nextItem.id === state.currentSong?.id) {
@@ -228,6 +233,14 @@ export const usePlaybackStore = create<PlaybackState>()(
         if (!streamUrl) return;
 
         try {
+          // cache the next track first so the standby element buffers from memory rather than racing the network at the boundary
+          await audioCache.ensureCached({
+            id: nextItem.id,
+            url: streamUrl,
+            duration: nextItem.duration,
+          });
+          if (token !== preloadToken) return;
+
           const playable = await audioCache.getPlayableSource(
             { id: nextItem.id, url: streamUrl, duration: nextItem.duration },
             { allowPrefetch: false },
@@ -350,7 +363,7 @@ export const usePlaybackStore = create<PlaybackState>()(
           });
 
           void syncGaplessPreload();
-          void prefetchNextInQueue(releaseCurrentSource !== null);
+          void prefetchNextInQueue(true);
         },
         onCanPlay: (duration) => {
           set((state) => ({
@@ -508,7 +521,7 @@ export const usePlaybackStore = create<PlaybackState>()(
             });
             consecutiveFailures = 0;
             void syncGaplessPreload();
-            void prefetchNextInQueue(releaseCurrentSource !== null);
+            void prefetchNextInQueue(true);
             activeRequestToken = null;
             return true;
           } catch (error) {
@@ -577,6 +590,7 @@ export const usePlaybackStore = create<PlaybackState>()(
 
         beginScrub: () => {
           scrubWasPlaying = get().isPlaying;
+          player.setScrubbing(true);
           set({ isScrubbing: true });
           if (!scrubWasPlaying && get().currentSong) {
             player.play().catch(() => undefined);
@@ -585,6 +599,8 @@ export const usePlaybackStore = create<PlaybackState>()(
         },
 
         endScrub: (finalTime?: number) => {
+          // re-enable crossfade detection first; if the release lands inside the fade window, the next frame catches it up
+          player.setScrubbing(false);
           if (typeof finalTime === "number") {
             const nextTime = clampTime(finalTime, resolveDuration(player.getDuration(), get().duration));
             player.seek(nextTime);
@@ -648,6 +664,15 @@ export const usePlaybackStore = create<PlaybackState>()(
 
         setEq: (eq) => {
           player.setParametricEq(eq.bands, eq.preampDb ?? 0);
+        },
+
+        applyGaplessSettings: () => {
+          const { gaplessEnabled, crossfadeDuration } = usePlaybackSettingsStore.getState();
+          const effectiveCrossfade = gaplessEnabled
+            ? (crossfadeDuration > 0 ? crossfadeDuration : GAPLESS_MICRO_CROSSFADE_SECONDS)
+            : 0;
+          player.setCrossfadeDuration(effectiveCrossfade);
+          void syncGaplessPreload();
         },
 
         setQueue: async (items: QueueItem[], startIndex = 0, options) => {
@@ -941,6 +966,11 @@ export const usePlaybackStore = create<PlaybackState>()(
     },
   ),
 );
+
+usePlaybackStore.getState().applyGaplessSettings();
+usePlaybackSettingsStore.subscribe(() => {
+  usePlaybackStore.getState().applyGaplessSettings();
+});
 
 export const playSong = async (songId: string, options?: { queueItem?: QueueItem; source?: QueueSource }): Promise<void> => {
   await usePlaybackStore.getState().playSong(songId, options);
