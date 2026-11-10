@@ -75,6 +75,36 @@ class ImageCache {
     return { url: sourceUrl, fromCache: false, cachePromise };
   }
 
+  public getCacheKey(sourceUrl: string): string {
+    return this.createCacheKey(sourceUrl);
+  }
+
+  public async getBlob(sourceUrl: string): Promise<Blob | null> {
+    if (!sourceUrl) {
+      return null;
+    }
+
+    if (isIndexedDbAvailable()) {
+      const key = this.createCacheKey(sourceUrl);
+      const cached = await this.readCached(key);
+      if (cached) {
+        return cached.blob;
+      }
+      await this.prefetch(key, sourceUrl);
+      const stored = await imageCacheDb.images.get(key);
+      if (stored) {
+        return stored.blob;
+      }
+    }
+
+    try {
+      const response = await fetch(sourceUrl);
+      return response.ok ? await response.blob() : null;
+    } catch {
+      return null;
+    }
+  }
+
   public async invalidate(sourceUrl: string): Promise<void> {
     if (!sourceUrl || !isIndexedDbAvailable()) {
       return;

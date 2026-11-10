@@ -1,6 +1,7 @@
 import React from "react";
 import { PlayArrowIcon } from "../../constants/icons";
 import cn from "../../utils/cn";
+import { hsla, type HslColor } from "../../utils/imageColor";
 import Button from "../ui/Button";
 import CoverImage from "../ui/CoverImage";
 import MediaContextMenu from "./MediaContextMenu";
@@ -34,17 +35,23 @@ export const TileFrame = ({ actions, className, children, ...props }: TileFrameP
 export type TileStackDepth = 0 | 1 | 2;
 
 const STACK_LAYERS = [
-  "mx-[10%] h-1 bg-surface4/50",
-  "mx-[5%] h-1.5 bg-surface4",
+  { className: "mx-[10%] h-1", fallback: "bg-surface4/50", alpha: 0.45 },
+  { className: "mx-[5%] h-1.5", fallback: "bg-surface4", alpha: 0.8 },
 ] as const;
 
-const TileStack = ({ depth }: { depth: TileStackDepth }) => (
+const TileStack = ({ depth, color }: { depth: TileStackDepth; color?: HslColor }) => (
   <>
-    {STACK_LAYERS.map((layerClass, index) => (
+    {STACK_LAYERS.map((layer, index) => (
       <div
-        key={layerClass}
+        key={layer.className}
         aria-hidden
-        className={cn("rounded-t-md", layerClass, index < STACK_LAYERS.length - depth && "invisible")}
+        className={cn(
+          "rounded-t-md transition-colors duration-300",
+          layer.className,
+          !color && layer.fallback,
+          index < STACK_LAYERS.length - depth && "invisible",
+        )}
+        style={color ? { backgroundColor: hsla(color, layer.alpha) } : undefined}
       />
     ))}
   </>
@@ -55,12 +62,13 @@ interface TileArtworkProps {
   alt: string;
   onPlay?: () => void;
   stack?: TileStackDepth;
+  stackColor?: HslColor;
   className?: string;
 }
 
-export const TileArtwork = ({ coverUrl, alt, onPlay, stack = 0, className }: TileArtworkProps) => (
+export const TileArtwork = ({ coverUrl, alt, onPlay, stack = 0, stackColor, className }: TileArtworkProps) => (
   <div className={cn("flex w-full flex-col gap-px", className)}>
-    <TileStack depth={stack} />
+    <TileStack depth={stack} color={stackColor} />
     <div className="relative aspect-square rounded-md w-full overflow-hidden bg-surface0 shadow transition-shadow group-hover:shadow-md">
       <CoverImage src={coverUrl} alt={alt} className="h-full w-full" />
       {onPlay ? (
@@ -88,13 +96,20 @@ interface TileCountBadgeProps {
   count: number;
   icon: React.ReactNode;
   label: string;
+  color?: HslColor;
 }
 
-export const TileCountBadge = ({ count, icon, label }: TileCountBadgeProps) => (
+const BADGE_MAX_LIGHTNESS = 40;
+
+export const TileCountBadge = ({ count, icon, label, color }: TileCountBadgeProps) => (
   <span
     title={label}
     aria-label={label}
-    className="flex shrink-0 items-center gap-1 rounded-full bg-surface2 px-1.5 text-sm font-semibold leading-5 text-text-grey tabular-nums transition group-hover:bg-surface3"
+    className={cn(
+      "flex shrink-0 items-center gap-1 rounded-full px-1.5 text-sm font-semibold leading-5 tabular-nums transition-colors duration-300",
+      color ? "text-light" : "bg-surface2 text-text-grey group-hover:bg-surface3",
+    )}
+    style={color ? { backgroundColor: hsla({ ...color, l: Math.min(color.l, BADGE_MAX_LIGHTNESS) }) } : undefined}
   >
     <span aria-hidden className="flex text-[1em]">{icon}</span>
     {count}
