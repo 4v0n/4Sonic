@@ -1,13 +1,17 @@
 import { useCallback, useMemo } from "react";
 import { useNavigate } from "react-router-dom";
-import { toast } from "sonner";
 import MediaCollection, { MediaSortOption } from "../components/library/MediaCollection";
+import { getArtistActions } from "../components/media/actions";
+import ArtistRow from "../components/media/ArtistRow";
+import ArtistTile from "../components/media/ArtistTile";
 import { useArtists, useLibraryStatus } from "../hooks/useLibrary";
 import { useAuthStore } from "../store/authStore";
 import { useLibraryStore } from "../store/libraryStore";
 import { ArtistEntity } from "../types/library";
 import { getArtistImageUrl } from "../utils/mediaImages";
-import { addArtistToQueue, playArtist, queueArtistNext } from "../utils/playbackActions";
+
+const getArtistKey = (artist: ArtistEntity) => artist.id;
+const getArtistSearchText = (artist: ArtistEntity) => [artist.name, String(artist.albumCount ?? "")].filter(Boolean).join(" ");
 
 const ArtistsPage = () => {
   const artists = useArtists();
@@ -53,43 +57,32 @@ const ArtistsPage = () => {
     [artists.length, isLoading],
   );
 
-  const mapArtistToItem = useCallback((artist: ArtistEntity) => {
-    const albumLabel = artist.albumCount === 1 ? "album" : "albums";
-    return {
-      id: artist.id,
-      title: artist.name,
-      subtitle: artist.albumCount ? `${artist.albumCount} ${albumLabel}` : undefined,
-      coverUrl: getArtistImageUrl(artist, client),
-      searchText: [artist.name, String(artist.albumCount ?? "")].filter(Boolean).join(" "),
-      onPlay: () => {
-        void playArtist(artist.id).catch((error) => {
-          const errorMessage = error instanceof Error ? error.message : undefined;
-          toast.error("Unable to play artist", errorMessage ? { description: errorMessage } : undefined);
-        });
-      },
-      onPlayNext: () => {
-        void queueArtistNext(artist.id).catch((error) => {
-          const errorMessage = error instanceof Error ? error.message : undefined;
-          toast.error("Unable to queue artist next", errorMessage ? { description: errorMessage } : undefined);
-        });
-      },
-      onAddToQueue: () => {
-        void addArtistToQueue(artist.id).catch((error) => {
-          const errorMessage = error instanceof Error ? error.message : undefined;
-          toast.error("Unable to add artist to queue", errorMessage ? { description: errorMessage } : undefined);
-        });
-      },
-      onClick: () => navigate(`/artists/${artist.id}`),
-    };
-  }, [client, navigate]);
+  const getArtistProps = useCallback((artist: ArtistEntity) => ({
+    name: artist.name,
+    albumCount: artist.albumCount,
+    coverUrl: getArtistImageUrl(artist, client),
+    actions: getArtistActions(artist.id),
+    onClick: () => navigate(`/artists/${artist.id}`),
+  }), [client, navigate]);
+
+  const renderTile = useCallback(
+    (artist: ArtistEntity) => <ArtistTile {...getArtistProps(artist)} className="w-full max-w-full" />,
+    [getArtistProps],
+  );
+  const renderRow = useCallback(
+    (artist: ArtistEntity) => <ArtistRow {...getArtistProps(artist)} className="w-full" />,
+    [getArtistProps],
+  );
 
   return (
     <MediaCollection
       title="Artists"
       description={description}
       items={artists}
-      kind="artist"
-      mapItem={mapArtistToItem}
+      getKey={getArtistKey}
+      getSearchText={getArtistSearchText}
+      renderTile={renderTile}
+      renderRow={renderRow}
       sortOptions={sortOptions}
       defaultSort="az"
       searchPlaceholder="Search..."

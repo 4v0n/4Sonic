@@ -19,7 +19,13 @@ import Switch from "../components/ui/Switch";
 import AlbumSongsTable from "../components/library/AlbumSongsTable";
 import { useThemeContext } from "../context/ThemeContext";
 import { ToastPosition, useUiPreferencesStore } from "../store/uiPreferencesStore";
-import MediaCard from "../components/ui/MediaCard";
+import AlbumRow from "../components/media/AlbumRow";
+import AlbumTile from "../components/media/AlbumTile";
+import ArtistTile from "../components/media/ArtistTile";
+import SongRow from "../components/media/SongRow";
+import SongTile from "../components/media/SongTile";
+import { RowSkeleton } from "../components/media/Row";
+import { TileSkeleton } from "../components/media/Tile";
 import Carousel, { CarouselItem } from "../components/ui/Carousel";
 import { useAuthStore } from "../store/authStore";
 import { SubsonicAlbumDetail, SubsonicArtistDetail, SubsonicSong } from "../types/subsonic";
@@ -201,27 +207,6 @@ const ComponentShowcasePage = () => {
     };
   }, [client]);
 
-  const albumMeta = useMemo(() => {
-    if (!mediaSamples.album) return "";
-    const songs = mediaSamples.album.songCount ?? mediaSamples.album.song?.length;
-    const yearPart = mediaSamples.album.year ? String(mediaSamples.album.year) : undefined;
-    const songPart = songs ? `${songs} song${songs === 1 ? "" : "s"}` : undefined;
-    return [yearPart, songPart].filter(Boolean).join(" • ");
-  }, [mediaSamples.album]);
-
-  const songMeta = useMemo(() => {
-    if (!mediaSamples.song && !mediaSamples.album) return "";
-    const albumName = mediaSamples.song?.album ?? mediaSamples.album?.name;
-    const yearPart = mediaSamples.song?.year ?? mediaSamples.album?.year;
-    const yearString = yearPart ? String(yearPart) : undefined;
-    return [albumName, yearString].filter(Boolean).join(" • ");
-  }, [mediaSamples.album, mediaSamples.song]);
-
-  const artistMeta = useMemo(() => {
-    if (!mediaSamples.artist?.albumCount) return "";
-    return `${mediaSamples.artist.albumCount} album${mediaSamples.artist.albumCount === 1 ? "" : "s"}`;
-  }, [mediaSamples.artist]);
-
   const artistCover = useMemo(
     () => getArtistImageUrl(mediaSamples.artist, client),
     [client, mediaSamples.artist],
@@ -282,77 +267,45 @@ const ComponentShowcasePage = () => {
     }
   };
 
-  const carouselItems = useMemo<CarouselItem[]>(() => {
-    const baseCards = [
-      {
-        kind: "artist" as const,
-        title: mediaSamples.artist?.name,
-        subtitle: artistMeta,
-        meta: undefined,
-        coverUrl: artistCover,
-        onPlay: handlePlaySampleArtist,
-        isLoading: mediaSamples.loading && !mediaSamples.artist,
-      },
-      {
-        kind: "album" as const,
-        title: mediaSamples.album?.name,
-        subtitle: mediaSamples.album?.artist,
-        meta: undefined,
-        coverUrl: albumCover,
-        onPlay: handlePlaySampleAlbum,
-        isLoading: mediaSamples.loading && !mediaSamples.album,
-      },
-      {
-        kind: "song" as const,
-        title: mediaSamples.song?.title,
-        subtitle: mediaSamples.song?.artist ?? mediaSamples.album?.artist,
-        meta: songMeta,
-        coverUrl: songCover,
-        onPlay: handlePlaySampleSong,
-        isLoading: mediaSamples.loading && !mediaSamples.song,
-      },
-    ];
+  const renderArtistTile = (className: string) => mediaSamples.artist ? (
+    <ArtistTile
+      name={mediaSamples.artist.name}
+      albumCount={mediaSamples.artist.albumCount}
+      coverUrl={artistCover}
+      actions={{ onPlay: handlePlaySampleArtist }}
+      className={className}
+    />
+  ) : <TileSkeleton className={className} />;
 
-    const ensureTitle = (kind: string, title?: string, index?: number) => {
-      if (title) return title;
-      const label = kind === "artist" ? "Artist" : kind === "album" ? "Album" : "Song";
-      return index ? `${label} ${index}` : label;
+  const renderAlbumTile = (className: string) => mediaSamples.album ? (
+    <AlbumTile
+      title={mediaSamples.album.name}
+      artistName={mediaSamples.album.artist}
+      coverUrl={albumCover}
+      actions={{ onPlay: handlePlaySampleAlbum }}
+      className={className}
+    />
+  ) : <TileSkeleton className={className} />;
+
+  const renderSongTile = (className: string) => mediaSamples.song ? (
+    <SongTile
+      title={mediaSamples.song.title}
+      artistName={mediaSamples.song.artist ?? mediaSamples.album?.artist}
+      albumName={mediaSamples.song.album ?? mediaSamples.album?.name}
+      year={mediaSamples.song.year ?? mediaSamples.album?.year}
+      coverUrl={songCover}
+      actions={{ onPlay: handlePlaySampleSong }}
+      className={className}
+    />
+  ) : <TileSkeleton className={className} />;
+
+  const carouselItems: CarouselItem[] = Array.from({ length: 9 }, (_, index) => {
+    const renderTile = [renderArtistTile, renderAlbumTile, renderSongTile][index % 3];
+    return {
+      id: `media-${index}`,
+      children: renderTile("w-full"),
     };
-
-    return Array.from({ length: 9 }, (_, index) => {
-      const blueprint = baseCards[index % baseCards.length];
-      const title = ensureTitle(blueprint.kind, blueprint.title, index + 1);
-
-      return {
-        id: `${blueprint.kind}-${index}`,
-        children: (
-          <MediaCard
-            kind={blueprint.kind}
-            title={title}
-            subtitle={blueprint.subtitle}
-            meta={blueprint.meta}
-            coverUrl={blueprint.coverUrl}
-            isLoading={blueprint.isLoading}
-            onPlay={blueprint.onPlay}
-            className="w-full"
-          />
-        ),
-      };
-    });
-  }, [
-    albumCover,
-    artistCover,
-    artistMeta,
-    handlePlaySampleAlbum,
-    handlePlaySampleArtist,
-    handlePlaySampleSong,
-    mediaSamples.album,
-    mediaSamples.artist,
-    mediaSamples.loading,
-    mediaSamples.song,
-    songCover,
-    songMeta,
-  ]);
+  });
 
   const dropdownOptions: MenuOption[] = [
     { label: "Profile", onClick: () => alert("Profile"), icon: <PersonIcon fontSize="small" /> },
@@ -386,58 +339,37 @@ const ComponentShowcasePage = () => {
               <p className="text-sm text-danger1">Unable to load media samples: {mediaSamples.error}</p>
             ) : null}
             <div className="grid gap-4 md:grid-cols-3">
-              <MediaCard
-                kind="artist"
-                title={mediaSamples.artist?.name}
-                subtitle={artistMeta}
-                coverUrl={artistCover}
-                isLoading={mediaSamples.loading && !mediaSamples.artist}
-                onPlay={handlePlaySampleArtist}
-                className="w-full max-w-none"
-              />
-              <MediaCard
-                kind="album"
-                title={mediaSamples.album?.name}
-                subtitle={mediaSamples.album?.artist}
-                coverUrl={albumCover}
-                isLoading={mediaSamples.loading && !mediaSamples.album}
-                onPlay={handlePlaySampleAlbum}
-                className="w-full max-w-none"
-              />
-              <MediaCard
-                kind="song"
-                title={mediaSamples.song?.title}
-                subtitle={mediaSamples.song?.artist ?? mediaSamples.album?.artist}
-                meta={mediaSamples.song?.album ?? mediaSamples.album?.name}
-                coverUrl={songCover}
-                isLoading={mediaSamples.loading && !mediaSamples.song}
-                onPlay={handlePlaySampleSong}
-                className="w-full max-w-none"
-              />
+              {renderArtistTile("w-full max-w-none")}
+              {renderAlbumTile("w-full max-w-none")}
+              {renderSongTile("w-full max-w-none")}
             </div>
             <div className="space-y-3">
-              <MediaCard
-                layout="row"
-                kind="album"
-                title={mediaSamples.album?.name}
-                subtitle={mediaSamples.album?.artist}
-                meta={albumMeta}
-                coverUrl={albumCover}
-                isLoading={mediaSamples.loading && !mediaSamples.album}
-                onPlay={handlePlaySampleAlbum}
-                className="w-full"
-              />
-              <MediaCard
-                layout="row"
-                kind="song"
-                title={mediaSamples.song?.title}
-                subtitle={mediaSamples.song?.artist ?? mediaSamples.album?.artist}
-                meta={songMeta}
-                coverUrl={songCover}
-                isLoading={mediaSamples.loading && !mediaSamples.song}
-                onPlay={handlePlaySampleSong}
-                className="w-full"
-              />
+              {mediaSamples.album ? (
+                <AlbumRow
+                  title={mediaSamples.album.name}
+                  artistName={mediaSamples.album.artist}
+                  year={mediaSamples.album.year}
+                  songCount={mediaSamples.album.songCount ?? mediaSamples.album.song?.length}
+                  coverUrl={albumCover}
+                  actions={{ onPlay: handlePlaySampleAlbum }}
+                  className="w-full"
+                />
+              ) : (
+                <RowSkeleton className="w-full" />
+              )}
+              {mediaSamples.song ? (
+                <SongRow
+                  title={mediaSamples.song.title}
+                  artistName={mediaSamples.song.artist ?? mediaSamples.album?.artist}
+                  albumName={mediaSamples.song.album ?? mediaSamples.album?.name}
+                  year={mediaSamples.song.year ?? mediaSamples.album?.year}
+                  coverUrl={songCover}
+                  actions={{ onPlay: handlePlaySampleSong }}
+                  className="w-full"
+                />
+              ) : (
+                <RowSkeleton className="w-full" />
+              )}
             </div>
             <p className="text-xs text-text-grey">
               Using artist {ARTIST_ID}, album {ALBUM_ID}, and song {SONG_ID} from your Navidrome server.

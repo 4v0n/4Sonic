@@ -1,26 +1,13 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { Fragment, ReactNode, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { GridViewIcon, ListViewIcon } from "../../constants/icons";
-import MediaCard, { MediaCardProps } from "../ui/MediaCard";
+import { RowSkeleton } from "../media/Row";
+import { TileSkeleton } from "../media/Tile";
 import SearchInput from "../ui/SearchInput";
 import Select from "../ui/Select";
 import { ToggleGroup, ToggleGroupItem } from "../ui/ToggleGroup";
 import Spinner from "../ui/Spinner";
 
 type ViewMode = "grid" | "list";
-
-export type MediaCollectionItem<T = unknown> = {
-  id: string;
-  title: string;
-  subtitle?: string;
-  meta?: string;
-  coverUrl?: string;
-  onPlay?: () => void;
-  onPlayNext?: () => void;
-  onAddToQueue?: () => void;
-  onClick?: () => void;
-  searchText?: string;
-  data?: T;
-};
 
 export type MediaSortOption<T> = {
   value: string;
@@ -32,8 +19,14 @@ interface MediaCollectionProps<T> {
   title: string;
   description?: string;
   items: T[];
-  kind: MediaCardProps["kind"];
-  mapItem: (item: T) => MediaCollectionItem<T>;
+  /** Stable, unique key for an item. */
+  getKey: (item: T) => string;
+  /** Text matched against the filter input. */
+  getSearchText: (item: T) => string;
+  /** Renders the item for the grid view. Should fill its grid cell. */
+  renderTile: (item: T) => ReactNode;
+  /** Renders the item for the list view. */
+  renderRow: (item: T) => ReactNode;
   sortOptions: MediaSortOption<T>[];
   defaultSort?: string;
   searchPlaceholder?: string;
@@ -54,8 +47,10 @@ function MediaCollection<T>({
   title,
   description,
   items,
-  kind,
-  mapItem,
+  getKey,
+  getSearchText,
+  renderTile,
+  renderRow,
   sortOptions,
   defaultSort,
   searchPlaceholder = "Filter...",
@@ -112,22 +107,23 @@ function MediaCollection<T>({
     return copy;
   }, [activeSort, items]);
 
-  const normalizedItems = useMemo(
-    () =>
-      sortedItems.map((item) => {
-        const mapped = mapItem(item);
-        const searchValue = (mapped.searchText ?? [mapped.title, mapped.subtitle, mapped.meta].filter(Boolean).join(" ")).toLowerCase();
-        return { ...mapped, searchText: searchValue };
-      }),
-    [mapItem, sortedItems],
-  );
+  // Rendered elements are memoised so typing in the filter doesn't hand fresh
+  // props (and therefore re-renders) to every visible tile/row.
+  const normalizedItems = useMemo(() => {
+    const render = viewMode === "grid" ? renderTile : renderRow;
+    return sortedItems.map((item) => ({
+      key: getKey(item),
+      searchText: getSearchText(item).toLowerCase(),
+      node: render(item),
+    }));
+  }, [getKey, getSearchText, renderRow, renderTile, sortedItems, viewMode]);
 
   const filteredItems = useMemo(() => {
     const query = searchQuery.trim().toLowerCase();
     if (!query) {
       return normalizedItems;
     }
-    return normalizedItems.filter((item) => item.searchText?.includes(query));
+    return normalizedItems.filter((item) => item.searchText.includes(query));
   }, [normalizedItems, searchQuery]);
 
   const pageSize = viewMode === "grid" ? GRID_PAGE_SIZE : LIST_PAGE_SIZE;
@@ -187,8 +183,11 @@ function MediaCollection<T>({
 
   const shouldShowSkeletons = isLoading && items.length === 0;
   const skeletonCount = viewMode === "grid" ? 12 : 6;
-  const itemsToRender: MediaCollectionItem<T>[] = shouldShowSkeletons
-    ? Array.from({ length: skeletonCount }, (_, index) => ({ id: `skeleton-${index}`, title: "" } as MediaCollectionItem<T>))
+  const itemsToRender = shouldShowSkeletons
+    ? Array.from({ length: skeletonCount }, (_, index) => ({
+      key: `skeleton-${index}`,
+      node: viewMode === "grid" ? <TileSkeleton className="w-full max-w-full" /> : <RowSkeleton className="w-full" />,
+    }))
     : filteredItems.slice(0, visibleCount);
 
   const showEmptyState = !isLoading && filteredItems.length === 0;
@@ -263,41 +262,13 @@ function MediaCollection<T>({
           className="grid grid-cols-[repeat(auto-fill,minmax(min(180px,100%),1fr))] gap-4"
         >
           {itemsToRender.map((item) => (
-            <MediaCard
-              key={item.id}
-              kind={kind}
-              title={!shouldShowSkeletons ? item.title : undefined}
-              subtitle={!shouldShowSkeletons ? item.subtitle : undefined}
-              meta={!shouldShowSkeletons ? item.meta : undefined}
-              coverUrl={!shouldShowSkeletons ? item.coverUrl : undefined}
-              onPlay={!shouldShowSkeletons ? item.onPlay : undefined}
-              onPlayNext={!shouldShowSkeletons ? item.onPlayNext : undefined}
-              onAddToQueue={!shouldShowSkeletons ? item.onAddToQueue : undefined}
-              onClick={!shouldShowSkeletons ? item.onClick : undefined}
-              isLoading={shouldShowSkeletons}
-              className="w-full"
-              style={{ maxWidth: "100%" }}
-            />
+            <Fragment key={item.key}>{item.node}</Fragment>
           ))}
         </div>
       ) : (
         <div className="space-y-3">
           {itemsToRender.map((item) => (
-            <MediaCard
-              key={item.id}
-              kind={kind}
-              layout="row"
-              title={!shouldShowSkeletons ? item.title : undefined}
-              subtitle={!shouldShowSkeletons ? item.subtitle : undefined}
-              meta={!shouldShowSkeletons ? item.meta : undefined}
-              coverUrl={!shouldShowSkeletons ? item.coverUrl : undefined}
-              onPlay={!shouldShowSkeletons ? item.onPlay : undefined}
-              onPlayNext={!shouldShowSkeletons ? item.onPlayNext : undefined}
-              onAddToQueue={!shouldShowSkeletons ? item.onAddToQueue : undefined}
-              onClick={!shouldShowSkeletons ? item.onClick : undefined}
-              isLoading={shouldShowSkeletons}
-              className="w-full"
-            />
+            <Fragment key={item.key}>{item.node}</Fragment>
           ))}
         </div>
       )}

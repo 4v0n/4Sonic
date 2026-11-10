@@ -1,13 +1,14 @@
 import { useCallback, useMemo } from "react";
 import { useNavigate } from "react-router-dom";
-import { toast } from "sonner";
 import MediaCollection, { MediaSortOption } from "../components/library/MediaCollection";
+import { getAlbumActions } from "../components/media/actions";
+import AlbumRow from "../components/media/AlbumRow";
+import AlbumTile from "../components/media/AlbumTile";
 import { useAlbums, useLibraryStatus } from "../hooks/useLibrary";
 import { useAuthStore } from "../store/authStore";
 import { useLibraryStore } from "../store/libraryStore";
 import { AlbumEntity } from "../types/library";
 import { getAlbumCoverUrl } from "../utils/mediaImages";
-import { addAlbumToQueue, playAlbum, queueAlbumNext } from "../utils/playbackActions";
 
 const getAlbumYear = (album: AlbumEntity): number | undefined => {
   if (typeof album.year === "number") {
@@ -18,6 +19,12 @@ const getAlbumYear = (album: AlbumEntity): number | undefined => {
     return Number.isFinite(parsed) ? parsed : undefined;
   }
   return undefined;
+};
+
+const getAlbumKey = (album: AlbumEntity) => album.id;
+const getAlbumSearchText = (album: AlbumEntity) => {
+  const year = getAlbumYear(album);
+  return [album.title, album.artistName, album.genre, year ? String(year) : ""].filter(Boolean).join(" ");
 };
 
 const AlbumsPage = () => {
@@ -80,53 +87,34 @@ const AlbumsPage = () => {
     [albums.length, isLoading],
   );
 
-  const mapAlbumToItem = useCallback((album: AlbumEntity) => {
-    const year = getAlbumYear(album);
-    const metaParts = [];
-    if (year) metaParts.push(String(year));
-    if (album.songCount) metaParts.push(`${album.songCount} song${album.songCount === 1 ? "" : "s"}`);
+  const getAlbumProps = useCallback((album: AlbumEntity) => ({
+    title: album.title,
+    artistName: album.artistName,
+    year: getAlbumYear(album),
+    songCount: album.songCount,
+    coverUrl: getAlbumCoverUrl(album, client),
+    actions: getAlbumActions(album.id),
+    onClick: () => navigate(`/albums/${album.id}`),
+  }), [client, navigate]);
 
-    return {
-      id: album.id,
-      title: album.title,
-      subtitle: album.artistName,
-      meta: metaParts.length > 0 ? metaParts.join(" • ") : undefined,
-      coverUrl: getAlbumCoverUrl(album, client),
-      searchText: [
-        album.title,
-        album.artistName,
-        album.genre,
-        year ? String(year) : "",
-      ].filter(Boolean).join(" "),
-      onPlay: () => {
-        void playAlbum(album.id).catch((error) => {
-          const errorMessage = error instanceof Error ? error.message : undefined;
-          toast.error("Unable to play album", errorMessage ? { description: errorMessage } : undefined);
-        });
-      },
-      onPlayNext: () => {
-        void queueAlbumNext(album.id).catch((error) => {
-          const errorMessage = error instanceof Error ? error.message : undefined;
-          toast.error("Unable to queue album next", errorMessage ? { description: errorMessage } : undefined);
-        });
-      },
-      onAddToQueue: () => {
-        void addAlbumToQueue(album.id).catch((error) => {
-          const errorMessage = error instanceof Error ? error.message : undefined;
-          toast.error("Unable to add album to queue", errorMessage ? { description: errorMessage } : undefined);
-        });
-      },
-      onClick: () => navigate(`/albums/${album.id}`),
-    };
-  }, [client, navigate]);
+  const renderTile = useCallback(
+    (album: AlbumEntity) => <AlbumTile {...getAlbumProps(album)} className="w-full max-w-full" />,
+    [getAlbumProps],
+  );
+  const renderRow = useCallback(
+    (album: AlbumEntity) => <AlbumRow {...getAlbumProps(album)} className="w-full" />,
+    [getAlbumProps],
+  );
 
   return (
     <MediaCollection
       title="Albums"
       description={description}
       items={albums}
-      kind="album"
-      mapItem={mapAlbumToItem}
+      getKey={getAlbumKey}
+      getSearchText={getAlbumSearchText}
+      renderTile={renderTile}
+      renderRow={renderRow}
       sortOptions={albumSortOptions}
       defaultSort="az"
       searchPlaceholder="Search"

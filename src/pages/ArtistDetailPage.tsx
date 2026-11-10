@@ -2,6 +2,9 @@ import { useCallback, useMemo } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { toast } from "sonner";
 import MediaCollection, { MediaSortOption } from "../components/library/MediaCollection";
+import { getAlbumActions } from "../components/media/actions";
+import AlbumRow from "../components/media/AlbumRow";
+import AlbumTile from "../components/media/AlbumTile";
 import Button from "../components/ui/Button";
 import Spinner from "../components/ui/Spinner";
 import CoverImage from "../components/ui/CoverImage";
@@ -9,7 +12,7 @@ import { PlayArrowIcon } from "../constants/icons";
 import { useAuthStore } from "../store/authStore";
 import { useLibraryStore } from "../store/libraryStore";
 import { AlbumEntity } from "../types/library";
-import { addAlbumToQueue, addArtistToQueue, playAlbum, playArtist, queueAlbumNext, queueArtistNext } from "../utils/playbackActions";
+import { addArtistToQueue, playArtist, queueArtistNext } from "../utils/playbackActions";
 import { getAlbumCoverUrl, getArtistImageUrl } from "../utils/mediaImages";
 
 const getAlbumYear = (album: AlbumEntity): number | undefined => {
@@ -21,6 +24,12 @@ const getAlbumYear = (album: AlbumEntity): number | undefined => {
     return Number.isFinite(parsed) ? parsed : undefined;
   }
   return undefined;
+};
+
+const getAlbumKey = (album: AlbumEntity) => album.id;
+const getAlbumSearchText = (album: AlbumEntity) => {
+  const year = getAlbumYear(album);
+  return [album.title, album.artistName, album.genre, year ? String(year) : ""].filter(Boolean).join(" ");
 };
 
 const ArtistDetailPage = () => {
@@ -101,45 +110,24 @@ const ArtistDetailPage = () => {
     },
   ], []);
 
-  const mapAlbumToItem = useCallback((album: AlbumEntity) => {
-    const year = getAlbumYear(album);
-    const metaParts = [];
-    if (year) metaParts.push(String(year));
-    if (album.songCount) metaParts.push(`${album.songCount} song${album.songCount === 1 ? "" : "s"}`);
+  const getAlbumProps = useCallback((album: AlbumEntity) => ({
+    title: album.title,
+    artistName: album.artistName,
+    year: getAlbumYear(album),
+    songCount: album.songCount,
+    coverUrl: getAlbumCoverUrl(album, client),
+    actions: getAlbumActions(album.id),
+    onClick: () => navigate(`/albums/${album.id}`),
+  }), [client, navigate]);
 
-    return {
-      id: album.id,
-      title: album.title,
-      subtitle: album.artistName,
-      meta: metaParts.length > 0 ? metaParts.join(" • ") : undefined,
-      coverUrl: getAlbumCoverUrl(album, client),
-      searchText: [
-        album.title,
-        album.artistName,
-        album.genre,
-        year ? String(year) : "",
-      ].filter(Boolean).join(" "),
-      onPlay: () => {
-        void playAlbum(album.id).catch((error) => {
-          const description = error instanceof Error ? error.message : undefined;
-          toast.error("Unable to play album", description ? { description } : undefined);
-        });
-      },
-      onPlayNext: () => {
-        void queueAlbumNext(album.id).catch((error) => {
-          const description = error instanceof Error ? error.message : undefined;
-          toast.error("Unable to queue album next", description ? { description } : undefined);
-        });
-      },
-      onAddToQueue: () => {
-        void addAlbumToQueue(album.id).catch((error) => {
-          const description = error instanceof Error ? error.message : undefined;
-          toast.error("Unable to add album to queue", description ? { description } : undefined);
-        });
-      },
-      onClick: () => navigate(`/albums/${album.id}`),
-    };
-  }, [client, navigate]);
+  const renderTile = useCallback(
+    (album: AlbumEntity) => <AlbumTile {...getAlbumProps(album)} className="w-full max-w-full" />,
+    [getAlbumProps],
+  );
+  const renderRow = useCallback(
+    (album: AlbumEntity) => <AlbumRow {...getAlbumProps(album)} className="w-full" />,
+    [getAlbumProps],
+  );
 
   if (!artistId) {
     return (
@@ -231,8 +219,10 @@ const ArtistDetailPage = () => {
         title="Albums"
         description={`${artistAlbums.length.toLocaleString()} album${artistAlbums.length === 1 ? "" : "s"}`}
         items={artistAlbums}
-        kind="album"
-        mapItem={mapAlbumToItem}
+        getKey={getAlbumKey}
+        getSearchText={getAlbumSearchText}
+        renderTile={renderTile}
+        renderRow={renderRow}
         sortOptions={albumSortOptions}
         defaultSort="az"
         searchPlaceholder="Search albums..."
