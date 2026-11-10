@@ -36,6 +36,8 @@ const BackgroundAreaVisualizer = ({ frequencyData, color, opacity, blur }: Backg
     }
 
     const { width, height } = rect;
+    const lineWidth = 1.5;
+    const baselineOffset = lineWidth;
     if (width === 0 || height === 0) {
       return;
     }
@@ -49,7 +51,7 @@ const BackgroundAreaVisualizer = ({ frequencyData, color, opacity, blur }: Backg
         if (isArea) {
           ctx.moveTo(0, height);
           if (numPoints === 1) {
-            const y = height - frequencyData[0].normalizedPeakRatio * height;
+            const y = height - frequencyData[0].normalizedPeakRatio * height + baselineOffset;
             ctx.lineTo(0, y);
             ctx.lineTo(width, y);
           }
@@ -61,7 +63,7 @@ const BackgroundAreaVisualizer = ({ frequencyData, color, opacity, blur }: Backg
 
       const points = frequencyData.map((point, index) => ({
         x: (index / (numPoints - 1)) * width,
-        y: height - point.normalizedPeakRatio * height,
+        y: height - point.normalizedPeakRatio * height + baselineOffset,
       }));
 
       if (isArea) {
@@ -90,7 +92,7 @@ const BackgroundAreaVisualizer = ({ frequencyData, color, opacity, blur }: Backg
     };
 
     context.strokeStyle = color;
-    context.lineWidth = 1.5;
+    context.lineWidth = lineWidth;
     createSmoothPath(context, false);
     context.stroke();
 
