@@ -170,7 +170,7 @@ const VolumeControl = ({ volume, isMuted, onChange, onToggleMute, onScroll }: Vo
         onScroll(step);
       }}
     >
-      <Button className="shadow-none" aria-label="Toggle mute" onClick={onToggleMute}>
+      <Button variant="ghost" aria-label="Toggle mute" onClick={onToggleMute}>
         {selectIcon()}
       </Button>
       <div
@@ -262,7 +262,8 @@ const BottomBar = ({ isRightCompact = false }: BottomBarProps) => {
 
   const queueButton = (
     <Button
-      className={`shadow-none ${isQueueOpen ? "bg-surface2" : ""}`}
+      variant="ghost"
+      className={isQueueOpen ? "bg-surface-tonal2 text-primary0 hover:bg-surface-tonal3" : ""}
       onClick={isRightCompact ? undefined : () => toggleQueue("queue")}
       aria-label="Toggle queue sidebar"
     >
@@ -291,16 +292,18 @@ const BottomBar = ({ isRightCompact = false }: BottomBarProps) => {
   const visualizerHeightPercent = Math.min(1, Math.max(0, visualizerHeight));
 
   return (
-    <footer className="sticky bottom-0 z-30 h-24 p-4 m-2 bg-surface1 rounded-xl shadow">
-      <div
-        className="pointer-events-none absolute left-0 right-0 bottom-0 z-0 overflow-visible"
-        style={{ height: `${visualizerHeightPercent * 100}%` }}
-      >
-        <BackgroundAreaVisualizer frequencyData={visualizerData} color={visualizerColor} opacity={visualizerOpacity} blur={visualizerBlur} />
+    <footer className="sticky bottom-0 z-30 h-20 p-3 m-2 bg-surface1 rounded-xl shadow">
+      <div className="pointer-events-none absolute inset-0 z-0 overflow-hidden rounded-xl">
+        <div
+          className="absolute left-0 right-0 bottom-0"
+          style={{ height: `${visualizerHeightPercent * 100}%` }}
+        >
+          <BackgroundAreaVisualizer frequencyData={visualizerData} color={visualizerColor} opacity={visualizerOpacity} blur={visualizerBlur} />
+        </div>
       </div>
       <div className="relative z-10 flex h-full w-full items-center justify-between">
         <div className="flex items-center w-1/3 min-w-0 gap-3">
-          <div className="h-18 w-18 overflow-hidden rounded-lg   bg-surface1">
+          <div className="h-14 w-14 overflow-hidden rounded-lg   bg-surface1">
             <CoverImage
               src={coverArtUrl}
               alt={currentSong?.title ?? "Cover"}
@@ -325,14 +328,15 @@ const BottomBar = ({ isRightCompact = false }: BottomBarProps) => {
         <div className="flex flex-col items-center w-1/3">
           <div className="flex items-center space-x-3 mb-2">
             <Button
-              className={`shadow-none ${shuffle ? "bg-surface2" : ""}`}
+              variant="ghost"
+              className={shuffle ? "bg-surface-tonal2 text-primary0 hover:bg-surface-tonal3" : ""}
               aria-label="Toggle shuffle"
               onClick={() => toggleShuffle()}
               disabled={!currentSong}
             >
               <ShuffleIcon fontSize="small" />
             </Button>
-            <Button className="shadow-none" disabled={!playbackReady} onClick={handlePrevious}>
+            <Button variant="ghost" disabled={!playbackReady} onClick={handlePrevious}>
               <SkipPreviousIcon fontSize="small" />
             </Button>
             <Button
@@ -348,11 +352,12 @@ const BottomBar = ({ isRightCompact = false }: BottomBarProps) => {
                 <PlayArrowIcon fontSize="small" className="text-text-inverted" />
               )}
             </Button>
-            <Button className="shadow-none" disabled={!playbackReady} onClick={handleNext}>
+            <Button variant="ghost" disabled={!playbackReady} onClick={handleNext}>
               <SkipNextIcon fontSize="small" />
             </Button>
             <Button
-              className={`shadow-none ${repeat !== "off" ? "bg-surface2" : ""}`}
+              variant="ghost"
+              className={repeat !== "off" ? "bg-surface-tonal2 text-primary0 hover:bg-surface-tonal3" : ""}
               aria-label="Toggle repeat"
               onClick={() => cycleRepeat()}
               disabled={!currentSong}
