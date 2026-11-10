@@ -31,52 +31,85 @@ export const TileFrame = ({ actions, className, children, ...props }: TileFrameP
   </MediaContextMenu>
 );
 
+export type TileStackDepth = 0 | 1 | 2;
+
+const STACK_LAYERS = [
+  "mx-[10%] h-1 bg-surface4/50",
+  "mx-[5%] h-1.5 bg-surface4",
+] as const;
+
+const TileStack = ({ depth }: { depth: TileStackDepth }) => (
+  <>
+    {STACK_LAYERS.map((layerClass, index) => (
+      <div
+        key={layerClass}
+        aria-hidden
+        className={cn("rounded-t-md", layerClass, index < STACK_LAYERS.length - depth && "invisible")}
+      />
+    ))}
+  </>
+);
+
 interface TileArtworkProps {
   coverUrl?: string;
   alt: string;
   onPlay?: () => void;
+  stack?: TileStackDepth;
   className?: string;
 }
 
-export const TileArtwork = ({ coverUrl, alt, onPlay, className }: TileArtworkProps) => (
-  <div
-    className={cn(
-      "relative aspect-square rounded-md w-full overflow-hidden bg-surface0 shadow transition-shadow group-hover:shadow-md",
-      className,
-    )}
-  >
-    <CoverImage src={coverUrl} alt={alt} className="h-full w-full" />
-    {onPlay ? (
-      <>
-        <div className="absolute inset-0 bg-black/25 opacity-0 transition group-hover:opacity-100" />
-        <Button
-          variant="primary"
-          size="large"
-          aria-label={`Play ${alt}`}
-          className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 opacity-0 transition duration-150 group-hover:opacity-100 shadow-lg"
-          onClick={(event) => {
-            event.stopPropagation();
-            onPlay();
-          }}
-        >
-          <PlayArrowIcon />
-        </Button>
-      </>
-    ) : null}
+export const TileArtwork = ({ coverUrl, alt, onPlay, stack = 0, className }: TileArtworkProps) => (
+  <div className={cn("flex w-full flex-col gap-px", className)}>
+    <TileStack depth={stack} />
+    <div className="relative aspect-square rounded-md w-full overflow-hidden bg-surface0 shadow transition-shadow group-hover:shadow-md">
+      <CoverImage src={coverUrl} alt={alt} className="h-full w-full" />
+      {onPlay ? (
+        <>
+          <div className="absolute inset-0 bg-black/25 opacity-0 transition group-hover:opacity-100" />
+          <Button
+            variant="primary"
+            size="large"
+            aria-label={`Play ${alt}`}
+            className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 opacity-0 transition duration-150 group-hover:opacity-100 shadow-lg"
+            onClick={(event) => {
+              event.stopPropagation();
+              onPlay();
+            }}
+          >
+            <PlayArrowIcon />
+          </Button>
+        </>
+      ) : null}
+    </div>
   </div>
 );
 
-export const TileSkeleton = ({ className }: { className?: string }) => (
-  <div
-    className={cn(
-      "max-w-[220px] overflow-hidden rounded-2xl border border-surface2 bg-surface1 shadow-sm animate-pulse",
-      className,
-    )}
+interface TileCountBadgeProps {
+  count: number;
+  icon: React.ReactNode;
+  label: string;
+}
+
+export const TileCountBadge = ({ count, icon, label }: TileCountBadgeProps) => (
+  <span
+    title={label}
+    aria-label={label}
+    className="flex shrink-0 items-center gap-1 rounded-full bg-surface2 px-1.5 text-sm font-semibold leading-5 text-text-grey tabular-nums transition group-hover:bg-surface3"
   >
-    <div className="aspect-square bg-surface2" />
-    <div className="space-y-2 p-3">
-      <div className="h-4 w-3/4 rounded bg-surface2" />
-      <div className="h-3 w-1/2 rounded bg-surface2" />
+    <span aria-hidden className="flex text-[1em]">{icon}</span>
+    {count}
+  </span>
+);
+
+export const TileSkeleton = ({ className }: { className?: string }) => (
+  <div aria-hidden className={cn("max-w-[220px] p-3 animate-pulse", className)}>
+    <div className="flex w-full flex-col gap-px">
+      <TileStack depth={0} />
+      <div className="aspect-square w-full rounded-md bg-surface2" />
+    </div>
+    <div className="flex min-h-[60px] flex-col gap-1 pt-2">
+      <div className="my-0.5 h-4 w-3/4 rounded bg-surface2" />
+      <div className="my-0.5 h-3 w-1/2 rounded bg-surface2" />
     </div>
   </div>
 );

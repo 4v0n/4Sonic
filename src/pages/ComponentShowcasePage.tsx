@@ -281,6 +281,8 @@ const ComponentShowcasePage = () => {
     <AlbumTile
       title={mediaSamples.album.name}
       artistName={mediaSamples.album.artist}
+      year={mediaSamples.album.year}
+      songCount={mediaSamples.album.songCount ?? mediaSamples.album.song?.length}
       coverUrl={albumCover}
       actions={{ onPlay: handlePlaySampleAlbum }}
       className={className}

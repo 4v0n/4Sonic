@@ -1,8 +1,14 @@
 import React from "react";
-import { formatAlbumMeta } from "./format";
-import { TileArtwork, TileFrame, type TileFrameProps } from "./Tile";
+import { AlbumIcon } from "../../constants/icons";
+import { TileArtwork, TileCountBadge, TileFrame, type TileFrameProps } from "./Tile";
 
-export interface AlbumTileProps extends Omit<TileFrameProps, "children" | "title"> {
+export interface AlbumDisplayOptions {
+  showArtist?: boolean;
+  showYear?: boolean;
+  showTrackCount?: boolean;
+}
+
+export interface AlbumTileProps extends Omit<TileFrameProps, "children" | "title">, AlbumDisplayOptions {
   title: string;
   artistName?: string;
   year?: number;
@@ -10,27 +16,35 @@ export interface AlbumTileProps extends Omit<TileFrameProps, "children" | "title
   coverUrl?: string;
 }
 
-const AlbumTile = ({ title, artistName, year, songCount, coverUrl, actions, ...props }: AlbumTileProps) => {
-  const meta = formatAlbumMeta(year, songCount);
-
-  return (
-    <TileFrame actions={actions} {...props}>
-      <TileArtwork coverUrl={coverUrl} alt={title} onPlay={actions?.onPlay} />
-      <div className="flex min-h-[60px] flex-col gap-1 pt-2">
-        <p className="truncate text-sm font-semibold text-text">{title}</p>
-        {artistName ? (
-          <p className="truncate text-xs text-text-grey">{artistName}</p>
-        ) : (
-          <p className="truncate text-xs text-text-grey invisible" aria-hidden>Subtitle placeholder</p>
-        )}
-        {meta ? (
-          <p className="truncate text-xs text-text-grey">{meta}</p>
-        ) : (
-          <p className="truncate text-xs text-text-grey invisible" aria-hidden>Meta placeholder</p>
-        )}
+const AlbumTile = ({
+  title,
+  artistName,
+  year,
+  songCount,
+  coverUrl,
+  actions,
+  showArtist = true,
+  showYear = true,
+  showTrackCount = true,
+  ...props
+}: AlbumTileProps) => (
+  <TileFrame actions={actions} {...props}>
+    <TileArtwork coverUrl={coverUrl} alt={title} onPlay={actions?.onPlay} stack={2} />
+    <div className="flex min-h-[60px] flex-col gap-1 pt-2">
+      <div className="flex items-center gap-2">
+        <p className="min-w-0 flex-1 truncate text-sm font-semibold text-text">{title}</p>
+        {showTrackCount && songCount ? (
+          <TileCountBadge
+            count={songCount}
+            icon={<AlbumIcon fontSize="inherit" />}
+            label={`${songCount} track${songCount === 1 ? "" : "s"}`}
+          />
+        ) : null}
       </div>
-    </TileFrame>
-  );
-};
+      {showArtist && artistName ? <p className="truncate text-xs text-text-grey">{artistName}</p> : null}
+      {showYear && year ? <p className="truncate text-xs text-text-grey">{year}</p> : null}
+    </div>
+  </TileFrame>
+);
 
 export default React.memo(AlbumTile);

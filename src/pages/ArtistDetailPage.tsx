@@ -118,6 +118,7 @@ const ArtistDetailPage = () => {
     coverUrl: getAlbumCoverUrl(album, client),
     actions: getAlbumActions(album.id),
     onClick: () => navigate(`/albums/${album.id}`),
+    showArtist: false,
   }), [client, navigate]);
 
   const renderTile = useCallback(
