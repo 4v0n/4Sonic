@@ -8,7 +8,6 @@
   --color-text: #ececf1;
   --color-text-grey: #9a9eab;
   --color-text-inverted: #000000;
-  --color-on-primary: #04150f;
   --color-primary0: #12e09f;
   --color-primary1: #4de4a9;
   --color-primary2: #6de8b4;
@@ -69,7 +68,6 @@
     --text: var(--color-text);
     --text-grey: var(--color-text-grey);
     --text-inverted: var(--color-text-inverted);
-    --on-primary: var(--color-on-primary);
     --primary0: var(--color-primary0);
     --primary1: var(--color-primary1);
     --primary2: var(--color-primary2);
@@ -110,7 +108,6 @@
     --color-text: #3b3b3b;
     --color-text-grey: #6b6f6d;
     --color-text-inverted: #ffffff;
-    --color-on-primary: #04150f;
 
     --color-primary0: #12e09f;
     --color-primary1: #1cc48c;
