@@ -55,7 +55,7 @@ const LeftSideBar = ({ width, isIconOnly, isResizing, onResizeStart }: LeftSideB
   return (
     <aside
       className={`
-        relative flex-shrink-0 space-y-6 flex flex-col border-r font-semibold border-(--surface1)
+        relative flex-shrink-0 space-y-6 flex flex-col font-semibold
         ${isIconOnly ? "px-2 py-4" : "p-4"}
         bg-(--surface0) ${isResizing ? "transition-none" : "transition-[width] duration-150"}
       `}

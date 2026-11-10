@@ -32,8 +32,8 @@ export const RightSidebarContent = ({ view }: { view: RightSidebarView }) => {
   const nowPlaying = (
     <div className="space-y-2">
       <div className="text-xs font-extrabold tracking-wide text-(--text-grey)">Now Playing</div>
-      <div className="flex gap-3 rounded-xl border border-(--surface2) bg-(--surface1) p-3">
-        <div className="h-14 w-14 flex-shrink-0 overflow-hidden rounded-lg border border-(--surface2) bg-(--surface2)">
+      <div className="flex gap-3 rounded-xl bg-surface-tonal1 p-3">
+        <div className="h-14 w-14 flex-shrink-0 overflow-hidden rounded-lg   bg-(--surface2)">
           <CoverImage
             src={coverArtUrl}
             alt={currentSong?.title ?? "Cover"}
@@ -76,7 +76,7 @@ export const RightSidebarContent = ({ view }: { view: RightSidebarView }) => {
       <div className="space-y-3">
         {nowPlaying}
         {!hasUpcoming ? (
-          <div className="rounded-lg border border-(--surface1) p-4 text-(--text-grey)">
+          <div className="rounded-lg   p-4 text-(--text-grey)">
             No more tracks in the queue.
           </div>
         ) : (
@@ -87,11 +87,11 @@ export const RightSidebarContent = ({ view }: { view: RightSidebarView }) => {
                 {priorityUpcoming.map(({ item, orderIndex }) => (
                   <button
                     key={`priority-${item.id}-${orderIndex}`}
-                    className="w-full rounded-lg border border-(--surface1) bg-(--surface0) px-3 py-2 text-left transition hover:border-(--surface2) hover:bg-(--surface1)"
+                    className="w-full rounded-lg   bg-(--surface0) px-3 py-2 text-left transition hover: hover:bg-(--surface1)"
                     onClick={() => playFromQueue(orderIndex)}
                   >
                     <div className="flex items-center gap-3">
-                      <div className="h-12 w-12 overflow-hidden rounded-md border border-(--surface2) bg-(--surface1)">
+                      <div className="h-12 w-12 overflow-hidden rounded-md   bg-(--surface1)">
                         <CoverImage
                           src={item.coverArtUrl}
                           alt={item.title}
@@ -117,11 +117,11 @@ export const RightSidebarContent = ({ view }: { view: RightSidebarView }) => {
                 {regularUpcoming.map(({ item, orderIndex }) => (
                   <button
                     key={`regular-${item.id}-${orderIndex}`}
-                    className="w-full rounded-lg border border-(--surface1) bg-(--surface0) px-3 py-2 text-left transition hover:border-(--surface2) hover:bg-(--surface1)"
+                    className="w-full rounded-lg   bg-(--surface0) px-3 py-2 text-left transition hover: hover:bg-(--surface1)"
                     onClick={() => playFromRegularQueue(orderIndex)}
                   >
                     <div className="flex items-center gap-3">
-                      <div className="h-12 w-12 overflow-hidden rounded-md border border-(--surface2) bg-(--surface1)">
+                      <div className="h-12 w-12 overflow-hidden rounded-md   bg-(--surface1)">
                         <CoverImage
                           src={item.coverArtUrl}
                           alt={item.title}
@@ -153,7 +153,7 @@ const RightSideBar = ({ width, view, isOpen, isResizing, onResizeStart, onClose 
   return (
     <aside
       className={`
-        relative flex-shrink-0 flex flex-col border-l border-(--surface1) bg-(--surface0) overflow-hidden
+        relative flex-shrink-0 flex flex-col bg-(--surface0) overflow-hidden
         ${isResizing ? "transition-none" : "transition-[width,opacity] duration-200 ease-in-out"}
         ${isOpen ? "opacity-100" : "opacity-0 pointer-events-none"}
       `}
@@ -170,7 +170,7 @@ const RightSideBar = ({ width, view, isOpen, isResizing, onResizeStart, onClose 
         aria-label="Resize right sidebar"
       />
 
-      <div className="flex items-center justify-between px-4 py-3 sticky top-0 bg-(--surface0) z-10 border-b border-(--surface1)">
+      <div className="flex items-center justify-between px-4 py-3 sticky top-0 bg-(--surface0) z-10  ">
         <div className="flex items-center gap-2 text-lg font-extrabold tracking-wide text-(--text-grey)">
           {view === "queue" && <QueueMusicRoundedIcon fontSize="small" />}
           <span className="truncate capitalize">{view}</span>

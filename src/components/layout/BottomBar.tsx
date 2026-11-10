@@ -187,7 +187,7 @@ const VolumeControl = ({ volume, isMuted, onChange, onToggleMute, onScroll }: Vo
           requestHide();
         }}
       >
-        <div className="flex h-28 w-10 items-center justify-center rounded-lg border border-(--surface2) bg-(--surface1) p-2 shadow-lg">
+        <div className="flex h-28 w-10 items-center justify-center rounded-lg   bg-(--surface1) p-2 shadow-lg">
           <Slider
             orientation="vertical"
             min={0}
@@ -291,7 +291,7 @@ const BottomBar = ({ isRightCompact = false }: BottomBarProps) => {
   const visualizerHeightPercent = Math.min(1, Math.max(0, visualizerHeight));
 
   return (
-    <footer className="sticky bottom-0 z-30 h-24 p-4 border-t border-(--surface1) bg-(--surface0) shadow">
+    <footer className="sticky bottom-0 z-30 h-24 p-4 m-2 bg-surface1 rounded-xl shadow">
       <div
         className="pointer-events-none absolute left-0 right-0 bottom-0 z-0 overflow-visible"
         style={{ height: `${visualizerHeightPercent * 100}%` }}
@@ -300,7 +300,7 @@ const BottomBar = ({ isRightCompact = false }: BottomBarProps) => {
       </div>
       <div className="relative z-10 flex h-full w-full items-center justify-between">
         <div className="flex items-center w-1/3 min-w-0 gap-3">
-          <div className="h-18 w-18 overflow-hidden rounded-lg border border-(--surface2) bg-(--surface1)">
+          <div className="h-18 w-18 overflow-hidden rounded-lg   bg-(--surface1)">
             <CoverImage
               src={coverArtUrl}
               alt={currentSong?.title ?? "Cover"}
@@ -389,7 +389,7 @@ const BottomBar = ({ isRightCompact = false }: BottomBarProps) => {
                 sideOffset={12}
                 className="w-[340px] max-h-[70vh] overflow-auto"
               >
-                <div className="flex items-center justify-between gap-2 pb-2 border-b border-(--surface2) mb-3">
+                <div className="flex items-center justify-between gap-2 pb-2 mb-3">
                   <div className="flex items-center gap-2 text-base font-semibold">
                     <QueueMusicRoundedIcon fontSize="small" />
                     <span className="capitalize">{rightView}</span>
