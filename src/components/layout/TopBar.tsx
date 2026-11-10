@@ -24,10 +24,10 @@ const TopBar = () => {
   return (
     <header className="h-16 flex items-center justify-between px-6 sticky top-0 z-30 shadow">
       <div className="flex items-center space-x-3">
-        <Button onClick={() => navigate(-1)} aria-label="Go back" className="shadow-none">
+        <Button variant="ghost" onClick={() => navigate(-1)} aria-label="Go back" className="shadow-none">
           <ArrowBackIcon fontSize="small" />
         </Button>
-        <Button onClick={() => navigate(1)} aria-label="Go back" className="shadow-none">
+        <Button variant="ghost" onClick={() => navigate(1)} aria-label="Go back" className="shadow-none">
           <ArrowForwardIcon fontSize="small" />
         </Button>
       </div>
@@ -42,6 +42,7 @@ const TopBar = () => {
           options={profileMenuOptions}
           dropdownPlacement="bottom-right"
           buttonClassName="shadow-none"
+          buttonProps={{ variant: "ghost" }}
         />
       </div>
     </header>

@@ -72,7 +72,7 @@ const Button = React.forwardRef<HTMLButtonElement, IconButtonProps>(
       secondary: "bg-surface-tonal2 text-primary5",
       outline: "bg-transparent text-text border border-surface3",
       ghost: "bg-transparent text-text",
-      destructive: "bg-[color-mix(in_oklab,var(--danger1),black_15%)] text-light",
+      destructive: "bg-danger1 text-light",
       link: "bg-transparent text-text px-0 h-auto rounded-none underline-offset-4 hover:underline before:hidden",
     } as const;
 
