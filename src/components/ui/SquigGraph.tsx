@@ -293,7 +293,7 @@ const SquigGraph = ({
     return (
       <div
         ref={containerRef}
-        className="w-full overflow-hidden rounded-2xl bg-(--surface0)"
+        className="w-full overflow-hidden rounded-2xl bg-surface0"
         style={{ height }}
       />
     );
@@ -302,7 +302,7 @@ const SquigGraph = ({
   return (
     <div
       ref={containerRef}
-      className="relative w-full select-none overflow-hidden rounded-2xl bg-(--surface0)"
+      className="relative w-full select-none overflow-hidden rounded-2xl bg-surface0"
     >
       <svg width={width} height={height}>
         <defs>
@@ -325,7 +325,7 @@ const SquigGraph = ({
         </defs>
 
         {/* Axes Labels */}
-        <g className="text-xs fill-[var(--text-grey)]">
+        <g className="text-xs fill-text-grey">
           {xTicks.map(tick => (
             <text
               key={`xlabel-${tick}`}

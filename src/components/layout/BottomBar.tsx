@@ -88,12 +88,12 @@ const ProgressSlider = ({ position, duration, disabled, onScrubStart, onScrub, o
 
   return (
     <div className="flex items-center w-full max-w-md space-x-2">
-      <span className="text-xs tabular-nums text-(--text-grey)">
+      <span className="text-xs tabular-nums text-text-grey">
         {formatTime(position)}
       </span>
       <div
         ref={barRef}
-        className={`relative flex-grow h-2 rounded-full cursor-pointer bg-(--surface2) transition ${disabled ? "opacity-50 cursor-not-allowed" : "hover:bg-(--surface3)"}`}
+        className={`relative flex-grow h-2 rounded-full cursor-pointer bg-surface2 transition ${disabled ? "opacity-50 cursor-not-allowed" : "hover:bg-surface3"}`}
         onPointerDown={handlePointerDown}
         role="slider"
         aria-valuemin={0}
@@ -101,7 +101,7 @@ const ProgressSlider = ({ position, duration, disabled, onScrubStart, onScrub, o
         aria-valuenow={position}
       >
         <div
-          className="absolute left-0 top-0 h-full rounded-full bg-(--primary0)"
+          className="absolute left-0 top-0 h-full rounded-full bg-primary0"
           style={{ width: `${progressRatio * 100}%` }}
         />
         <div
@@ -109,7 +109,7 @@ const ProgressSlider = ({ position, duration, disabled, onScrubStart, onScrub, o
           style={{ left: `${progressRatio * 100}%`, opacity: disabled ? 0 : 1 }}
         />
       </div>
-      <span className="text-xs tabular-nums text-(--text-grey)">{formatTime(duration)}</span>
+      <span className="text-xs tabular-nums text-text-grey">{formatTime(duration)}</span>
     </div>
   );
 };
@@ -187,7 +187,7 @@ const VolumeControl = ({ volume, isMuted, onChange, onToggleMute, onScroll }: Vo
           requestHide();
         }}
       >
-        <div className="flex h-28 w-10 items-center justify-center rounded-lg   bg-(--surface1) p-2 shadow-lg">
+        <div className="flex h-28 w-10 items-center justify-center rounded-lg   bg-surface1 p-2 shadow-lg">
           <Slider
             orientation="vertical"
             min={0}
@@ -262,7 +262,7 @@ const BottomBar = ({ isRightCompact = false }: BottomBarProps) => {
 
   const queueButton = (
     <Button
-      className={`shadow-none ${isQueueOpen ? "bg-(--surface2)" : ""}`}
+      className={`shadow-none ${isQueueOpen ? "bg-surface2" : ""}`}
       onClick={isRightCompact ? undefined : () => toggleQueue("queue")}
       aria-label="Toggle queue sidebar"
     >
@@ -300,23 +300,23 @@ const BottomBar = ({ isRightCompact = false }: BottomBarProps) => {
       </div>
       <div className="relative z-10 flex h-full w-full items-center justify-between">
         <div className="flex items-center w-1/3 min-w-0 gap-3">
-          <div className="h-18 w-18 overflow-hidden rounded-lg   bg-(--surface1)">
+          <div className="h-18 w-18 overflow-hidden rounded-lg   bg-surface1">
             <CoverImage
               src={coverArtUrl}
               alt={currentSong?.title ?? "Cover"}
               className="h-full w-full"
-              placeholder={<div className="h-full w-full bg-(--surface2)" />}
-              fallback={<div className="h-full w-full bg-(--surface2)" />}
+              placeholder={<div className="h-full w-full bg-surface2" />}
+              fallback={<div className="h-full w-full bg-surface2" />}
             />
           </div>
           <div className="min-w-0">
             <p className="text-sm font-semibold truncate">{currentSong?.title ?? "Nothing playing"}</p>
-            <p className="text-xs text-(--text-grey) truncate">
+            <p className="text-xs text-text-grey truncate">
               {currentSong?.artist ?? "Select a song to start"}
             </p>
             {qualityText ? (
               <div className="mt-1 flex items-center gap-2">
-                <p className="text-[11px] text-(--text-grey) truncate">{qualityText}</p>
+                <p className="text-[11px] text-text-grey truncate">{qualityText}</p>
               </div>
             ) : null}
           </div>
@@ -325,7 +325,7 @@ const BottomBar = ({ isRightCompact = false }: BottomBarProps) => {
         <div className="flex flex-col items-center w-1/3">
           <div className="flex items-center space-x-3 mb-2">
             <Button
-              className={`shadow-none ${shuffle ? "bg-(--surface2)" : ""}`}
+              className={`shadow-none ${shuffle ? "bg-surface2" : ""}`}
               aria-label="Toggle shuffle"
               onClick={() => toggleShuffle()}
               disabled={!currentSong}
@@ -337,22 +337,22 @@ const BottomBar = ({ isRightCompact = false }: BottomBarProps) => {
             </Button>
             <Button
               size="large"
-              className="bg-(--text) hover:bg-(--primary2) shadow-none"
+              className="bg-text hover:bg-primary2 shadow-none"
               aria-label={isPlaying ? "Pause" : "Play"}
               onClick={() => void togglePlayPause()}
               disabled={!currentSong || isLoading}
             >
               {isPlaying && !isScrubbing ? (
-                <PauseIcon fontSize="small" className="text-(--text-inverted)" />
+                <PauseIcon fontSize="small" className="text-text-inverted" />
               ) : (
-                <PlayArrowIcon fontSize="small" className="text-(--text-inverted)" />
+                <PlayArrowIcon fontSize="small" className="text-text-inverted" />
               )}
             </Button>
             <Button className="shadow-none" disabled={!playbackReady} onClick={handleNext}>
               <SkipNextIcon fontSize="small" />
             </Button>
             <Button
-              className={`shadow-none ${repeat !== "off" ? "bg-(--surface2)" : ""}`}
+              className={`shadow-none ${repeat !== "off" ? "bg-surface2" : ""}`}
               aria-label="Toggle repeat"
               onClick={() => cycleRepeat()}
               disabled={!currentSong}

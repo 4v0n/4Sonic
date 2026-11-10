@@ -13,12 +13,12 @@ const toggleVariants = (variant: ToggleProps["variant"], size: ToggleProps["size
 
   const baseClasses =
     `inline-flex items-center justify-center rounded-md text-sm font-medium transition-colors shadow
-    hover:bg-(--surface2) data-[state=on]:bg-(--surface-tonal1) data-[state=on]:hover:bg-(--surface-tonal2) disabled:opacity-50
+    hover:bg-surface2 data-[state=on]:bg-surface-tonal1 data-[state=on]:hover:bg-surface-tonal2 disabled:opacity-50
     cursor-pointer`;
 
   const variants: Record<NonNullable<ToggleProps["variant"]>, string> = {
-    default: "bg-(--surface1)",
-    outline: "bg-(--surface1) border border-(--surface4) hover:bg-(--surface2)",
+    default: "bg-surface1",
+    outline: "bg-surface1 border border-surface4 hover:bg-surface2",
   };
 
   const sizes: Record<NonNullable<ToggleProps["size"]>, string> = {

@@ -144,7 +144,7 @@ const ArtistDetailPage = () => {
   if (!artistId) {
     return (
       <div className="space-y-4">
-        <p className="text-lg font-semibold text-(--text)">Artist not found</p>
+        <p className="text-lg font-semibold text-text">Artist not found</p>
         <Button variant="secondary" onClick={() => navigate("/artists")}>Back to artists</Button>
       </div>
     );
@@ -161,7 +161,7 @@ const ArtistDetailPage = () => {
 
     return (
       <div className="space-y-4">
-        <p className="text-lg font-semibold text-(--text)">Artist not found</p>
+        <p className="text-lg font-semibold text-text">Artist not found</p>
         <Button variant="secondary" onClick={() => navigate("/artists")}>Back to artists</Button>
       </div>
     );
@@ -169,20 +169,20 @@ const ArtistDetailPage = () => {
 
   return (
     <div className="space-y-6">
-      <section className="flex flex-col gap-5 rounded-2xl border border-(--surface2) bg-(--surface1) p-4 sm:flex-row sm:items-center">
-        <div className="h-28 w-28 overflow-hidden rounded-xl border border-(--surface2) bg-(--surface0) sm:h-32 sm:w-32">
+      <section className="flex flex-col gap-5 rounded-2xl border border-surface2 bg-surface1 p-4 sm:flex-row sm:items-center">
+        <div className="h-28 w-28 overflow-hidden rounded-xl border border-surface2 bg-surface0 sm:h-32 sm:w-32">
           <CoverImage
             src={artistCover}
             alt={artist.name}
             className="h-full w-full"
-            placeholder={<div className="h-full w-full bg-(--surface2)" />}
-            fallback={<div className="h-full w-full bg-(--surface2)" />}
+            placeholder={<div className="h-full w-full bg-surface2" />}
+            fallback={<div className="h-full w-full bg-surface2" />}
           />
         </div>
         <div className="min-w-0 flex-1 space-y-2">
-          <p className="text-xs font-semibold uppercase tracking-wide text-(--text-grey)">Artist</p>
-          <h1 className="truncate text-3xl font-extrabold text-(--text)">{artist.name}</h1>
-          <p className="text-sm text-(--text-grey)">
+          <p className="text-xs font-semibold uppercase tracking-wide text-text-grey">Artist</p>
+          <h1 className="truncate text-3xl font-extrabold text-text">{artist.name}</h1>
+          <p className="text-sm text-text-grey">
             {artistAlbums.length.toLocaleString()} album{artistAlbums.length === 1 ? "" : "s"}
           </p>
           <div className="flex flex-wrap items-center gap-2">

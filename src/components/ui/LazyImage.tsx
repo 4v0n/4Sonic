@@ -133,7 +133,7 @@ const LazyImage: React.FC<LazyImageProps> = ({
       ) : null}
       {!isLoaded && !hasError ? (
         <div className="absolute inset-0">
-          {placeholder ?? <div className="h-full w-full bg-(--surface2)" />}
+          {placeholder ?? <div className="h-full w-full bg-surface2" />}
         </div>
       ) : null}
       {hasError && fallback ? (

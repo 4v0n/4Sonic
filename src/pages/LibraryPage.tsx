@@ -48,7 +48,7 @@ const LibraryPage = () => {
       return null;
     }
     return (
-      <p className="mt-2 text-xs text-(--text-grey)">
+      <p className="mt-2 text-xs text-text-grey">
         Showing first {SAMPLE_SIZE.toLocaleString()} items. {total - SAMPLE_SIZE} more in memory.
       </p>
     );
@@ -57,32 +57,32 @@ const LibraryPage = () => {
   return (
     <div className="space-y-6">
       <section>
-        <h1 className="text-2xl font-semibold text-(--text)">Library Debug View</h1>
-        <p className="text-sm text-(--text-grey)">Live snapshot of the global store.</p>
-        <pre className="mt-4 overflow-auto rounded-2xl border border-(--surface2) bg-(--surface0) p-4 text-xs leading-tight text-(--text)">
+        <h1 className="text-2xl font-semibold text-text">Library Debug View</h1>
+        <p className="text-sm text-text-grey">Live snapshot of the global store.</p>
+        <pre className="mt-4 overflow-auto rounded-2xl border border-surface2 bg-surface0 p-4 text-xs leading-tight text-text">
           {metaString}
         </pre>
       </section>
 
       <section>
-        <h2 className="text-xl font-semibold text-(--text)">Artists ({artists.length})</h2>
-        <pre className="mt-2 max-h-56 overflow-auto rounded-2xl border border-(--surface2) bg-(--surface0) p-4 text-xs leading-tight text-(--text)">
+        <h2 className="text-xl font-semibold text-text">Artists ({artists.length})</h2>
+        <pre className="mt-2 max-h-56 overflow-auto rounded-2xl border border-surface2 bg-surface0 p-4 text-xs leading-tight text-text">
           {artistPreview}
         </pre>
         {renderPreviewFooter(artists.length)}
       </section>
 
       <section>
-        <h2 className="text-xl font-semibold text-(--text)">Albums ({albums.length})</h2>
-        <pre className="mt-2 max-h-56 overflow-auto rounded-2xl border border-(--surface2) bg-(--surface0) p-4 text-xs leading-tight text-(--text)">
+        <h2 className="text-xl font-semibold text-text">Albums ({albums.length})</h2>
+        <pre className="mt-2 max-h-56 overflow-auto rounded-2xl border border-surface2 bg-surface0 p-4 text-xs leading-tight text-text">
           {albumPreview}
         </pre>
         {renderPreviewFooter(albums.length)}
       </section>
 
       <section>
-        <h2 className="text-xl font-semibold text-(--text)">Songs ({tracks.length})</h2>
-        <pre className="mt-2 max-h-56 overflow-auto rounded-2xl border border-(--surface2) bg-(--surface0) p-4 text-xs leading-tight text-(--text)">
+        <h2 className="text-xl font-semibold text-text">Songs ({tracks.length})</h2>
+        <pre className="mt-2 max-h-56 overflow-auto rounded-2xl border border-surface2 bg-surface0 p-4 text-xs leading-tight text-text">
           {trackPreview}
         </pre>
         {renderPreviewFooter(tracks.length)}

@@ -60,13 +60,13 @@ const Button = React.forwardRef<HTMLButtonElement, IconButtonProps>(
     };
 
     const variantClasses = {
-      default: "bg-(--surface0) hover:bg-(--surface1)",
-      primary: "bg-(--primary0) hover:bg-(--primary1) text-(--on-primary)",
-      secondary: "bg-(--surface-tonal0) hover:bg-(--surface-tonal1)",
-      outline: "bg-transparent border border-(--text-grey) hover:bg-(--surface1) shadow-none",
-      ghost: "bg-transparent hover:bg-(--surface1) shadow-none",
-      destructive: "bg-(--danger0) hover:bg-(--danger1)",
-      link: "bg-transparent underline underline-offset-4 text-(--text) hover:text-(--text) px-0 h-auto shadow-none hover:shadow-none rounded-none",
+      default: "bg-surface0 hover:bg-surface1",
+      primary: "bg-primary0 hover:bg-primary1 text-on-primary",
+      secondary: "bg-surface-tonal0 hover:bg-surface-tonal1",
+      outline: "bg-transparent border border-text-grey hover:bg-surface1 shadow-none",
+      ghost: "bg-transparent hover:bg-surface1 shadow-none",
+      destructive: "bg-danger0 hover:bg-danger1",
+      link: "bg-transparent underline underline-offset-4 text-text hover:text-text px-0 h-auto shadow-none hover:shadow-none rounded-none",
     } as const;
 
     const classNames = cn(

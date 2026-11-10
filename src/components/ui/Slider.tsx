@@ -39,14 +39,14 @@ const Slider = ({
       <SliderPrimitive.Track
         data-slot="slider-track"
         className={cn(
-          "relative grow overflow-hidden rounded-full bg-(--surface2)",
+          "relative grow overflow-hidden rounded-full bg-surface2",
           "data-[orientation=horizontal]:h-1.5 data-[orientation=horizontal]:w-full",
           "data-[orientation=vertical]:h-full data-[orientation=vertical]:w-1.5",
         )}
       >
         <SliderPrimitive.Range
           data-slot="slider-range"
-          className="absolute select-none bg-(--primary0) data-[orientation=horizontal]:h-full data-[orientation=vertical]:w-full"
+          className="absolute select-none bg-primary0 data-[orientation=horizontal]:h-full data-[orientation=vertical]:w-full"
         />
       </SliderPrimitive.Track>
       {Array.from({ length: _values.length }, (_, index) => (
@@ -54,9 +54,9 @@ const Slider = ({
           data-slot="slider-thumb"
           key={index}
           className={cn(
-            "block h-3.5 w-3.5 shrink-0 rounded-full border border-(--surface3) bg-(--text)",
+            "block h-3.5 w-3.5 shrink-0 rounded-full border border-surface3 bg-text",
             "shadow-sm transition-[box-shadow] focus-visible:outline-none",
-            "focus-visible:ring-2 focus-visible:ring-(--primary1) disabled:pointer-events-none disabled:opacity-50",
+            "focus-visible:ring-2 focus-visible:ring-primary1 disabled:pointer-events-none disabled:opacity-50",
           )}
         />
       ))}

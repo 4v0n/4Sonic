@@ -13,7 +13,7 @@ const ThemeToggle = ({ showLabel = true, className }: ThemeToggleProps) => {
 
   return (
     <div className={`flex items-center gap-2 ${className ?? ""}`}>
-      {showLabel ? <span className="text-sm font-medium text-(--text)">Theme</span> : null}
+      {showLabel ? <span className="text-sm font-medium text-text">Theme</span> : null}
       <Select
         aria-label="Select color theme"
         fullWidth={false}
@@ -22,7 +22,7 @@ const ThemeToggle = ({ showLabel = true, className }: ThemeToggleProps) => {
         onValueChange={(value) => setTheme(value as ThemeName)}
         options={themes.map(({ id, label }) => ({ label, value: id }))}
       />
-      {showLabel ? <span className="text-xs text-(--text-grey)">Now: {activeLabel}</span> : null}
+      {showLabel ? <span className="text-xs text-text-grey">Now: {activeLabel}</span> : null}
     </div>
   );
 };

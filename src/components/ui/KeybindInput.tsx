@@ -52,8 +52,8 @@ export const KeybindInput: React.FC<KeybindInputProps> = ({ value, onValueChange
       onKeyDown={handleKeyDown}
       className={cn(
         `flex h-10 w-full min-w-0 items-center justify-between px-3 py-2 sm:min-w-[200px] rounded-full
-        bg-(--surface1) text-sm hover:bg-(--surface2) transition-colors cursor-pointer focus:cursor-auto
-        focus:bg-(--surface-tonal1) outline-none focus:outline-none shadow`,
+        bg-surface1 text-sm hover:bg-surface2 transition-colors cursor-pointer focus:cursor-auto
+        focus:bg-surface-tonal1 outline-none focus:outline-none shadow`,
         className,
       )}
     >

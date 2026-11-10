@@ -17,7 +17,7 @@ export const PopoverContent = React.forwardRef<
       align={align}
       sideOffset={sideOffset}
       className={cn(
-        "z-50 rounded-lg border border-(--surface2) bg-(--surface1) p-4 shadow-lg outline-none",
+        "z-50 rounded-lg border border-surface2 bg-surface1 p-4 shadow-lg outline-none",
         "data-[state=open]:animate-in data-[state=closed]:animate-out",
         "data-[state=open]:fade-in-0 data-[state=closed]:fade-out-0",
         "data-[state=open]:zoom-in-95 data-[state=closed]:zoom-out-95",
@@ -28,7 +28,7 @@ export const PopoverContent = React.forwardRef<
       {...props}
     >
       {children}
-      <PopoverPrimitive.Arrow className="fill-(--surface1) stroke-(--surface2) stroke-1" />
+      <PopoverPrimitive.Arrow className="fill-surface1 stroke-surface2 stroke-1" />
     </PopoverPrimitive.Content>
   </PopoverPrimitive.Portal>
 ));

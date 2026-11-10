@@ -18,8 +18,8 @@ const NavItem = ({ to, icon, label, isIconOnly }: NavItemProps) => (
       px-3 py-2
       ${isIconOnly ? "justify-center gap-2" : "justify-start gap-3"}
       ${isActive
-        ? "bg-(--surface2) text-(--text) shadow-md"
-        : "text-(--text-grey) hover:bg-(--surface1)"}
+        ? "bg-surface2 text-text shadow-md"
+        : "text-text-grey hover:bg-surface1"}
       `
     )}
     title={label}
@@ -33,7 +33,7 @@ const NavItem = ({ to, icon, label, isIconOnly }: NavItemProps) => (
       <span
         className="
           pointer-events-none absolute left-full top-1/2 -translate-y-1/2 ml-2
-          whitespace-nowrap rounded-md bg-(--surface2) px-2 py-1 text-sm text-(--text)
+          whitespace-nowrap rounded-md bg-surface2 px-2 py-1 text-sm text-text
           opacity-0 shadow-sm transition-opacity duration-150 group-hover:opacity-100 z-40 drop-shadow-lg
         "
         role="tooltip"
@@ -57,7 +57,7 @@ const LeftSideBar = ({ width, isIconOnly, isResizing, onResizeStart }: LeftSideB
       className={`
         relative flex-shrink-0 space-y-6 flex flex-col font-semibold
         ${isIconOnly ? "px-2 py-4" : "p-4"}
-        bg-(--surface0) ${isResizing ? "transition-none" : "transition-[width] duration-150"}
+        bg-surface0 ${isResizing ? "transition-none" : "transition-[width] duration-150"}
       `}
       style={{ width }}
     >
@@ -72,7 +72,7 @@ const LeftSideBar = ({ width, isIconOnly, isResizing, onResizeStart }: LeftSideB
       <div
         className={`
           absolute top-0 right-0 h-full w-1 cursor-col-resize
-          ${isResizing ? "bg-(--surface2)" : "bg-transparent hover:bg-(--surface2)"}
+          ${isResizing ? "bg-surface2" : "bg-transparent hover:bg-surface2"}
         `}
         onMouseDown={onResizeStart}
         aria-label="Resize sidebar"

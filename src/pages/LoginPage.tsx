@@ -50,15 +50,15 @@ const LoginPage = () => {
   };
 
   return (
-    <div className="flex min-h-screen items-center justify-center bg-(--surface0) px-4 py-8">
-      <div className="w-full max-w-md rounded-3xl border border-(--surface2) bg-(--surface0) p-8 shadow-lg">
-        <h1 className="text-2xl font-semibold text-(--text)">Welcome to 4Sonic</h1>
-        <p className="mt-2 text-sm text-(--text-grey)">Connect your Navidrome/Subsonic server to get started.</p>
+    <div className="flex min-h-screen items-center justify-center bg-surface0 px-4 py-8">
+      <div className="w-full max-w-md rounded-3xl border border-surface2 bg-surface0 p-8 shadow-lg">
+        <h1 className="text-2xl font-semibold text-text">Welcome to 4Sonic</h1>
+        <p className="mt-2 text-sm text-text-grey">Connect your Navidrome/Subsonic server to get started.</p>
 
         <form className="mt-8 space-y-6" onSubmit={handleSubmit}>
           {!HAS_DEFAULT_SERVER_URL && (
             <div>
-              <label htmlFor="serverUrl" className="text-sm font-medium text-(--text)">
+              <label htmlFor="serverUrl" className="text-sm font-medium text-text">
                 Server URL
               </label>
               <TextInput
@@ -76,7 +76,7 @@ const LoginPage = () => {
           )}
 
           <div>
-            <label htmlFor="username" className="text-sm font-medium text-(--text)">
+            <label htmlFor="username" className="text-sm font-medium text-text">
               Username
             </label>
             <TextInput
@@ -93,7 +93,7 @@ const LoginPage = () => {
           </div>
 
           <div>
-            <label htmlFor="password" className="text-sm font-medium text-(--text)">
+            <label htmlFor="password" className="text-sm font-medium text-text">
               Password
             </label>
             <TextInput
@@ -116,12 +116,12 @@ const LoginPage = () => {
                 onCheckedChange={(checked) => setFormState((prev) => ({ ...prev, stayLoggedIn: checked }))}
                 aria-label="Stay logged in"
               />
-              <span className="text-sm text-(--text)">Stay logged in</span>
+              <span className="text-sm text-text">Stay logged in</span>
             </div>
           </div>
 
           {(localError || storeError) && (
-            <div className="rounded-2xl border border-(--danger1) bg-(--danger2) px-4 py-3 text-sm text-(--danger0)">
+            <div className="rounded-2xl border border-danger1 bg-danger2 px-4 py-3 text-sm text-danger0">
               {localError ?? storeError}
             </div>
           )}
@@ -130,10 +130,10 @@ const LoginPage = () => {
             type="submit"
             size="large"
             variant="primary"
-            className="w-full font-semibold text-(--dark)"
+            className="w-full font-semibold text-dark"
             disabled={isSubmitting}
           >
-            {isSubmitting ? <Spinner size="sm" showLabel label="Connecting..." color="text-(--dark)" /> : "Connect"}
+            {isSubmitting ? <Spinner size="sm" showLabel label="Connecting..." color="text-dark" /> : "Connect"}
           </Button>
         </form>
       </div>

@@ -208,7 +208,7 @@ const AppShell = () => {
   const rightSidebarWidth = effectiveRightOpen ? rightWidth : 0;
 
   return (
-    <div className="flex h-screen min-w-0 flex-col bg-(--surface0) font-sans text-(--text)">
+    <div className="flex h-screen min-w-0 flex-col bg-surface0 font-sans text-text">
       <TopBar />
       <Sonner />
       <div className="flex min-w-0 flex-1 overflow-hidden">

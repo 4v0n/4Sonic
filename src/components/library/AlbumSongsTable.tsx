@@ -34,13 +34,13 @@ const AlbumSongsTable: React.FC<AlbumSongsTableProps> = ({ album, onSongClick })
           <CoverImage
             src={coverUrl}
             alt={album?.name ?? "Album cover"}
-            className="h-full w-full rounded border border-(--surface2)"
+            className="h-full w-full rounded border border-surface2"
             placeholder={<CoverFallback rounded className="rounded" />}
             fallback={<CoverFallback rounded className="rounded" />}
           />
         </div>
         <div className="min-w-0 flex-1">
-          <h1 className="break-words text-3xl font-extrabold leading-tight text-(--text) sm:text-4xl">
+          <h1 className="break-words text-3xl font-extrabold leading-tight text-text sm:text-4xl">
             {album?.name}
           </h1>
         </div>
@@ -91,8 +91,8 @@ const AlbumSongsTable: React.FC<AlbumSongsTableProps> = ({ album, onSongClick })
                   <ContextMenuTrigger asChild>
                     <tr
                       className={cn(
-                        "hover:bg-(--surface2) cursor-pointer transition-colors",
-                        currentSongId === song.id && "bg-(--surface-tonal0)",
+                        "hover:bg-surface2 cursor-pointer transition-colors",
+                        currentSongId === song.id && "bg-surface-tonal0",
                       )}
                       onClick={handleClick}
                     >

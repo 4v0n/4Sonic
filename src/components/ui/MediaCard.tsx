@@ -30,14 +30,14 @@ const TYPE_LABEL: Record<MediaKind, string> = {
 const TileSkeleton = ({ className }: { className?: string }) => (
   <div
     className={cn(
-      "max-w-[220px] overflow-hidden rounded-2xl border border-(--surface2) bg-(--surface1) shadow-sm animate-pulse",
+      "max-w-[220px] overflow-hidden rounded-2xl border border-surface2 bg-surface1 shadow-sm animate-pulse",
       className,
     )}
   >
-    <div className="aspect-square bg-(--surface2)" />
+    <div className="aspect-square bg-surface2" />
     <div className="space-y-2 p-3">
-      <div className="h-4 w-3/4 rounded bg-(--surface2)" />
-      <div className="h-3 w-1/2 rounded bg-(--surface2)" />
+      <div className="h-4 w-3/4 rounded bg-surface2" />
+      <div className="h-3 w-1/2 rounded bg-surface2" />
     </div>
   </div>
 );
@@ -45,17 +45,17 @@ const TileSkeleton = ({ className }: { className?: string }) => (
 const RowSkeleton = ({ className }: { className?: string }) => (
   <div
     className={cn(
-      "flex items-center gap-4 rounded-2xl border border-(--surface2) bg-(--surface1) px-4 py-3 shadow-sm animate-pulse",
+      "flex items-center gap-4 rounded-2xl border border-surface2 bg-surface1 px-4 py-3 shadow-sm animate-pulse",
       className,
     )}
   >
-    <div className="h-16 w-16 rounded-lg bg-(--surface2)" />
+    <div className="h-16 w-16 rounded-lg bg-surface2" />
     <div className="flex-1 space-y-2">
-      <div className="h-3 w-20 rounded bg-(--surface2)" />
-      <div className="h-4 w-3/4 rounded bg-(--surface2)" />
-      <div className="h-3 w-1/3 rounded bg-(--surface2)" />
+      <div className="h-3 w-20 rounded bg-surface2" />
+      <div className="h-4 w-3/4 rounded bg-surface2" />
+      <div className="h-3 w-1/3 rounded bg-surface2" />
     </div>
-    <div className="h-10 w-10 rounded-full bg-(--surface2)" />
+    <div className="h-10 w-10 rounded-full bg-surface2" />
   </div>
 );
 
@@ -90,8 +90,8 @@ const MediaCard: React.FC<MediaCardProps> = ({
       <div
         {...props}
         className={cn(
-          "group flex items-center gap-4 rounded-lg border border-(--surface2) bg-(--surface1) p-2 shadow transition",
-          "hover:border-(--surface3) hover:bg-(--surface2) hover:shadow-md cursor-pointer",
+          "group flex items-center gap-4 rounded-lg border border-surface2 bg-surface1 p-2 shadow transition",
+          "hover:border-surface3 hover:bg-surface2 hover:shadow-md cursor-pointer",
           onClick ? "cursor-pointer" : "",
           className,
         )}
@@ -101,12 +101,12 @@ const MediaCard: React.FC<MediaCardProps> = ({
           src={coverUrl}
           alt={title ?? TYPE_LABEL[kind]}
           rounded
-          className="relative h-20 w-20 overflow-hidden rounded-md bg-(--surface0) shadow transition-shadow group-hover:shadow-md"
+          className="relative h-20 w-20 overflow-hidden rounded-md bg-surface0 shadow transition-shadow group-hover:shadow-md"
         />
         <div className="min-w-0 flex-1 space-y-0.5">
-          <p className="truncate text-base font-semibold text-(--text)">{title ?? "Unknown"}</p>
-          {subtitle ? <p className="truncate text-sm text-(--text-grey)">{subtitle}</p> : null}
-          {meta ? <p className="text-xs text-(--text-grey)">{meta}</p> : null}
+          <p className="truncate text-base font-semibold text-text">{title ?? "Unknown"}</p>
+          {subtitle ? <p className="truncate text-sm text-text-grey">{subtitle}</p> : null}
+          {meta ? <p className="text-xs text-text-grey">{meta}</p> : null}
         </div>
         {onPlay ? (
           <Button
@@ -155,13 +155,13 @@ const MediaCard: React.FC<MediaCardProps> = ({
       {...props}
       className={cn(
         "group max-w-[220px] p-3 overflow-hidden rounded-lg bg-transparent shadow",
-        "transition hover:bg-(--surface2) hover:shadow-lg cursor-pointer",
+        "transition hover:bg-surface2 hover:shadow-lg cursor-pointer",
         onClick ? "cursor-pointer" : "",
         className,
       )}
       onClick={onClick}
     >
-      <div className="relative aspect-square rounded-md w-full overflow-hidden bg-(--surface0) shadow transition-shadow group-hover:shadow-md">
+      <div className="relative aspect-square rounded-md w-full overflow-hidden bg-surface0 shadow transition-shadow group-hover:shadow-md">
         <CoverImage
           src={coverUrl}
           alt={title ?? TYPE_LABEL[kind]}
@@ -183,16 +183,16 @@ const MediaCard: React.FC<MediaCardProps> = ({
         ) : null}
       </div>
       <div className="flex min-h-[60px] flex-col gap-1 pt-2">
-        <p className="truncate text-sm font-semibold text-(--text)">{title ?? "Unknown"}</p>
+        <p className="truncate text-sm font-semibold text-text">{title ?? "Unknown"}</p>
         {subtitle ? (
-          <p className="truncate text-xs text-(--text-grey)">{subtitle}</p>
+          <p className="truncate text-xs text-text-grey">{subtitle}</p>
         ) : (
-          <p className="truncate text-xs text-(--text-grey) invisible" aria-hidden>Subtitle placeholder</p>
+          <p className="truncate text-xs text-text-grey invisible" aria-hidden>Subtitle placeholder</p>
         )}
         {meta ? (
-          <p className="truncate text-xs text-(--text-grey)">{meta}</p>
+          <p className="truncate text-xs text-text-grey">{meta}</p>
         ) : (
-          <p className="truncate text-xs text-(--text-grey) invisible" aria-hidden>Meta placeholder</p>
+          <p className="truncate text-xs text-text-grey invisible" aria-hidden>Meta placeholder</p>
         )}
       </div>
     </div>

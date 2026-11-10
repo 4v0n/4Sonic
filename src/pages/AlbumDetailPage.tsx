@@ -63,7 +63,7 @@ const AlbumDetailPage = () => {
   if (!albumId) {
     return (
       <div className="space-y-4">
-        <p className="text-lg font-semibold text-(--text)">Album not found</p>
+        <p className="text-lg font-semibold text-text">Album not found</p>
         <Button variant="secondary" onClick={() => navigate(-1)}>Go back</Button>
       </div>
     );
@@ -79,7 +79,7 @@ const AlbumDetailPage = () => {
     }
     return (
       <div className="space-y-4">
-        <p className="text-lg font-semibold text-(--text)">Album not found</p>
+        <p className="text-lg font-semibold text-text">Album not found</p>
         <Button variant="secondary" onClick={() => navigate("/albums")}>Back to albums</Button>
       </div>
     );

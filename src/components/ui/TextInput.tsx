@@ -57,8 +57,8 @@ const TextInput = React.forwardRef<HTMLInputElement, TextInputProps>(
     };
 
     const rootClassNames = cn(
-      "group flex items-center rounded-full bg-(--surface1) text-sm",
-      "shadow hover:bg-(--surface2) focus-within:bg-(--surface-tonal1) transition-colors",
+      "group flex items-center rounded-full bg-surface1 text-sm",
+      "shadow hover:bg-surface2 focus-within:bg-surface-tonal1 transition-colors",
       "cursor-text",
       "data-[disabled]:opacity-60 data-[disabled]:cursor-not-allowed",
       fullWidth ? "w-full" : "w-auto",
@@ -67,16 +67,16 @@ const TextInput = React.forwardRef<HTMLInputElement, TextInputProps>(
     );
 
     const inputClassNames = cn(
-      "flex-1 bg-transparent text-(--text) placeholder:text-(--text-grey)",
-      "border-none outline-none focus:outline-none focus:ring-0 focus-visible:ring-0 caret-(--primary1)",
-      "disabled:cursor-not-allowed disabled:text-(--text-grey)",
+      "flex-1 bg-transparent text-text placeholder:text-text-grey",
+      "border-none outline-none focus:outline-none focus:ring-0 focus-visible:ring-0 caret-primary1",
+      "disabled:cursor-not-allowed disabled:text-text-grey",
       inputClassName,
     );
 
     return (
       <div className={rootClassNames} data-disabled={disabled || undefined} onMouseDown={handleActivate}>
         {startIcon ? (
-          <Slot className={cn("pointer-events-none text-(--text-grey)", iconClasses)}>
+          <Slot className={cn("pointer-events-none text-text-grey", iconClasses)}>
             {startIcon}
           </Slot>
         ) : null}
@@ -84,7 +84,7 @@ const TextInput = React.forwardRef<HTMLInputElement, TextInputProps>(
           {asChild ? children : null}
         </InputComponent>
         {endIcon ? (
-          <Slot className={cn("pointer-events-none text-(--text-grey)", iconClasses)}>
+          <Slot className={cn("pointer-events-none text-text-grey", iconClasses)}>
             {endIcon}
           </Slot>
         ) : null}

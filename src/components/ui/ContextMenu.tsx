@@ -23,8 +23,8 @@ export const ContextMenuContent = React.forwardRef<
     <ContextMenuPrimitive.Content
       ref={ref}
       className={cn(
-        "min-w-[12rem] rounded-md shadow-lg border border-(--surface2)",
-        "bg-(--surface1) py-1 text-(--text-grey)",
+        "min-w-[12rem] rounded-md shadow-lg border border-surface2",
+        "bg-surface1 py-1 text-text-grey",
         "animate-in fade-in-0 zoom-in-95 data-[side=bottom]:slide-in-from-top-2 data-[side=top]:slide-in-from-bottom-2",
         className,
       )}
@@ -42,8 +42,8 @@ export const ContextMenuItem = React.forwardRef<
     ref={ref}
     className={cn(
       "flex cursor-pointer transition-colors items-center gap-3 w-full text-left px-4 py-2 text-sm",
-      "text-(--text-grey) hover:bg-(--surface2) hover:text-(--text)",
-      "focus:bg-(--surface2) outline-none focus:outline-none",
+      "text-text-grey hover:bg-surface2 hover:text-text",
+      "focus:bg-surface2 outline-none focus:outline-none",
       "disabled:pointer-events-none disabled:opacity-50",
       inset && "pl-8",
       className,
@@ -51,7 +51,7 @@ export const ContextMenuItem = React.forwardRef<
     {...props}
   >
     {icon && (
-      <span className="flex h-5 w-5 shrink-0 items-center justify-center text-(--text-grey) [&>svg]:h-5 [&>svg]:w-5">
+      <span className="flex h-5 w-5 shrink-0 items-center justify-center text-text-grey [&>svg]:h-5 [&>svg]:w-5">
         {icon}
       </span>
     )}
@@ -66,7 +66,7 @@ export const ContextMenuSeparator = React.forwardRef<
 >(({ className, ...props }, ref) => (
   <ContextMenuPrimitive.Separator
     ref={ref}
-    className={cn("my-1 h-px bg-(--surface2)", className)}
+    className={cn("my-1 h-px bg-surface2", className)}
     {...props}
   />
 ));
@@ -81,8 +81,8 @@ export const ContextMenuSubTrigger = React.forwardRef<
   <ContextMenuPrimitive.SubTrigger
     ref={ref}
     className={cn(
-      "relative flex cursor-pointer select-none items-center rounded-sm px-4 py-2 text-sm text-(--text-grey)",
-      "transition-colors hover:bg-(--surface2) focus:bg-(--surface2) hover:text-(--text) focus:text-(--text)",
+      "relative flex cursor-pointer select-none items-center rounded-sm px-4 py-2 text-sm text-text-grey",
+      "transition-colors hover:bg-surface2 focus:bg-surface2 hover:text-text focus:text-text",
       "outline-none focus:outline-none",
       inset && "pl-8",
       className,
@@ -103,7 +103,7 @@ export const ContextMenuSubContent = React.forwardRef<
     ref={ref}
     sideOffset={sideOffset}
     alignOffset={alignOffset}
-    className={cn("min-w-[12rem] rounded-md shadow-lg bg-(--surface1) py-1 border border-(--surface2)", className)}
+    className={cn("min-w-[12rem] rounded-md shadow-lg bg-surface1 py-1 border border-surface2", className)}
     {...props}
   />
 ));

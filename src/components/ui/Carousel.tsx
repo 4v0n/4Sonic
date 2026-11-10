@@ -87,18 +87,18 @@ const Carousel: React.FC<CarouselProps> = ({
           orientation="horizontal"
           className="flex h-2 select-none touch-none items-center px-4"
         >
-          <ScrollAreaPrimitive.Thumb className="relative flex-1 rounded-full bg-(--surface3) transition hover:bg-(--surface4)" />
+          <ScrollAreaPrimitive.Thumb className="relative flex-1 rounded-full bg-surface3 transition hover:bg-surface4" />
         </ScrollAreaPrimitive.Scrollbar>
         <ScrollAreaPrimitive.Corner />
       </ScrollAreaPrimitive.Root>
 
       <div
         aria-hidden
-        className="pointer-events-none absolute inset-y-0 left-0 w-16 bg-gradient-to-r from-(--surface0) to-transparent opacity-0 transition-opacity duration-200 group-hover/carousel:opacity-90 group-focus-within/carousel:opacity-90"
+        className="pointer-events-none absolute inset-y-0 left-0 w-16 bg-gradient-to-r from-surface0 to-transparent opacity-0 transition-opacity duration-200 group-hover/carousel:opacity-90 group-focus-within/carousel:opacity-90"
       />
       <div
         aria-hidden
-        className="pointer-events-none absolute inset-y-0 right-0 w-16 bg-gradient-to-l from-(--surface0) to-transparent opacity-0 transition-opacity duration-200 group-hover/carousel:opacity-90 group-focus-within/carousel:opacity-90"
+        className="pointer-events-none absolute inset-y-0 right-0 w-16 bg-gradient-to-l from-surface0 to-transparent opacity-0 transition-opacity duration-200 group-hover/carousel:opacity-90 group-focus-within/carousel:opacity-90"
       />
 
       <div className="absolute inset-y-0 left-0 flex items-center pl-2 opacity-0 transition-opacity duration-200 group-hover/carousel:opacity-100 group-focus-within/carousel:opacity-100 pointer-events-none group-hover/carousel:pointer-events-auto group-focus-within/carousel:pointer-events-auto">
@@ -108,7 +108,7 @@ const Carousel: React.FC<CarouselProps> = ({
           variant="ghost"
           disabled={!canScrollLeft}
           onClick={() => handleNavigate("previous")}
-          className="pointer-events-auto shadow-md bg-(--surface1) hover:bg-(--surface2)"
+          className="pointer-events-auto shadow-md bg-surface1 hover:bg-surface2"
         >
           <ArrowBackIcon fontSize="medium" />
         </Button>
@@ -120,7 +120,7 @@ const Carousel: React.FC<CarouselProps> = ({
           variant="ghost"
           disabled={!canScrollRight}
           onClick={() => handleNavigate("next")}
-          className="pointer-events-auto shadow-md bg-(--surface1) hover:bg-(--surface2)"
+          className="pointer-events-auto shadow-md bg-surface1 hover:bg-surface2"
         >
           <ArrowForwardIcon fontSize="medium" />
         </Button>

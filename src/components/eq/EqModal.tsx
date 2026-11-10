@@ -263,7 +263,7 @@ const EqModal = ({ open, onOpenChange }: EqModalProps) => {
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-h-[92dvh] max-w-[min(1200px,95vw)] p-0 sm:rounded-2xl">
         <div className="grid h-full min-h-[640px] grid-cols-1 lg:grid-cols-[340px_minmax(0,1fr)]">
-          <div className="min-h-0 overflow-y-auto border-b border-(--surface2) p-5 lg:border-b-0 lg:border-r">
+          <div className="min-h-0 overflow-y-auto border-b border-surface2 p-5 lg:border-b-0 lg:border-r">
             <DialogHeader className="mb-4 pr-10 text-left">
               <DialogTitle>Equalizer</DialogTitle>
               <DialogDescription>
@@ -273,7 +273,7 @@ const EqModal = ({ open, onOpenChange }: EqModalProps) => {
 
             <div className="space-y-4">
               <div className="space-y-2">
-                <p className="text-xs font-semibold uppercase tracking-wide text-(--text-grey)">Profile</p>
+                <p className="text-xs font-semibold uppercase tracking-wide text-text-grey">Profile</p>
                 <Select
                   size="small"
                   value={activeProfile.id}
@@ -296,7 +296,7 @@ const EqModal = ({ open, onOpenChange }: EqModalProps) => {
               </div>
 
               <div className="space-y-2">
-                <p className="text-xs font-semibold uppercase tracking-wide text-(--text-grey)">Mode</p>
+                <p className="text-xs font-semibold uppercase tracking-wide text-text-grey">Mode</p>
                 <div className="grid grid-cols-3 gap-2">
                   {MODE_OPTIONS.map((mode) => (
                     <Button
@@ -312,10 +312,10 @@ const EqModal = ({ open, onOpenChange }: EqModalProps) => {
                 </div>
               </div>
 
-              <div className="flex items-center justify-between rounded-xl border border-(--surface2) bg-(--surface0) px-3 py-2">
+              <div className="flex items-center justify-between rounded-xl border border-surface2 bg-surface0 px-3 py-2">
                 <div>
-                  <p className="text-xs font-semibold uppercase tracking-wide text-(--text-grey)">EQ</p>
-                  <p className="text-xs text-(--text-grey)">
+                  <p className="text-xs font-semibold uppercase tracking-wide text-text-grey">EQ</p>
+                  <p className="text-xs text-text-grey">
                     {eqEnabled ? "On (processing active)" : "Off (playback bypassed)"}
                   </p>
                 </div>
@@ -327,7 +327,7 @@ const EqModal = ({ open, onOpenChange }: EqModalProps) => {
               </div>
 
               <div className="space-y-2">
-                <p className="text-xs font-semibold uppercase tracking-wide text-(--text-grey)">FR Baseline</p>
+                <p className="text-xs font-semibold uppercase tracking-wide text-text-grey">FR Baseline</p>
                 <div className="flex flex-wrap gap-2">
                   <Button size="small" variant="outline" onClick={() => fileInputRef.current?.click()}>
                     Upload FR
@@ -348,7 +348,7 @@ const EqModal = ({ open, onOpenChange }: EqModalProps) => {
                     onChange={handleUploadMeasurement}
                   />
                 </div>
-                <p className="text-xs text-(--text-grey)">
+                <p className="text-xs text-text-grey">
                   {activeProfile.measurementFileName
                     ? `Loaded: ${activeProfile.measurementFileName} (${activeProfile.measurementData?.length ?? 0} points, smoothed)`
                     : "Upload a two-column file: freq spl"}
@@ -356,7 +356,7 @@ const EqModal = ({ open, onOpenChange }: EqModalProps) => {
               </div>
 
               <div className="space-y-2">
-                <p className="text-xs font-semibold uppercase tracking-wide text-(--text-grey)">Target / Reference</p>
+                <p className="text-xs font-semibold uppercase tracking-wide text-text-grey">Target / Reference</p>
                 <div className="flex flex-wrap gap-2">
                   <Button size="small" variant="outline" onClick={() => referenceFileInputRef.current?.click()}>
                     Upload Ref
@@ -385,7 +385,7 @@ const EqModal = ({ open, onOpenChange }: EqModalProps) => {
                     onChange={handleUploadReference}
                   />
                 </div>
-                <p className="text-xs text-(--text-grey)">
+                <p className="text-xs text-text-grey">
                   {activeProfile.referenceFileName
                     ? `Loaded: ${activeProfile.referenceFileName} (${activeProfile.referenceData?.length ?? 0} points, smoothed)`
                     : "Upload optional reference curve (freq spl) for overlay/flattening"}
@@ -407,13 +407,13 @@ const EqModal = ({ open, onOpenChange }: EqModalProps) => {
                 />
               </div>
 
-              <div className="rounded-2xl bg-(--surface0) p-4">
+              <div className="rounded-2xl bg-surface0 p-4">
                 {activeProfile.mode === "ten-band" ? (
                   <div className="space-y-4">
                     <div className="space-y-3">
                       <div className="flex flex-wrap items-center justify-between gap-2 text-sm">
-                        <span className="text-(--text-grey)">
-                          Preamp: <span className="font-semibold text-(--text)">{effectivePreamp.toFixed(1)} dB</span>
+                        <span className="text-text-grey">
+                          Preamp: <span className="font-semibold text-text">{effectivePreamp.toFixed(1)} dB</span>
                         </span>
                         <div className="grid grid-cols-2 gap-2">
                           {PREAMP_MODE_OPTIONS.map((option) => (
@@ -429,16 +429,16 @@ const EqModal = ({ open, onOpenChange }: EqModalProps) => {
                           ))}
                         </div>
                       </div>
-                      <p className="text-xs text-(--text-grey)">
+                      <p className="text-xs text-text-grey">
                         Auto preamp follows the highest active boost; manual preamp uses the dedicated slider.
                       </p>
                     </div>
 
                     <div className="flex flex-nowrap gap-3 overflow-x-auto pb-2">
                       {activeProfile.preampMode === "manual" ? (
-                        <div className="flex shrink-0 flex-col items-center rounded-xl bg-(--surface0) px-2 py-3">
-                          <span className="text-xs text-(--text-grey)">Manual</span>
-                          <span className="mb-2 text-xs font-semibold text-(--text)">{activeProfile.preamp.toFixed(1)} dB</span>
+                        <div className="flex shrink-0 flex-col items-center rounded-xl bg-surface0 px-2 py-3">
+                          <span className="text-xs text-text-grey">Manual</span>
+                          <span className="mb-2 text-xs font-semibold text-text">{activeProfile.preamp.toFixed(1)} dB</span>
                           <div className="h-40">
                             <Slider
                               orientation="vertical"
@@ -450,13 +450,13 @@ const EqModal = ({ open, onOpenChange }: EqModalProps) => {
                               className="h-full"
                             />
                           </div>
-                          <span className="mt-2 text-xs font-semibold text-(--text)">Preamp</span>
+                          <span className="mt-2 text-xs font-semibold text-text">Preamp</span>
                         </div>
                       ) : null}
 
                       {activeProfile.tenBandBands.map((band) => (
                         <div key={band.id} className="flex shrink-0 flex-col items-center px-2 py-3">
-                          <span className="mb-2 text-xs font-semibold text-(--text)">{band.gain.toFixed(1)}</span>
+                          <span className="mb-2 text-xs font-semibold text-text">{band.gain.toFixed(1)}</span>
                           <div className="h-40">
                             <Slider
                               orientation="vertical"
@@ -468,7 +468,7 @@ const EqModal = ({ open, onOpenChange }: EqModalProps) => {
                               className="h-full"
                             />
                           </div>
-                          <span className="mt-2 text-xs font-semibold text-(--text)">{formatFrequency(band.freq)} Hz</span>
+                          <span className="mt-2 text-xs font-semibold text-text">{formatFrequency(band.freq)} Hz</span>
                         </div>
                       ))}
                     </div>
@@ -481,8 +481,8 @@ const EqModal = ({ open, onOpenChange }: EqModalProps) => {
                   <div className="space-y-4">
                     <div className="space-y-3">
                       <div className="flex flex-wrap items-center justify-between gap-2 text-sm">
-                        <span className="text-(--text-grey)">
-                          Preamp: <span className="font-semibold text-(--text)">{effectivePreamp.toFixed(1)} dB</span>
+                        <span className="text-text-grey">
+                          Preamp: <span className="font-semibold text-text">{effectivePreamp.toFixed(1)} dB</span>
                         </span>
                         <div className="grid grid-cols-2 gap-2">
                           {PREAMP_MODE_OPTIONS.map((option) => (
@@ -501,10 +501,10 @@ const EqModal = ({ open, onOpenChange }: EqModalProps) => {
                     </div>
 
                     {activeProfile.preampMode === "manual" ? (
-                      <div className="space-y-2 rounded-xl bg-(--surface0) p-2">
+                      <div className="space-y-2 rounded-xl bg-surface0 p-2">
                         <div className="flex flex-wrap items-center justify-between gap-2 text-sm">
-                          <span className="text-(--text-grey)">
-                            Manual Preamp: <span className="font-semibold text-(--text)">{activeProfile.preamp.toFixed(1)} dB</span>
+                          <span className="text-text-grey">
+                            Manual Preamp: <span className="font-semibold text-text">{activeProfile.preamp.toFixed(1)} dB</span>
                           </span>
                         </div>
                         <Slider
@@ -528,9 +528,9 @@ const EqModal = ({ open, onOpenChange }: EqModalProps) => {
                         return (
                           <div
                             key={control.id}
-                            className="flex items-center gap-3 rounded-lg bg-(--surface0) px-2 py-2"
+                            className="flex items-center gap-3 rounded-lg bg-surface0 px-2 py-2"
                           >
-                            <span className="w-24 text-[11px] text-(--text-grey)">{control.minLabel}</span>
+                            <span className="w-24 text-[11px] text-text-grey">{control.minLabel}</span>
                             <Slider
                               aria-label={control.label}
                               orientation="horizontal"
@@ -542,7 +542,7 @@ const EqModal = ({ open, onOpenChange }: EqModalProps) => {
                               className={cn("w-full", simpleSliderToneClasses)}
                               style={sliderStyle}
                             />
-                            <span className="w-24 text-right text-[11px] text-(--text-grey)">{control.maxLabel}</span>
+                            <span className="w-24 text-right text-[11px] text-text-grey">{control.maxLabel}</span>
                           </div>
                         );
                       })}
@@ -556,8 +556,8 @@ const EqModal = ({ open, onOpenChange }: EqModalProps) => {
                   <div className="space-y-4">
                     <div className="space-y-3">
                       <div className="flex flex-wrap items-center justify-between gap-2 text-sm">
-                        <span className="text-(--text-grey)">
-                          Preamp: <span className="font-semibold text-(--text)">{effectivePreamp.toFixed(1)} dB</span>
+                        <span className="text-text-grey">
+                          Preamp: <span className="font-semibold text-text">{effectivePreamp.toFixed(1)} dB</span>
                         </span>
                         <div className="grid grid-cols-2 gap-2">
                           {PREAMP_MODE_OPTIONS.map((option) => (
@@ -573,16 +573,16 @@ const EqModal = ({ open, onOpenChange }: EqModalProps) => {
                           ))}
                         </div>
                       </div>
-                      <p className="text-xs text-(--text-grey)">
+                      <p className="text-xs text-text-grey">
                         Advanced mode supports any number of PEQ filters and Squiglink imports.
                       </p>
                     </div>
 
                     {activeProfile.preampMode === "manual" ? (
-                      <div className="space-y-2 rounded-xl bg-(--surface0) p-2">
+                      <div className="space-y-2 rounded-xl bg-surface0 p-2">
                         <div className="flex flex-wrap items-center justify-between gap-2 text-sm">
-                          <span className="text-(--text-grey)">
-                            Manual Preamp: <span className="font-semibold text-(--text)">{activeProfile.preamp.toFixed(1)} dB</span>
+                          <span className="text-text-grey">
+                            Manual Preamp: <span className="font-semibold text-text">{activeProfile.preamp.toFixed(1)} dB</span>
                           </span>
                         </div>
                         <Slider
@@ -597,9 +597,9 @@ const EqModal = ({ open, onOpenChange }: EqModalProps) => {
                       </div>
                     ) : null}
 
-                    <div className="space-y-2 rounded-xl border border-(--surface2) bg-(--surface0) p-3">
+                    <div className="space-y-2 rounded-xl border border-surface2 bg-surface0 p-3">
                       <div className="flex flex-wrap items-center justify-between gap-2">
-                        <p className="text-xs font-semibold uppercase tracking-wide text-(--text-grey)">Import from Squiglink</p>
+                        <p className="text-xs font-semibold uppercase tracking-wide text-text-grey">Import from Squiglink</p>
                         <div className="flex gap-2">
                           <Button
                             size="small"
@@ -623,16 +623,16 @@ const EqModal = ({ open, onOpenChange }: EqModalProps) => {
                         value={squigImportDraft}
                         onChange={(event) => setSquigImportDraft(event.target.value)}
                         rows={6}
-                        className="w-full resize-y rounded-xl border border-(--surface2) bg-(--surface1) p-3 text-xs text-(--text) outline-none focus:border-(--primary0)"
+                        className="w-full resize-y rounded-xl border border-surface2 bg-surface1 p-3 text-xs text-text outline-none focus:border-primary0"
                         placeholder={"Preamp: -7.5 dB\nFilter 1: ON PK Fc 20 Hz Gain 1.3 dB Q 2.000"}
                       />
-                      <p className="text-xs text-(--text-grey)">
+                      <p className="text-xs text-text-grey">
                         Supports `PK`, `LS`, and `HS` filters. Preamp is optional.
                       </p>
                     </div>
 
                     <div className="flex flex-wrap items-center justify-between gap-2">
-                      <p className="text-xs font-semibold uppercase tracking-wide text-(--text-grey)">
+                      <p className="text-xs font-semibold uppercase tracking-wide text-text-grey">
                         Filters ({activeProfile.advancedBands.length})
                       </p>
                       <Button size="small" variant="outline" onClick={() => addActiveProfileAdvancedBand()}>
@@ -641,17 +641,17 @@ const EqModal = ({ open, onOpenChange }: EqModalProps) => {
                     </div>
 
                     {activeProfile.advancedBands.length === 0 ? (
-                      <div className="rounded-xl border border-dashed border-(--surface3) bg-(--surface0) p-4 text-center text-sm text-(--text-grey)">
+                      <div className="rounded-xl border border-dashed border-surface3 bg-surface0 p-4 text-center text-sm text-text-grey">
                         No filters yet. Add one or import from Squiglink.
                       </div>
                     ) : (
                       <div className="space-y-2">
                         {activeProfile.advancedBands.map((band, index) => (
-                          <div key={band.id} className="space-y-3 rounded-xl border border-(--surface2) bg-(--surface0) p-3">
+                          <div key={band.id} className="space-y-3 rounded-xl border border-surface2 bg-surface0 p-3">
                             <div className="flex flex-wrap items-center justify-between gap-2">
-                              <p className="text-sm font-semibold text-(--text)">Filter {index + 1}</p>
+                              <p className="text-sm font-semibold text-text">Filter {index + 1}</p>
                               <div className="flex items-center gap-2">
-                                <span className="text-xs text-(--text-grey)">Enabled</span>
+                                <span className="text-xs text-text-grey">Enabled</span>
                                 <Switch
                                   size="sm"
                                   checked={band.enabled}
@@ -669,7 +669,7 @@ const EqModal = ({ open, onOpenChange }: EqModalProps) => {
 
                             <div className="grid grid-cols-1 gap-2 sm:grid-cols-3">
                               <div className="space-y-1">
-                                <p className="text-xs text-(--text-grey)">Type</p>
+                                <p className="text-xs text-text-grey">Type</p>
                                 <Select
                                   size="small"
                                   value={band.type}
@@ -679,7 +679,7 @@ const EqModal = ({ open, onOpenChange }: EqModalProps) => {
                                 />
                               </div>
                               <div className="space-y-1">
-                                <p className="text-xs text-(--text-grey)">Frequency (Hz)</p>
+                                <p className="text-xs text-text-grey">Frequency (Hz)</p>
                                 <input
                                   type="number"
                                   min={EQ_MIN_FREQUENCY}
@@ -687,11 +687,11 @@ const EqModal = ({ open, onOpenChange }: EqModalProps) => {
                                   step={1}
                                   defaultValue={band.freq}
                                   onBlur={(event) => updateAdvancedBandNumber(band.id, "freq", event.target.value, band.freq)}
-                                  className="h-8 w-full rounded-full border border-(--surface2) bg-(--surface1) px-3 text-sm text-(--text) outline-none focus:border-(--primary0)"
+                                  className="h-8 w-full rounded-full border border-surface2 bg-surface1 px-3 text-sm text-text outline-none focus:border-primary0"
                                 />
                               </div>
                               <div className="space-y-1">
-                                <p className="text-xs text-(--text-grey)">Q</p>
+                                <p className="text-xs text-text-grey">Q</p>
                                 <input
                                   type="number"
                                   min={EQ_MIN_Q}
@@ -699,15 +699,15 @@ const EqModal = ({ open, onOpenChange }: EqModalProps) => {
                                   step={0.01}
                                   defaultValue={band.q}
                                   onBlur={(event) => updateAdvancedBandNumber(band.id, "q", event.target.value, band.q)}
-                                  className="h-8 w-full rounded-full border border-(--surface2) bg-(--surface1) px-3 text-sm text-(--text) outline-none focus:border-(--primary0)"
+                                  className="h-8 w-full rounded-full border border-surface2 bg-surface1 px-3 text-sm text-text outline-none focus:border-primary0"
                                 />
                               </div>
                             </div>
 
                             <div className="space-y-2">
-                              <div className="flex items-center justify-between text-xs text-(--text-grey)">
+                              <div className="flex items-center justify-between text-xs text-text-grey">
                                 <span>Gain</span>
-                                <span className="font-semibold text-(--text)">{band.gain.toFixed(1)} dB</span>
+                                <span className="font-semibold text-text">{band.gain.toFixed(1)} dB</span>
                               </div>
                               <Slider
                                 orientation="horizontal"

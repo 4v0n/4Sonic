@@ -17,12 +17,12 @@ interface SettingsSectionProps {
 }
 
 const SettingsSection = ({ title, description, children }: SettingsSectionProps) => (
-  <section className="overflow-hidden rounded-2xl border border-(--surface2) bg-(--surface0) shadow-sm">
-    <div className="border-b border-(--surface2) px-5 py-4">
-      <h2 className="text-lg font-semibold text-(--text)">{title}</h2>
-      <p className="mt-1 text-sm text-(--text-grey)">{description}</p>
+  <section className="overflow-hidden rounded-2xl border border-surface2 bg-surface0 shadow-sm">
+    <div className="border-b border-surface2 px-5 py-4">
+      <h2 className="text-lg font-semibold text-text">{title}</h2>
+      <p className="mt-1 text-sm text-text-grey">{description}</p>
     </div>
-    <div className="divide-y divide-(--surface2)">{children}</div>
+    <div className="divide-y divide-surface2">{children}</div>
   </section>
 );
 
@@ -38,9 +38,9 @@ const SettingRow = ({ name, description = undefined, children, align = "center" 
     className={`grid gap-4 px-5 py-4 md:grid-cols-[minmax(0,1fr)_minmax(280px,360px)] ${align === "start" ? "md:items-start" : "md:items-center"}`}
   >
     <div className="min-w-0">
-      <h3 className="text-sm font-semibold text-(--text)">{name}</h3>
+      <h3 className="text-sm font-semibold text-text">{name}</h3>
       {description && (
-        <p className="mt-1 text-sm leading-5 text-(--text-grey)">{description}</p>
+        <p className="mt-1 text-sm leading-5 text-text-grey">{description}</p>
       )}
     </div>
     <div className="w-full md:justify-self-end">{children}</div>
@@ -94,8 +94,8 @@ const SettingsPage = () => {
   return (
     <div className="mx-auto w-full max-w-5xl space-y-8 pb-8">
       <div className="flex flex-col gap-1">
-        <h1 className="text-3xl font-extrabold text-(--text)">Settings</h1>
-        <p className="text-sm text-(--text-grey)">
+        <h1 className="text-3xl font-extrabold text-text">Settings</h1>
+        <p className="text-sm text-text-grey">
           Manage app behavior and playback visuals.
         </p>
       </div>
@@ -170,10 +170,10 @@ const SettingsPage = () => {
             description="Overlaps the end of one track with the start of the next, fading evenly between them. Leave at 0 for an instant seamless cut."
             align="start"
           >
-            <div className="w-full rounded-xl border border-(--surface2) bg-(--surface1) p-4 md:w-[340px]">
-              <div className="mb-2 flex items-center justify-between text-xs text-(--text-grey)">
+            <div className="w-full rounded-xl border border-surface2 bg-surface1 p-4 md:w-[340px]">
+              <div className="mb-2 flex items-center justify-between text-xs text-text-grey">
                 <span>Off</span>
-                <span className="font-semibold text-(--text)">
+                <span className="font-semibold text-text">
                   {crossfadeDuration === 0 ? "Off" : `${crossfadeDuration.toFixed(1)}s`}
                 </span>
                 <span>{MAX_CROSSFADE_SECONDS}s</span>
@@ -205,7 +205,7 @@ const SettingsPage = () => {
               type="color"
               value={visualizerColor}
               onChange={(event) => setVisualizerColor(event.target.value)}
-              className="h-10 w-14 cursor-pointer rounded-lg border border-(--surface2) bg-(--surface1) p-1"
+              className="h-10 w-14 cursor-pointer rounded-lg border border-surface2 bg-surface1 p-1"
               aria-label="Visualizer colour"
             />
             <div className="w-36">
@@ -224,10 +224,10 @@ const SettingsPage = () => {
           description="Lower is subtle, higher is more prominent."
           align="start"
         >
-          <div className="w-full rounded-xl border border-(--surface2) bg-(--surface1) p-4 md:w-[340px]">
-            <div className="mb-2 flex items-center justify-between text-xs text-(--text-grey)">
+          <div className="w-full rounded-xl border border-surface2 bg-surface1 p-4 md:w-[340px]">
+            <div className="mb-2 flex items-center justify-between text-xs text-text-grey">
               <span>Subtle</span>
-              <span className="font-semibold text-(--text)">{Math.round(visualizerOpacity * 100)}%</span>
+              <span className="font-semibold text-text">{Math.round(visualizerOpacity * 100)}%</span>
               <span>Bold</span>
             </div>
             <Slider
@@ -246,10 +246,10 @@ const SettingsPage = () => {
           description="Softens the waveform edges."
           align="start"
         >
-          <div className="w-full rounded-xl border border-(--surface2) bg-(--surface1) p-4 md:w-[340px]">
-            <div className="mb-2 flex items-center justify-between text-xs text-(--text-grey)">
+          <div className="w-full rounded-xl border border-surface2 bg-surface1 p-4 md:w-[340px]">
+            <div className="mb-2 flex items-center justify-between text-xs text-text-grey">
               <span>Crisp</span>
-              <span className="font-semibold text-(--text)">{Math.round(visualizerBlur)}px</span>
+              <span className="font-semibold text-text">{Math.round(visualizerBlur)}px</span>
               <span>Dreamy</span>
             </div>
             <Slider
@@ -268,10 +268,10 @@ const SettingsPage = () => {
           description="Caps the visualizer to this share of the bar when volume is at 100%."
           align="start"
         >
-          <div className="w-full rounded-xl border border-(--surface2) bg-(--surface1) p-4 md:w-[340px]">
-            <div className="mb-2 flex items-center justify-between text-xs text-(--text-grey)">
+          <div className="w-full rounded-xl border border-surface2 bg-surface1 p-4 md:w-[340px]">
+            <div className="mb-2 flex items-center justify-between text-xs text-text-grey">
               <span>Low profile</span>
-              <span className="font-semibold text-(--text)">{Math.round(visualizerHeight * 100)}%</span>
+              <span className="font-semibold text-text">{Math.round(visualizerHeight * 100)}%</span>
               <span>Full height</span>
             </div>
             <Slider
@@ -290,10 +290,10 @@ const SettingsPage = () => {
           description="Lower values smooth motion and make peaks rise/fall less abruptly."
           align="start"
         >
-          <div className="w-full rounded-xl border border-(--surface2) bg-(--surface1) p-4 md:w-[340px]">
-            <div className="mb-2 flex items-center justify-between text-xs text-(--text-grey)">
+          <div className="w-full rounded-xl border border-surface2 bg-surface1 p-4 md:w-[340px]">
+            <div className="mb-2 flex items-center justify-between text-xs text-text-grey">
               <span>Smooth</span>
-              <span className="font-semibold text-(--text)">{Math.round(visualizerResponse * 100)}%</span>
+              <span className="font-semibold text-text">{Math.round(visualizerResponse * 100)}%</span>
               <span>Reactive</span>
             </div>
             <Slider
@@ -312,10 +312,10 @@ const SettingsPage = () => {
           description="Caps animation FPS to avoid overly fast-looking movement."
           align="start"
         >
-          <div className="w-full rounded-xl border border-(--surface2) bg-(--surface1) p-4 md:w-[340px]">
-            <div className="mb-2 flex items-center justify-between text-xs text-(--text-grey)">
+          <div className="w-full rounded-xl border border-surface2 bg-surface1 p-4 md:w-[340px]">
+            <div className="mb-2 flex items-center justify-between text-xs text-text-grey">
               <span>Calm</span>
-              <span className="font-semibold text-(--text)">{visualizerFps} FPS</span>
+              <span className="font-semibold text-text">{visualizerFps} FPS</span>
               <span>Fluid</span>
             </div>
             <Slider

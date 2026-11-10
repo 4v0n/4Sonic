@@ -5,7 +5,7 @@ import LazyImage from "./LazyImage";
 export const CoverFallback = ({ rounded, className }: { rounded?: boolean; className?: string }) => (
   <div
     className={cn(
-      "h-full w-full bg-gradient-to-br from-(--surface-tonal1) via-(--surface-tonal2) to-(--surface-tonal3)",
+      "h-full w-full bg-gradient-to-br from-surface-tonal1 via-surface-tonal2 to-surface-tonal3",
       rounded ? "rounded-lg" : "",
       className,
     )}

@@ -17,7 +17,7 @@ const Checkbox = React.forwardRef<React.ElementRef<typeof CheckboxPrimitive.Root
         checked={checked}
         onCheckedChange={(value) => onCheckedChange(value === true)}
         className={cn(
-          "peer h-4 w-4 shrink-0 rounded-sm border border-(--text) cursor-pointer disabled:cursor-not-allowed disabled:opacity-50 text-(--success1)",
+          "peer h-4 w-4 shrink-0 rounded-sm border border-text cursor-pointer disabled:cursor-not-allowed disabled:opacity-50 text-success1",
           className,
         )}
         {...props}

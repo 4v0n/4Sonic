@@ -40,9 +40,9 @@ const Switch = React.forwardRef<React.ElementRef<typeof SwitchPrimitive.Root>, S
         disabled={disabled}
         className={cn(
           "peer relative inline-flex shrink-0 cursor-pointer items-center rounded-full border transition-colors duration-200",
-          "bg-(--danger0) border-(--surface2)",
-          "data-[state=checked]:bg-(--success0)",
-          "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-(--success1) focus-visible:ring-offset-2 focus-visible:ring-offset-(--surface0)",
+          "bg-danger0 border-surface2",
+          "data-[state=checked]:bg-success0",
+          "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-success1 focus-visible:ring-offset-2 focus-visible:ring-offset-surface0",
           "disabled:cursor-not-allowed disabled:opacity-50",
           styles.track,
           className,
@@ -51,7 +51,7 @@ const Switch = React.forwardRef<React.ElementRef<typeof SwitchPrimitive.Root>, S
       >
         <SwitchPrimitive.Thumb
           className={cn(
-            "pointer-events-none absolute top-1/2 -translate-y-1/2 rounded-full bg-(--light) shadow-[0_1px_4px_rgba(0,0,0,0.18)] transition-all duration-200",
+            "pointer-events-none absolute top-1/2 -translate-y-1/2 rounded-full bg-light shadow-[0_1px_4px_rgba(0,0,0,0.18)] transition-all duration-200",
             styles.thumb,
             styles.start,
             styles.checked,

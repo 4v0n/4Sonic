@@ -210,9 +210,9 @@ function MediaCollection<T>({
   return (
     <div className="space-y-6">
       <div className="space-y-1">
-        <h1 className="text-3xl font-extrabold text-(--text)">{title}</h1>
-        {description ? <p className="text-sm text-(--text-grey)">{description}</p> : null}
-        {error ? <p className="text-sm text-(--danger1)">{error}</p> : null}
+        <h1 className="text-3xl font-extrabold text-text">{title}</h1>
+        {description ? <p className="text-sm text-text-grey">{description}</p> : null}
+        {error ? <p className="text-sm text-danger1">{error}</p> : null}
       </div>
 
       <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
@@ -248,13 +248,13 @@ function MediaCollection<T>({
         </div>
       </div>
 
-      <div className="flex items-center justify-between text-xs text-(--text-grey)">
+      <div className="flex items-center justify-between text-xs text-text-grey">
         <span>{visibleCountLabel}</span>
         {searchQuery ? <span className="truncate">Filtered by: {searchQuery}</span> : null}
       </div>
 
       {showEmptyState ? (
-        <div className="flex min-h-[180px] items-center justify-center rounded-2xl border border-(--surface2) bg-(--surface1) text-sm text-(--text-grey)">
+        <div className="flex min-h-[180px] items-center justify-center rounded-2xl border border-surface2 bg-surface1 text-sm text-text-grey">
           {emptyMessage}
         </div>
       ) : viewMode === "grid" ? (

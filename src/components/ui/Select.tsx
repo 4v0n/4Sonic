@@ -64,7 +64,7 @@ const Select = ({
 }: SelectProps) => {
   const normalized = React.useMemo(() => options.map(toObjectOption), [options]);
   const sizeStyles = triggerSizes[size];
-  const iconClasses = cn("flex shrink-0 items-center text-(--text-grey)", sizeStyles.icon);
+  const iconClasses = cn("flex shrink-0 items-center text-text-grey", sizeStyles.icon);
 
   const measureRef = React.useRef<HTMLDivElement>(null);
   const [calculatedWidth, setCalculatedWidth] = React.useState<number>();
@@ -87,7 +87,7 @@ const Select = ({
           <div
             key={opt.value}
             className={cn(
-              "inline-flex w-fit items-center gap-2 whitespace-nowrap rounded-full border border-transparent bg-(--surface0)",
+              "inline-flex w-fit items-center gap-2 whitespace-nowrap rounded-full border border-transparent bg-surface0",
               sizeStyles.height,
               sizeStyles.text,
               sizeStyles.padding,
@@ -103,8 +103,8 @@ const Select = ({
       <SelectPrimitive.Root value={value} defaultValue={defaultValue} onValueChange={onValueChange} disabled={disabled}>
         <SelectPrimitive.Trigger
           className={cn(
-            "inline-flex min-w-0 max-w-full items-center gap-2 rounded-full border border-transparent bg-(--surface0) shadow-sm",
-            "hover:bg-(--surface1) transition-colors outline-none whitespace-nowrap",
+            "inline-flex min-w-0 max-w-full items-center gap-2 rounded-full border border-transparent bg-surface0 shadow-sm",
+            "hover:bg-surface1 transition-colors outline-none whitespace-nowrap",
             "cursor-pointer disabled:cursor-not-allowed disabled:opacity-50",
             sizeStyles.height,
             sizeStyles.text,
@@ -122,7 +122,7 @@ const Select = ({
 
         <SelectPrimitive.Portal>
           <SelectPrimitive.Content
-            className="z-50 overflow-hidden rounded-lg border border-(--surface2) bg-(--surface1) shadow-lg"
+            className="z-50 overflow-hidden rounded-lg border border-surface2 bg-surface1 shadow-lg"
             position="popper"
             style={calculatedWidth ? { minWidth: `${calculatedWidth}px` } : undefined}
           >
@@ -133,9 +133,9 @@ const Select = ({
                   value={opt.value}
                   disabled={opt.disabled}
                   className={cn(
-                    "relative flex cursor-pointer select-none items-center gap-2 rounded-md px-3 py-2 text-sm text-(--text-grey)",
-                    "focus:bg-(--surface2) focus:text-(--text) focus:outline-none data-[state=checked]:text-(--text)",
-                    "hover:bg-(--surface2) hover:text-(--text)",
+                    "relative flex cursor-pointer select-none items-center gap-2 rounded-md px-3 py-2 text-sm text-text-grey",
+                    "focus:bg-surface2 focus:text-text focus:outline-none data-[state=checked]:text-text",
+                    "hover:bg-surface2 hover:text-text",
                     "data-[disabled]:opacity-50 data-[disabled]:pointer-events-none",
                   )}
                 >
