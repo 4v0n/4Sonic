@@ -1,6 +1,46 @@
 @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
 @import "tailwindcss";
 
+/* Dark is the default others override */
+@theme static {
+  --color-dark: #000000;
+  --color-light: #ffffff;
+  --color-text: #ececf1;
+  --color-text-grey: #9a9eab;
+  --color-text-inverted: #000000;
+  --color-on-primary: #04150f;
+  --color-primary0: #12e09f;
+  --color-primary1: #4de4a9;
+  --color-primary2: #6de8b4;
+  --color-primary3: #86ecbe;
+  --color-primary4: #9df0c9;
+  --color-primary5: #b2f3d4;
+  --color-surface0: #0b0c10;
+  --color-surface1: #13141a;
+  --color-surface2: #1b1d25;
+  --color-surface3: #272a34;
+  --color-surface4: #3b3f4c;
+  --color-surface5: #575c6c;
+  --color-surface-tonal0: #0e1815;
+  --color-surface-tonal1: #14231f;
+  --color-surface-tonal2: #1b2f29;
+  --color-surface-tonal3: #274039;
+  --color-surface-tonal4: #3b574e;
+  --color-surface-tonal5: #567469;
+  --color-success2: #22946e;
+  --color-success1: #47d5a6;
+  --color-success0: #9ae8ce;
+  --color-warning2: #a87a2a;
+  --color-warning1: #d7ac61;
+  --color-warning0: #ecd7b2;
+  --color-danger2: #9c2121;
+  --color-danger1: #d94a4a;
+  --color-danger0: #eb9e9e;
+  --color-info2: #21498a;
+  --color-info1: #4077d1;
+  --color-info0: #92b2e5;
+}
+
 @layer base {
   :root {
     color-scheme: dark;
@@ -18,336 +58,238 @@
     }
   }
 
-  :root,
   [data-theme="dark"] {
-    --dark: #000000;
-    --light: #ffffff;
+    color-scheme: dark;
+  }
 
-    --text: #ececf1;
-    --text-grey: #9a9eab;
-    --text-inverted: #000000;
-    --on-primary: #04150f;
-
-    --primary0: #12e09f;
-    --primary1: #4de4a9;
-    --primary2: #6de8b4;
-    --primary3: #86ecbe;
-    --primary4: #9df0c9;
-    --primary5: #b2f3d4;
-
-    --surface0: #0b0c10;
-    --surface1: #13141a;
-    --surface2: #1b1d25;
-    --surface3: #272a34;
-    --surface4: #3b3f4c;
-    --surface5: #575c6c;
-
-    --surface-tonal0: #0e1815;
-    --surface-tonal1: #14231f;
-    --surface-tonal2: #1b2f29;
-    --surface-tonal3: #274039;
-    --surface-tonal4: #3b574e;
-    --surface-tonal5: #567469;
-
-    --success2: #22946e;
-    --success1: #47d5a6;
-    --success0: #9ae8ce;
-
-    --warning2: #a87a2a;
-    --warning1: #d7ac61;
-    --warning0: #ecd7b2;
-
-    --danger2: #9c2121;
-    --danger1: #d94a4a;
-    --danger0: #eb9e9e;
-
-    --info2: #21498a;
-    --info1: #4077d1;
-    --info0: #92b2e5;
+  :root,
+  [data-theme] {
+    --dark: var(--color-dark);
+    --light: var(--color-light);
+    --text: var(--color-text);
+    --text-grey: var(--color-text-grey);
+    --text-inverted: var(--color-text-inverted);
+    --on-primary: var(--color-on-primary);
+    --primary0: var(--color-primary0);
+    --primary1: var(--color-primary1);
+    --primary2: var(--color-primary2);
+    --primary3: var(--color-primary3);
+    --primary4: var(--color-primary4);
+    --primary5: var(--color-primary5);
+    --surface0: var(--color-surface0);
+    --surface1: var(--color-surface1);
+    --surface2: var(--color-surface2);
+    --surface3: var(--color-surface3);
+    --surface4: var(--color-surface4);
+    --surface5: var(--color-surface5);
+    --surface-tonal0: var(--color-surface-tonal0);
+    --surface-tonal1: var(--color-surface-tonal1);
+    --surface-tonal2: var(--color-surface-tonal2);
+    --surface-tonal3: var(--color-surface-tonal3);
+    --surface-tonal4: var(--color-surface-tonal4);
+    --surface-tonal5: var(--color-surface-tonal5);
+    --success2: var(--color-success2);
+    --success1: var(--color-success1);
+    --success0: var(--color-success0);
+    --warning2: var(--color-warning2);
+    --warning1: var(--color-warning1);
+    --warning0: var(--color-warning0);
+    --danger2: var(--color-danger2);
+    --danger1: var(--color-danger1);
+    --danger0: var(--color-danger0);
+    --info2: var(--color-info2);
+    --info1: var(--color-info1);
+    --info0: var(--color-info0);
   }
 
   [data-theme="light"] {
     color-scheme: light;
-    --dark: #000000;
-    --light: #ffffff;
+    --color-dark: #000000;
+    --color-light: #ffffff;
 
-    --text: #3b3b3b;
-    --text-grey: #6b6f6d;
-    --text-inverted: #ffffff;
-    --on-primary: #04150f;
+    --color-text: #3b3b3b;
+    --color-text-grey: #6b6f6d;
+    --color-text-inverted: #ffffff;
+    --color-on-primary: #04150f;
 
-    --primary0: #12e09f;
-    --primary1: #1cc48c;
-    --primary2: #21aa79;
-    --primary3: #228f67;
-    --primary4: #227656;
-    --primary5: #1f5e45;
+    --color-primary0: #12e09f;
+    --color-primary1: #1cc48c;
+    --color-primary2: #21aa79;
+    --color-primary3: #228f67;
+    --color-primary4: #227656;
+    --color-primary5: #1f5e45;
 
-    --surface0: #f3f3f3;
-    --surface1: #e6e6e6;
-    --surface2: #d8d8d8;
-    --surface3: #cbcbcb;
-    --surface4: #bebebe;
-    --surface5: #b1b1b1;
+    --color-surface0: #f3f3f3;
+    --color-surface1: #e6e6e6;
+    --color-surface2: #d8d8d8;
+    --color-surface3: #cbcbcb;
+    --color-surface4: #bebebe;
+    --color-surface5: #b1b1b1;
 
-    --surface-tonal0: #e4f2ea;
-    --surface-tonal1: #d8e5de;
-    --surface-tonal2: #cdd8d1;
-    --surface-tonal3: #c2cbc5;
-    --surface-tonal4: #b6beb9;
-    --surface-tonal5: #abb1ae;
+    --color-surface-tonal0: #e4f2ea;
+    --color-surface-tonal1: #d8e5de;
+    --color-surface-tonal2: #cdd8d1;
+    --color-surface-tonal3: #c2cbc5;
+    --color-surface-tonal4: #b6beb9;
+    --color-surface-tonal5: #abb1ae;
 
-    --success0: #58dbad;
-    --success1: #28be8a;
-    --success2: #1b7f5c;
+    --color-success0: #58dbad;
+    --color-success1: #28be8a;
+    --color-success2: #1b7f5c;
 
-    --warning0: #ebca85;
-    --warning1: #dfae44;
-    --warning2: #b8871f;
+    --color-warning0: #ebca85;
+    --color-warning1: #dfae44;
+    --color-warning2: #b8871f;
 
-    --danger0: #e29d9d;
-    --danger1: #d06262;
-    --danger2: #b13535;
+    --color-danger0: #e29d9d;
+    --color-danger1: #d06262;
+    --color-danger2: #b13535;
 
-    --info0: #74a4e6;
-    --info1: #347ada;
-    --info2: #1e56a3;
+    --color-info0: #74a4e6;
+    --color-info1: #347ada;
+    --color-info2: #1e56a3;
   }
 
   [data-theme="nord"] {
     color-scheme: dark;
-    --dark: #000000;
-    --light: #ffffff;
+    --color-dark: #000000;
+    --color-light: #ffffff;
 
-    --text: #eceff4;
-    --text-grey: #d8dee9;
-    --text-inverted: #2e3440;
+    --color-text: #eceff4;
+    --color-text-grey: #d8dee9;
+    --color-text-inverted: #2e3440;
 
-    --primary0: #88c0d0;
-    --primary1: #8fbcbb;
-    --primary2: #81a1c1;
-    --primary3: #5e81ac;
-    --primary4: #b48ead;
-    --primary5: #a3be8c;
+    --color-primary0: #88c0d0;
+    --color-primary1: #8fbcbb;
+    --color-primary2: #81a1c1;
+    --color-primary3: #5e81ac;
+    --color-primary4: #b48ead;
+    --color-primary5: #a3be8c;
 
-    --surface0: #2e3440;
-    --surface1: #3b4252;
-    --surface2: #434c5e;
-    --surface3: #4c566a;
-    --surface4: #d8dee9;
-    --surface5: #e5e9f0;
+    --color-surface0: #2e3440;
+    --color-surface1: #3b4252;
+    --color-surface2: #434c5e;
+    --color-surface3: #4c566a;
+    --color-surface4: #d8dee9;
+    --color-surface5: #e5e9f0;
 
-    --surface-tonal0: #323946;
-    --surface-tonal1: #363d4a;
-    --surface-tonal2: #3d4554;
-    --surface-tonal3: #454e5f;
-    --surface-tonal4: #50596a;
-    --surface-tonal5: #5a6375;
+    --color-surface-tonal0: #323946;
+    --color-surface-tonal1: #363d4a;
+    --color-surface-tonal2: #3d4554;
+    --color-surface-tonal3: #454e5f;
+    --color-surface-tonal4: #50596a;
+    --color-surface-tonal5: #5a6375;
 
-    --success0: #cde0b9;
-    --success1: #a3be8c;
-    --success2: #6f8a5f;
+    --color-success0: #cde0b9;
+    --color-success1: #a3be8c;
+    --color-success2: #6f8a5f;
 
-    --warning0: #f3deb6;
-    --warning1: #ebcb8b;
-    --warning2: #c8a664;
+    --color-warning0: #f3deb6;
+    --color-warning1: #ebcb8b;
+    --color-warning2: #c8a664;
 
-    --danger0: #e7a0a7;
-    --danger1: #bf616a;
-    --danger2: #8f4550;
+    --color-danger0: #e7a0a7;
+    --color-danger1: #bf616a;
+    --color-danger2: #8f4550;
 
-    --info0: #a3b8d1;
-    --info1: #81a1c1;
-    --info2: #5e81ac;
+    --color-info0: #a3b8d1;
+    --color-info1: #81a1c1;
+    --color-info2: #5e81ac;
   }
 
   [data-theme="sakura"] {
     color-scheme: light;
-    --dark: #000000;
-    --light: #ffffff;
+    --color-dark: #000000;
+    --color-light: #ffffff;
 
-    --text: #5c4b51;
-    --text-grey: #8c7b80;
-    --text-inverted: #ffffff;
+    --color-text: #5c4b51;
+    --color-text-grey: #8c7b80;
+    --color-text-inverted: #ffffff;
 
-    --primary0: #ffb7c5;
-    --primary1: #ffc2cf;
-    --primary2: #ffccd8;
-    --primary3: #ffd8e2;
-    --primary4: #ffe3eb;
-    --primary5: #ffeef5;
+    --color-primary0: #ffb7c5;
+    --color-primary1: #ffc2cf;
+    --color-primary2: #ffccd8;
+    --color-primary3: #ffd8e2;
+    --color-primary4: #ffe3eb;
+    --color-primary5: #ffeef5;
 
-    --surface0: #fffbf7;
-    --surface1: #ffffff;
-    --surface2: #f5f2f0;
-    --surface3: #ebe8e6;
-    --surface4: #e1dedc;
-    --surface5: #d7d4d2;
+    --color-surface0: #fffbf7;
+    --color-surface1: #ffffff;
+    --color-surface2: #f5f2f0;
+    --color-surface3: #ebe8e6;
+    --color-surface4: #e1dedc;
+    --color-surface5: #d7d4d2;
 
-    --surface-tonal0: #fff0f3;
-    --surface-tonal1: #feebf0;
-    --surface-tonal2: #fde5ec;
-    --surface-tonal3: #fcdfe8;
-    --surface-tonal4: #fcdbe5;
-    --surface-tonal5: #fbd4e1;
+    --color-surface-tonal0: #fff0f3;
+    --color-surface-tonal1: #feebf0;
+    --color-surface-tonal2: #fde5ec;
+    --color-surface-tonal3: #fcdfe8;
+    --color-surface-tonal4: #fcdbe5;
+    --color-surface-tonal5: #fbd4e1;
 
-    --success0: #cfe9d6;
-    --success1: #a3d6b5;
-    --success2: #769f84;
+    --color-success0: #cfe9d6;
+    --color-success1: #a3d6b5;
+    --color-success2: #769f84;
 
-    --warning0: #f8deb0;
-    --warning1: #f2c08f;
-    --warning2: #d68c76;
+    --color-warning0: #f8deb0;
+    --color-warning1: #f2c08f;
+    --color-warning2: #d68c76;
 
-    --danger0: #f3b1bf;
-    --danger1: #e87a90;
-    --danger2: #b75c70;
+    --color-danger0: #f3b1bf;
+    --color-danger1: #e87a90;
+    --color-danger2: #b75c70;
 
-    --info0: #c6d3e7;
-    --info1: #9fb4d3;
-    --info2: #788fb1;
+    --color-info0: #c6d3e7;
+    --color-info1: #9fb4d3;
+    --color-info2: #788fb1;
   }
 
   [data-theme="sakura-dark"] {
     color-scheme: dark;
-    --dark: #000000;
-    --light: #ffffff;
+    --color-dark: #000000;
+    --color-light: #ffffff;
 
-    --text: #f7eaf1;
-    --text-grey: #cbb6c3;
-    --text-inverted: #140c12;
+    --color-text: #f7eaf1;
+    --color-text-grey: #cbb6c3;
+    --color-text-inverted: #140c12;
 
-    --primary0: #ff7aa9;
-    --primary1: #ff90b8;
-    --primary2: #ffa6c6;
-    --primary3: #ffc2d7;
-    --primary4: #ffd8e5;
-    --primary5: #ffebf2;
+    --color-primary0: #ff7aa9;
+    --color-primary1: #ff90b8;
+    --color-primary2: #ffa6c6;
+    --color-primary3: #ffc2d7;
+    --color-primary4: #ffd8e5;
+    --color-primary5: #ffebf2;
 
-    --surface0: #0f0a10;
-    --surface1: #19131c;
-    --surface2: #231a27;
-    --surface3: #2d2232;
-    --surface4: #372b3d;
-    --surface5: #423447;
+    --color-surface0: #0f0a10;
+    --color-surface1: #19131c;
+    --color-surface2: #231a27;
+    --color-surface3: #2d2232;
+    --color-surface4: #372b3d;
+    --color-surface5: #423447;
 
-    --surface-tonal0: #171017;
-    --surface-tonal1: #201820;
-    --surface-tonal2: #281f28;
-    --surface-tonal3: #312730;
-    --surface-tonal4: #3a3038;
-    --surface-tonal5: #433741;
+    --color-surface-tonal0: #171017;
+    --color-surface-tonal1: #201820;
+    --color-surface-tonal2: #281f28;
+    --color-surface-tonal3: #312730;
+    --color-surface-tonal4: #3a3038;
+    --color-surface-tonal5: #433741;
 
-    --success0: #a9e4c4;
-    --success1: #6fcfa0;
-    --success2: #2f8f72;
+    --color-success0: #a9e4c4;
+    --color-success1: #6fcfa0;
+    --color-success2: #2f8f72;
 
-    --warning0: #f3d6a4;
-    --warning1: #eab06a;
-    --warning2: #ba7f38;
+    --color-warning0: #f3d6a4;
+    --color-warning1: #eab06a;
+    --color-warning2: #ba7f38;
 
-    --danger0: #f3b7c6;
-    --danger1: #e7819b;
-    --danger2: #b55b71;
+    --color-danger0: #f3b7c6;
+    --color-danger1: #e7819b;
+    --color-danger2: #b55b71;
 
-    --info0: #c2c9f4;
-    --info1: #8ea4e8;
-    --info2: #5d73b7;
+    --color-info0: #c2c9f4;
+    --color-info1: #8ea4e8;
+    --color-info2: #5d73b7;
   }
-
-  [data-theme="ocean"] {
-    color-scheme: light;
-    --dark: #000000;
-    --light: #ffffff;
-
-    --text: #003b46;
-    --text-grey: #5a848c;
-    --text-inverted: #ffffff;
-
-    --primary0: #4edad8;
-    --primary1: #64dfdd;
-    --primary2: #7ae4e2;
-    --primary3: #90e9e7;
-    --primary4: #a6eeee;
-    --primary5: #bcf3f2;
-
-    --surface0: #fdf8f0;
-    --surface1: #ffffff;
-    --surface2: #f4efe7;
-    --surface3: #ebe6dd;
-    --surface4: #e2ddcf;
-    --surface5: #d8d4c8;
-
-    --surface-tonal0: #e6fafa;
-    --surface-tonal1: #ddf6f5;
-    --surface-tonal2: #d4f1f0;
-    --surface-tonal3: #ccedec;
-    --surface-tonal4: #c3e8e7;
-    --surface-tonal5: #bbe4e2;
-
-    --success0: #b5e0c9;
-    --success1: #7fc6a4;
-    --success2: #5c9a7c;
-
-    --warning0: #f8deb0;
-    --warning1: #f2c572;
-    --warning2: #cfa45b;
-
-    --danger0: #f6b4b4;
-    --danger1: #f08a8a;
-    --danger2: #c86d6d;
-
-    --info0: #88c3e0;
-    --info1: #4fa3d1;
-    --info2: #2c7ea9;
-  }
-}
-
-@theme {
-  --dark: var(--dark);
-  --light: var(--light);
-
-  --text: var(--text);
-  --text-grey: var(--text-grey);
-  --text-inverted: var(--text-inverted);
-  --on-primary: var(--on-primary);
-
-  --primary0: var(--primary0);
-  --primary1: var(--primary1);
-  --primary2: var(--primary2);
-  --primary3: var(--primary3);
-  --primary4: var(--primary4);
-  --primary5: var(--primary5);
-
-  --surface0: var(--surface0);
-  --surface1: var(--surface1);
-  --surface2: var(--surface2);
-  --surface3: var(--surface3);
-  --surface4: var(--surface4);
-  --surface5: var(--surface5);
-
-  --surface-tonal0: var(--surface-tonal0);
-  --surface-tonal1: var(--surface-tonal1);
-  --surface-tonal2: var(--surface-tonal2);
-  --surface-tonal3: var(--surface-tonal3);
-  --surface-tonal4: var(--surface-tonal4);
-  --surface-tonal5: var(--surface-tonal5);
-
-  --success0: var(--success0);
-  --success1: var(--success1);
-  --success2: var(--success2);
-
-  --warning0: var(--warning0);
-  --warning1: var(--warning1);
-  --warning2: var(--warning2);
-
-  --danger0: var(--danger0);
-  --danger1: var(--danger1);
-  --danger2: var(--danger2);
-
-  --info0: var(--info0);
-  --info1: var(--info1);
-  --info2: var(--info2);
 }
 
 :root {
