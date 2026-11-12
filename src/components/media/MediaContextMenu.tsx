@@ -1,5 +1,5 @@
 import React from "react";
-import { ArrowForwardIcon, PlayArrowIcon, QueueMusicRoundedIcon } from "../../constants/icons";
+import { PlayArrowIcon, PlaylistAddIcon, QueuePlayNextIcon } from "../../constants/icons";
 import { ContextMenu, ContextMenuContent, ContextMenuItem, ContextMenuTrigger } from "../ui/ContextMenu";
 import { hasMediaActions, type MediaActions } from "./types";
 
@@ -27,12 +27,12 @@ const MediaContextMenu = ({ actions, children }: MediaContextMenuProps) => {
           </ContextMenuItem>
         ) : null}
         {onPlayNext ? (
-          <ContextMenuItem icon={<ArrowForwardIcon />} onSelect={onPlayNext}>
+          <ContextMenuItem icon={<QueuePlayNextIcon />} onSelect={onPlayNext}>
             Play next
           </ContextMenuItem>
         ) : null}
         {onAddToQueue ? (
-          <ContextMenuItem icon={<QueueMusicRoundedIcon />} onSelect={onAddToQueue}>
+          <ContextMenuItem icon={<PlaylistAddIcon />} onSelect={onAddToQueue}>
             Add to queue
           </ContextMenuItem>
         ) : null}

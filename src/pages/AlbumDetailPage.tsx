@@ -154,11 +154,17 @@ const AlbumDetailPage = () => {
 
   const shuffle = usePlaybackStore((state) => state.shuffle);
   const toggleShuffle = usePlaybackStore((state) => state.toggleShuffle);
+  const isAlbumCurrent = usePlaybackStore((state) => Boolean(albumId) && state.currentSong?.albumId === albumId);
+  const isAlbumPlaying = usePlaybackStore((state) => isAlbumCurrent && state.isPlaying);
 
   const actions = useMemo(() => {
     if (!albumDetail) return undefined;
     return {
-      onPlay: withErrorToast(() => {
+      onPlay: withErrorToast(async () => {
+        if (isAlbumCurrent) {
+          await usePlaybackStore.getState().togglePlayPause();
+          return;
+        }
         const start = usePlaybackStore.getState().shuffle
           ? songs[Math.floor(Math.random() * songs.length)]
           : undefined;
@@ -167,7 +173,7 @@ const AlbumDetailPage = () => {
       onPlayNext: withErrorToast(() => queueAlbumNext(albumDetail), "Unable to queue album next"),
       onAddToQueue: withErrorToast(() => addAlbumToQueue(albumDetail), "Unable to add album to queue"),
     };
-  }, [albumDetail, songs]);
+  }, [albumDetail, isAlbumCurrent, songs]);
 
   if (!album || !albumDetail) {
     if (albumId && (status === "idle" || status === "indexing" || status === "checking")) {
@@ -223,6 +229,7 @@ const AlbumDetailPage = () => {
         <CollectionActionBar
           title={album.title}
           {...actions}
+          isPlaying={isAlbumPlaying}
           shuffleActive={shuffle}
           onShuffle={toggleShuffle}
           searchQuery={searchQuery}

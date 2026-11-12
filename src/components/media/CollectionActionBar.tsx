@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import {
+  PauseIcon,
   PlayArrowIcon,
   PlaylistAddIcon,
   QueuePlayNextIcon,
@@ -13,6 +14,7 @@ import SearchInput from "../ui/SearchInput";
 export interface CollectionActionBarProps {
   title: string;
   onPlay?: () => void;
+  isPlaying?: boolean;
   onShuffle?: () => void;
   shuffleActive?: boolean;
   onPlayNext?: () => void;
@@ -26,6 +28,7 @@ export interface CollectionActionBarProps {
 const CollectionActionBar = ({
   title,
   onPlay,
+  isPlaying = false,
   onShuffle,
   shuffleActive = false,
   onPlayNext,
@@ -51,8 +54,14 @@ const CollectionActionBar = ({
   return (
     <div className={cn("flex items-center gap-2", className)}>
       {onPlay ? (
-        <Button variant="primary" size="large" aria-label={`Play ${title}`} className="mr-2 h-12 w-12 shadow-lg" onClick={onPlay}>
-          <PlayArrowIcon />
+        <Button
+          variant="primary"
+          size="large"
+          aria-label={isPlaying ? `Pause ${title}` : `Play ${title}`}
+          className="mr-2 h-12 w-12 shadow-lg"
+          onClick={onPlay}
+        >
+          {isPlaying ? <PauseIcon /> : <PlayArrowIcon />}
         </Button>
       ) : null}
       {onShuffle ? (
