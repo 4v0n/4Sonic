@@ -34,3 +34,6 @@ export { default as ClockIcon } from "@mui/icons-material/AccessTime";
 export { default as BugReportIcon } from "@mui/icons-material/BugReportRounded";
 export { default as QueuePlayNextIcon } from "@mui/icons-material/PlaylistPlayRounded";
 export { default as PlaylistAddIcon } from "@mui/icons-material/PlaylistAddRounded";
+export { default as MinimizeIcon } from "@mui/icons-material/HorizontalRuleRounded";
+export { default as MaximizeIcon } from "@mui/icons-material/CropSquareRounded";
+export { default as RestoreIcon } from "@mui/icons-material/FilterNoneRounded";

@@ -3,6 +3,8 @@ import { ArrowBackIcon, ArrowForwardIcon, LogoutIcon, PersonIcon, SettingsIcon }
 import Dropdown, { MenuOption } from "../ui/Dropdown";
 import Button from "../ui/Button";
 import { useAuthStore } from "../../store/authStore";
+import cn from "../../utils/cn";
+import WindowControls, { IS_DESKTOP } from "./WindowControls";
 
 const TopBar = () => {
   const navigate = useNavigate();
@@ -22,8 +24,11 @@ const TopBar = () => {
   ];
 
   return (
-    <header className="h-16 flex items-center justify-between px-6 sticky top-0 z-30">
-      <div className="flex items-center space-x-3">
+    <header
+      data-tauri-drag-region
+      className={cn("sticky top-0 z-30 flex h-16 items-center justify-between pl-6", IS_DESKTOP ? "pr-0" : "pr-6")}
+    >
+      <div data-tauri-drag-region className="flex items-center space-x-3">
         <Button variant="ghost" onClick={() => navigate(-1)} aria-label="Go back" className="shadow-none">
           <ArrowBackIcon fontSize="small" />
         </Button>
@@ -31,7 +36,7 @@ const TopBar = () => {
           <ArrowForwardIcon fontSize="small" />
         </Button>
       </div>
-      <div className="flex items-center space-x-4">
+      <div data-tauri-drag-region className="flex items-center gap-4 self-stretch">
         <Dropdown
           buttonAriaLabel="Account and Settings"
           triggerContent={
@@ -44,6 +49,7 @@ const TopBar = () => {
           buttonClassName="shadow-none"
           buttonProps={{ variant: "ghost" }}
         />
+        <WindowControls />
       </div>
     </header>
   );

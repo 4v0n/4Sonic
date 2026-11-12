@@ -1,3 +1,4 @@
+import { WindowFrameBar } from "../components/layout/WindowControls";
 import { ChangeEvent, FormEvent, useState } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import Button from "../components/ui/Button";
@@ -51,6 +52,7 @@ const LoginPage = () => {
 
   return (
     <div className="flex min-h-screen items-center justify-center bg-surface0 px-4 py-8">
+      <WindowFrameBar />
       <div className="w-full max-w-md rounded-3xl border border-surface2 bg-surface0 p-8 shadow-lg">
         <h1 className="text-2xl font-semibold text-text">Welcome to 4Sonic</h1>
         <p className="mt-2 text-sm text-text-grey">Connect your Navidrome/Subsonic server to get started.</p>
