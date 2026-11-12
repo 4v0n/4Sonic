@@ -4,6 +4,7 @@ import App from "./App";
 import "./App.css";
 import { HashRouter } from "react-router-dom";
 import { ThemeProvider } from "./context/ThemeContext";
+import { TooltipProvider } from "./components/ui/Tooltip";
 
 
 if (import.meta.env.VITE_ENVIRONMENT !== "development") {
@@ -14,9 +15,11 @@ if (import.meta.env.VITE_ENVIRONMENT !== "development") {
 ReactDOM.createRoot(document.getElementById("root") as HTMLElement).render(
   <React.StrictMode>
     <ThemeProvider>
-      <HashRouter>
-        <App />
-      </HashRouter>
+      <TooltipProvider>
+        <HashRouter>
+          <App />
+        </HashRouter>
+      </TooltipProvider>
     </ThemeProvider>
   </React.StrictMode>,
 );

@@ -12,6 +12,7 @@ import useAudioVisualizerData from "../../hooks/useAudioVisualizerData";
 import { formatTime } from "../../utils/time";
 import CoverImage from "../ui/CoverImage";
 import Slider from "../ui/Slider";
+import Tooltip from "../ui/Tooltip";
 import SongLinks, { AlbumCoverLink } from "../media/SongLinks";
 import { formatSampleRate } from "../../utils/audioQuality";
 
@@ -342,18 +343,23 @@ const BottomBar = ({ isRightCompact = false }: BottomBarProps) => {
 
         <div className="flex flex-col items-center w-1/3">
           <div className="flex items-center space-x-3 mb-2">
-            <Button
-              variant="ghost"
-              className={shuffle ? "bg-primary0/15 text-primary0 hover:bg-primary0/25" : ""}
-              aria-label="Toggle shuffle"
-              onClick={() => toggleShuffle()}
-              disabled={!currentSong}
-            >
-              <ShuffleIcon fontSize="small" />
-            </Button>
-            <Button variant="ghost" aria-label="Previous" title="Previous" disabled={!playbackReady} onClick={handlePrevious}>
-              <SkipPreviousIcon fontSize="small" />
-            </Button>
+            <Tooltip content={shuffle ? "Shuffle on" : "Shuffle off"}>
+              <Button
+                variant="ghost"
+                className={shuffle ? "bg-primary0/15 text-primary0 hover:bg-primary0/25" : ""}
+                aria-label="Toggle shuffle"
+                aria-pressed={shuffle}
+                onClick={() => toggleShuffle()}
+                disabled={!currentSong}
+              >
+                <ShuffleIcon fontSize="small" />
+              </Button>
+            </Tooltip>
+            <Tooltip content="Previous">
+              <Button variant="ghost" aria-label="Previous" disabled={!playbackReady} onClick={handlePrevious}>
+                <SkipPreviousIcon fontSize="small" />
+              </Button>
+            </Tooltip>
             <Button
               size="large"
               className="bg-text hover:bg-primary2 shadow-none"
@@ -367,18 +373,22 @@ const BottomBar = ({ isRightCompact = false }: BottomBarProps) => {
                 <PlayArrowIcon fontSize="small" className="text-text-inverted" />
               )}
             </Button>
-            <Button variant="ghost" aria-label="Next" title="Next" disabled={!playbackReady} onClick={handleNext}>
-              <SkipNextIcon fontSize="small" />
-            </Button>
-            <Button
-              variant="ghost"
-              className={repeat !== "off" ? "bg-primary0/15 text-primary0 hover:bg-primary0/25" : ""}
-              aria-label="Toggle repeat"
-              onClick={() => cycleRepeat()}
-              disabled={!currentSong}
-            >
-              {repeat === "one" ? <RepeatOneIcon fontSize="small" /> : <RepeatIcon fontSize="small" />}
-            </Button>
+            <Tooltip content="Next">
+              <Button variant="ghost" aria-label="Next" disabled={!playbackReady} onClick={handleNext}>
+                <SkipNextIcon fontSize="small" />
+              </Button>
+            </Tooltip>
+            <Tooltip content={{ off: "Repeat off", all: "Repeat all", one: "Repeat one" }[repeat]}>
+              <Button
+                variant="ghost"
+                className={repeat !== "off" ? "bg-primary0/15 text-primary0 hover:bg-primary0/25" : ""}
+                aria-label="Toggle repeat"
+                onClick={() => cycleRepeat()}
+                disabled={!currentSong}
+              >
+                {repeat === "one" ? <RepeatOneIcon fontSize="small" /> : <RepeatIcon fontSize="small" />}
+              </Button>
+            </Tooltip>
           </div>
           <ProgressSlider
             position={position}
@@ -402,7 +412,9 @@ const BottomBar = ({ isRightCompact = false }: BottomBarProps) => {
                 }
               }}
             >
-              <PopoverTrigger asChild>{queueButton}</PopoverTrigger>
+              <Tooltip content="Queue">
+                <PopoverTrigger asChild>{queueButton}</PopoverTrigger>
+              </Tooltip>
               <PopoverContent
                 side="top"
                 align="end"
@@ -424,7 +436,7 @@ const BottomBar = ({ isRightCompact = false }: BottomBarProps) => {
               </PopoverContent>
             </Popover>
           ) : (
-            queueButton
+            <Tooltip content="Queue">{queueButton}</Tooltip>
           )}
           <VolumeControl
             volume={volume}

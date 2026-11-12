@@ -1,5 +1,6 @@
 import type { MouseEvent, ReactNode } from "react";
 import { NavLink } from "react-router-dom";
+import Tooltip from "../ui/Tooltip";
 import { AlbumIcon, BuildIcon, FavoriteFilledIcon, HomeIcon, PersonIcon } from "../../constants/icons";
 
 interface NavItemProps {
@@ -10,38 +11,24 @@ interface NavItemProps {
 }
 
 const NavItem = ({ to, icon, label, isIconOnly }: NavItemProps) => (
-  <NavLink
-    to={to}
-    className={({ isActive }) => (
-      `
-      group relative flex items-center w-full rounded-md transition-colors duration-200 ease-in-out
-      px-3 py-2
-      ${isIconOnly ? "justify-center gap-2" : "justify-start gap-3"}
-      ${isActive
-        ? "bg-surface2 text-text shadow-md"
-        : "text-text-grey hover:bg-surface1"}
-      `
-    )}
-    title={label}
-    aria-label={isIconOnly ? label : undefined}
-  >
-    {icon}
-    {!isIconOnly && (
-      <span className="truncate">{label}</span>
-    )}
-    {isIconOnly && (
-      <span
-        className="
-          pointer-events-none absolute left-full top-1/2 -translate-y-1/2 ml-2
-          whitespace-nowrap rounded-md bg-surface2 px-2 py-1 text-sm text-text
-          opacity-0 shadow-sm transition-opacity duration-150 group-hover:opacity-100 z-40 drop-shadow-lg
-        "
-        role="tooltip"
-      >
-        {label}
-      </span>
-    )}
-  </NavLink>
+  <Tooltip content={label} side="right" disabled={!isIconOnly}>
+    <NavLink
+      to={to}
+      className={`
+        group relative flex items-center w-full rounded-md transition-colors duration-200 ease-in-out
+        px-3 py-2
+        ${isIconOnly ? "justify-center gap-2" : "justify-start gap-3"}
+        text-text-grey hover:bg-surface1
+        [&.active]:bg-surface2 [&.active]:text-text [&.active]:shadow-md [&.active]:hover:bg-surface2
+      `}
+      aria-label={isIconOnly ? label : undefined}
+    >
+      {icon}
+      {!isIconOnly && (
+        <span className="truncate">{label}</span>
+      )}
+    </NavLink>
+  </Tooltip>
 );
 
 interface LeftSideBarProps {

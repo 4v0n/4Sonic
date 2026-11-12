@@ -3,6 +3,7 @@ import { getCurrentWindow } from "@tauri-apps/api/window";
 import { useEffect, useState } from "react";
 import { CloseIcon, MaximizeIcon, MinimizeIcon, RestoreIcon } from "../../constants/icons";
 import cn from "../../utils/cn";
+import Tooltip from "../ui/Tooltip";
 
 export const IS_DESKTOP = isTauri();
 
@@ -49,27 +50,31 @@ const WindowControls = ({ className }: { className?: string }) => {
 
   return (
     <div className={cn("flex h-full items-stretch", className)}>
-      <button type="button" aria-label="Minimise" title="Minimise" className={CONTROL_CLASS} onClick={() => void appWindow.minimize()}>
-        <MinimizeIcon fontSize="small" />
-      </button>
-      <button
-        type="button"
-        aria-label={maximized ? "Restore" : "Maximise"}
-        title={maximized ? "Restore" : "Maximise"}
-        className={CONTROL_CLASS}
-        onClick={() => void appWindow.toggleMaximize()}
-      >
-        {maximized ? <RestoreIcon sx={{ fontSize: 16 }} /> : <MaximizeIcon sx={{ fontSize: 18 }} />}
-      </button>
-      <button
-        type="button"
-        aria-label="Close"
-        title="Close"
-        className={cn(CONTROL_CLASS, "hover:bg-danger1 hover:text-light focus-visible:bg-danger1 focus-visible:text-light active:bg-danger2")}
-        onClick={() => void appWindow.close()}
-      >
-        <CloseIcon fontSize="small" />
-      </button>
+      <Tooltip content="Minimise" side="bottom">
+        <button type="button" aria-label="Minimise" className={CONTROL_CLASS} onClick={() => void appWindow.minimize()}>
+          <MinimizeIcon fontSize="small" />
+        </button>
+      </Tooltip>
+      <Tooltip content={maximized ? "Restore" : "Maximise"} side="bottom">
+        <button
+          type="button"
+          aria-label={maximized ? "Restore" : "Maximise"}
+          className={CONTROL_CLASS}
+          onClick={() => void appWindow.toggleMaximize()}
+        >
+          {maximized ? <RestoreIcon sx={{ fontSize: 16 }} /> : <MaximizeIcon sx={{ fontSize: 18 }} />}
+        </button>
+      </Tooltip>
+      <Tooltip content="Close" side="bottom" align="end">
+        <button
+          type="button"
+          aria-label="Close"
+          className={cn(CONTROL_CLASS, "hover:bg-danger1 hover:text-light focus-visible:bg-danger1 focus-visible:text-light active:bg-danger2")}
+          onClick={() => void appWindow.close()}
+        >
+          <CloseIcon fontSize="small" />
+        </button>
+      </Tooltip>
     </div>
   );
 };

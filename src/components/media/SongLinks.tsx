@@ -3,6 +3,7 @@ import { Link } from "react-router-dom";
 import { useLibraryStore } from "../../store/libraryStore";
 import type { SubsonicSong } from "../../types/subsonic";
 import cn from "../../utils/cn";
+import Tooltip from "../ui/Tooltip";
 
 const LINK_CLASS = "outline-none hover:underline focus-visible:underline";
 
@@ -27,7 +28,9 @@ const SongLinks = ({ song, fallbackTitle, fallbackArtist, titleClassName, artist
     <>
       <p className={cn("truncate", titleClassName)}>
         {song?.albumId ? (
-          <Link to={`/albums/${song.albumId}`} className={LINK_CLASS} title={song.album}>{song.title}</Link>
+          <Tooltip content={song.album} side="top" align="start">
+            <Link to={`/albums/${song.albumId}`} className={LINK_CLASS}>{song.title}</Link>
+          </Tooltip>
         ) : (song?.title ?? fallbackTitle)}
       </p>
       <p className={cn("truncate", artistClassName)}>

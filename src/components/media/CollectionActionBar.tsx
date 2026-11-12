@@ -10,6 +10,7 @@ import {
 import cn from "../../utils/cn";
 import Button from "../ui/Button";
 import SearchInput from "../ui/SearchInput";
+import Tooltip from "../ui/Tooltip";
 
 export interface CollectionActionBarProps {
   title: string;
@@ -54,40 +55,47 @@ const CollectionActionBar = ({
   return (
     <div className={cn("flex items-center gap-2", className)}>
       {onPlay ? (
-        <Button
-          variant="primary"
-          size="large"
-          aria-label={isPlaying ? `Pause ${title}` : `Play ${title}`}
-          className="mr-2 h-12 w-12 shadow-lg"
-          onClick={onPlay}
-        >
-          {isPlaying ? <PauseIcon /> : <PlayArrowIcon />}
-        </Button>
+        <Tooltip content={isPlaying ? "Pause" : "Play"}>
+          <Button
+            variant="primary"
+            size="large"
+            aria-label={isPlaying ? `Pause ${title}` : `Play ${title}`}
+            className="mr-2 h-12 w-12 shadow-lg"
+            onClick={onPlay}
+          >
+            {isPlaying ? <PauseIcon /> : <PlayArrowIcon />}
+          </Button>
+        </Tooltip>
       ) : null}
       {onShuffle ? (
-        <Button
-          variant="ghost"
-          size="large"
-          aria-label="Shuffle"
-          aria-pressed={shuffleActive}
-          title={shuffleActive ? "Shuffle on" : "Shuffle off"}
-          className={shuffleActive
-            ? "bg-surface-tonal2 text-primary0 hover:bg-surface-tonal3"
-            : "text-text-grey hover:text-text"}
-          onClick={onShuffle}
-        >
-          <ShuffleIcon />
-        </Button>
+        <Tooltip content={shuffleActive ? "Shuffle on" : "Shuffle off"}>
+          <Button
+            variant="ghost"
+            size="large"
+            aria-label="Shuffle"
+            aria-pressed={shuffleActive}
+            className={shuffleActive
+              ? "bg-surface-tonal2 text-primary0 hover:bg-surface-tonal3"
+              : "text-text-grey hover:text-text"}
+            onClick={onShuffle}
+          >
+            <ShuffleIcon />
+          </Button>
+        </Tooltip>
       ) : null}
       {onPlayNext ? (
-        <Button variant="ghost" size="large" aria-label={`Play ${title} next`} title="Play next" className="text-text-grey hover:text-text" onClick={onPlayNext}>
-          <QueuePlayNextIcon />
-        </Button>
+        <Tooltip content="Play next">
+          <Button variant="ghost" size="large" aria-label={`Play ${title} next`} className="text-text-grey hover:text-text" onClick={onPlayNext}>
+            <QueuePlayNextIcon />
+          </Button>
+        </Tooltip>
       ) : null}
       {onAddToQueue ? (
-        <Button variant="ghost" size="large" aria-label={`Add ${title} to queue`} title="Add to queue" className="text-text-grey hover:text-text" onClick={onAddToQueue}>
-          <PlaylistAddIcon />
-        </Button>
+        <Tooltip content="Add to queue">
+          <Button variant="ghost" size="large" aria-label={`Add ${title} to queue`} className="text-text-grey hover:text-text" onClick={onAddToQueue}>
+            <PlaylistAddIcon />
+          </Button>
+        </Tooltip>
       ) : null}
 
       {hasSearch ? (
@@ -109,16 +117,17 @@ const CollectionActionBar = ({
               }}
             />
           ) : (
-            <Button
-              variant="ghost"
-              size="large"
-              aria-label={searchPlaceholder}
-              title="Search"
-              className="text-text-grey hover:text-text"
-              onClick={() => setSearchOpen(true)}
-            >
-              <SearchIcon />
-            </Button>
+            <Tooltip content="Search">
+              <Button
+                variant="ghost"
+                size="large"
+                aria-label={searchPlaceholder}
+                className="text-text-grey hover:text-text"
+                onClick={() => setSearchOpen(true)}
+              >
+                <SearchIcon />
+              </Button>
+            </Tooltip>
           )}
         </div>
       ) : null}

@@ -1,3 +1,4 @@
+import Tooltip from "../ui/Tooltip";
 import React from "react";
 import { PlayArrowIcon } from "../../constants/icons";
 import cn from "../../utils/cn";
@@ -102,18 +103,19 @@ interface TileCountBadgeProps {
 const BADGE_MAX_LIGHTNESS = 40;
 
 export const TileCountBadge = ({ count, icon, label, color }: TileCountBadgeProps) => (
-  <span
-    title={label}
-    aria-label={label}
-    className={cn(
-      "flex shrink-0 items-center gap-1 rounded-full px-1.5 text-sm font-semibold leading-5 tabular-nums transition-colors duration-300",
-      color ? "text-light" : "bg-surface2 text-text-grey group-hover:bg-surface3",
-    )}
-    style={color ? { backgroundColor: hsla({ ...color, l: Math.min(color.l, BADGE_MAX_LIGHTNESS) }) } : undefined}
-  >
-    <span aria-hidden className="flex text-[1em]">{icon}</span>
-    {count}
-  </span>
+  <Tooltip content={label}>
+    <span
+      aria-label={label}
+      className={cn(
+        "flex shrink-0 items-center gap-1 rounded-full px-1.5 text-sm font-semibold leading-5 tabular-nums transition-colors duration-300",
+        color ? "text-light" : "bg-surface2 text-text-grey group-hover:bg-surface3",
+      )}
+      style={color ? { backgroundColor: hsla({ ...color, l: Math.min(color.l, BADGE_MAX_LIGHTNESS) }) } : undefined}
+    >
+      <span aria-hidden className="flex text-[1em]">{icon}</span>
+      {count}
+    </span>
+  </Tooltip>
 );
 
 export const TileSkeleton = ({ className }: { className?: string }) => (
