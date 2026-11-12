@@ -2,7 +2,6 @@ import { ReactNode, useMemo, useState } from "react";
 import EqModal from "../components/eq/EqModal";
 import Button from "../components/ui/Button";
 import Select from "../components/ui/Select";
-import TextInput from "../components/ui/TextInput";
 import Slider from "../components/ui/Slider";
 import Switch from "../components/ui/Switch";
 import { ThemeName } from "../constants/themes";
@@ -51,14 +50,12 @@ const SettingsPage = () => {
   const [isEqModalOpen, setIsEqModalOpen] = useState(false);
   const { theme, setTheme, themes } = useThemeContext();
   const toastPosition = useUiPreferencesStore((state) => state.toastPosition);
-  const visualizerColor = useUiPreferencesStore((state) => state.visualizerColor);
   const visualizerOpacity = useUiPreferencesStore((state) => state.visualizerOpacity);
   const visualizerBlur = useUiPreferencesStore((state) => state.visualizerBlur);
   const visualizerHeight = useUiPreferencesStore((state) => state.visualizerHeight);
   const visualizerResponse = useUiPreferencesStore((state) => state.visualizerResponse);
   const visualizerFps = useUiPreferencesStore((state) => state.visualizerFps);
   const setToastPosition = useUiPreferencesStore((state) => state.setToastPosition);
-  const setVisualizerColor = useUiPreferencesStore((state) => state.setVisualizerColor);
   const setVisualizerOpacity = useUiPreferencesStore((state) => state.setVisualizerOpacity);
   const setVisualizerBlur = useUiPreferencesStore((state) => state.setVisualizerBlur);
   const setVisualizerHeight = useUiPreferencesStore((state) => state.setVisualizerHeight);
@@ -83,13 +80,6 @@ const SettingsPage = () => {
     () => themes.map((option) => ({ label: option.label, value: option.id })),
     [themes],
   );
-
-  const handleColorInput = (value: string) => {
-    const prefixed = value.startsWith("#") ? value : `#${value}`;
-    if (/^#[0-9a-fA-F]{0,6}$/.test(prefixed)) {
-      setVisualizerColor(prefixed);
-    }
-  };
 
   return (
     <div className="mx-auto w-full max-w-5xl space-y-8 pb-8">
@@ -195,30 +185,6 @@ const SettingsPage = () => {
         title="Playback Visualizer"
         description="Tune the look and intensity of the bottom playback visual."
       >
-        <SettingRow
-          name="Visualizer colour"
-          description="Applies to both the line and the fill glow."
-          align="start"
-        >
-          <div className="flex w-full items-center gap-3 md:justify-end">
-            <input
-              type="color"
-              value={visualizerColor}
-              onChange={(event) => setVisualizerColor(event.target.value)}
-              className="h-10 w-14 cursor-pointer rounded-lg border border-surface2 bg-surface1 p-1"
-              aria-label="Visualizer colour"
-            />
-            <div className="w-36">
-              <TextInput
-                value={visualizerColor}
-                onChange={(event) => handleColorInput(event.target.value)}
-                aria-label="Visualizer colour hex value"
-                fullWidth
-              />
-            </div>
-          </div>
-        </SettingRow>
-
         <SettingRow
           name="Visualizer opacity"
           description="Lower is subtle, higher is more prominent."

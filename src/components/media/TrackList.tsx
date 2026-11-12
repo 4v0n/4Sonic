@@ -36,7 +36,7 @@ const runSafely = (action: () => Promise<void> | void, message: string) => {
 
 const ROW_CELLS = cn(
   "[&>td]:py-2 [&>td]:pr-4 [&>td:first-child]:pl-2 [&>td:last-child]:pr-2",
-  "[&>td]:transition-colors [&>td:first-child]:rounded-l-md [&>td:last-child]:rounded-r-md",
+  "[&>td]:transition-colors [&>td:first-child]:rounded-l-lg [&>td:last-child]:rounded-r-lg",
 );
 
 interface TrackRowProps {
@@ -71,7 +71,7 @@ const TrackRow = React.memo(({ song, number, isCurrent, showArtist, showAlbum, o
           "group cursor-pointer outline-none",
           ROW_CELLS,
           "hover:[&>td]:bg-surface2 focus-visible:[&>td]:bg-surface2",
-          isCurrent && "[&>td]:bg-surface-tonal0",
+          isCurrent && "[&>td]:bg-surface-tonal1 hover:[&>td]:bg-surface-tonal2 focus-visible:[&>td]:bg-surface-tonal2",
         )}
       >
         <td className={cn("text-center text-sm tabular-nums", isCurrent ? "text-primary0" : "text-text-grey")}>

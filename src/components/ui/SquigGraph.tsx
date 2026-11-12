@@ -1,3 +1,4 @@
+import useVisualizerColor from "../../hooks/useVisualizerColor";
 import * as d3Shape from "d3-shape";
 import * as d3Scale from "d3-scale";
 import { useEffect, useId, useMemo, useRef, useState } from "react";
@@ -74,7 +75,7 @@ const SquigGraph = ({
   const height = 400;
   const padding = { top: 20, right: 20, bottom: 40, left: 50 };
   const visualizerData = useAudioVisualizerData();
-  const visualizerColor = useUiPreferencesStore((state) => state.visualizerColor);
+  const visualizerColor = useVisualizerColor();
   const visualizerOpacity = useUiPreferencesStore((state) => state.visualizerOpacity);
   const visualizerBlur = useUiPreferencesStore((state) => state.visualizerBlur);
   const visualizerHeight = useUiPreferencesStore((state) => state.visualizerHeight);

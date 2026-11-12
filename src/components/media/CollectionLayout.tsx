@@ -1,6 +1,6 @@
 import React from "react";
 import cn from "../../utils/cn";
-import { hsla, type HslColor } from "../../utils/imageColor";
+import { accentThemeVars, hsla, type HslColor } from "../../utils/imageColor";
 import CoverImage from "../ui/CoverImage";
 
 export interface CollectionLayoutProps {
@@ -24,7 +24,10 @@ const CollectionLayout = ({
   children,
   className,
 }: CollectionLayoutProps) => (
-  <div className={cn("@container relative isolate", className)}>
+  <div
+    className={cn("@container relative isolate", className)}
+    style={accentColor ? (accentThemeVars(accentColor) as React.CSSProperties) : undefined}
+  >
     <div
       aria-hidden
       className="pointer-events-none absolute -inset-x-4 -top-4 -z-10 h-96 transition-[background] duration-500 sm:-inset-x-6 sm:-top-6"

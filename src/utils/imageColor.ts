@@ -102,7 +102,53 @@ export const getDominantColorFromPixels = (data: Uint8ClampedArray): HslColor | 
   }
   if (!best) return null;
 
-  return rgbToHsl(best.r / best.weight, best.g / best.weight, best.b / best.weight);
+  const dominant = rgbToHsl(best.r / best.weight, best.g / best.weight, best.b / best.weight);
+  if (dominant.s >= MUTED_SATURATION) return dominant;
+  return getVividColorFromPixels(data) ?? dominant;
+};
+
+// A dominant colour below this saturation reads as grey, so a smaller vivid area is preferred.
+const MUTED_SATURATION = 20;
+const VIVID_MIN_SATURATION = 30;
+const VIVID_MIN_LIGHTNESS = 15;
+const VIVID_MAX_LIGHTNESS = 85;
+const VIVID_HUE_BIN = 30;
+// The vivid hue must cover at least this share of the image to count as part of the cover.
+const VIVID_MIN_SHARE = 0.05;
+
+/** Averages the most common vivid hue range, e.g. neon lights on an otherwise dark cover. */
+const getVividColorFromPixels = (data: Uint8ClampedArray): HslColor | null => {
+  const bins = new Map<number, { count: number; r: number; g: number; b: number }>();
+  let total = 0;
+
+  for (let index = 0; index < data.length; index += 4) {
+    if (data[index + 3] < 128) continue;
+    total += 1;
+    const r = data[index];
+    const g = data[index + 1];
+    const b = data[index + 2];
+    const { h, s, l } = rgbToHsl(r, g, b);
+    if (s < VIVID_MIN_SATURATION || l < VIVID_MIN_LIGHTNESS || l > VIVID_MAX_LIGHTNESS) continue;
+
+    const key = Math.floor(h / VIVID_HUE_BIN);
+    const bin = bins.get(key);
+    if (bin) {
+      bin.count += 1;
+      bin.r += r;
+      bin.g += g;
+      bin.b += b;
+    } else {
+      bins.set(key, { count: 1, r, g, b });
+    }
+  }
+
+  let best: { count: number; r: number; g: number; b: number } | undefined;
+  for (const [, bin] of [...bins].sort(([a], [b]) => a - b)) {
+    if (!best || bin.count > best.count) best = bin;
+  }
+  if (!best || best.count < total * VIVID_MIN_SHARE) return null;
+
+  return rgbToHsl(best.r / best.count, best.g / best.count, best.b / best.count);
 };
 
 export const getDominantColorFromBlob = async (blob: Blob): Promise<HslColor | null> => {
@@ -183,4 +229,41 @@ export const getImageAccentColor = (url: string): Promise<HslColor | null> => {
     pending.set(key, promise);
   }
   return promise;
+};
+
+export const MIN_THEME_SATURATION = 12;
+
+export const accentThemeVars = ({ h, s }: HslColor): Record<string, string> | undefined => {
+  if (s < MIN_THEME_SATURATION) return undefined;
+  const hue = (l: number) => `hsl(${Math.round(h)} ${Math.round(s)}% ${l}%)`;
+  const step = (light: number, dark: number) => `light-dark(${hue(light)}, ${hue(dark)})`;
+  const tonal = (amount: number, surface: string) =>
+    `color-mix(in oklab, var(--color-primary0) ${amount}%, var(${surface}))`;
+
+  return {
+    "--color-primary0": step(40, 55),
+    "--color-primary1": step(34, 62),
+    "--color-primary2": step(28, 68),
+    "--color-primary3": step(24, 74),
+    "--color-primary4": step(20, 80),
+    "--color-primary5": step(16, 86),
+    "--color-surface-tonal0": tonal(10, "--color-surface0"),
+    "--color-surface-tonal1": tonal(14, "--color-surface0"),
+    "--color-surface-tonal2": tonal(20, "--color-surface1"),
+    "--color-surface-tonal3": tonal(28, "--color-surface1"),
+    "--color-surface-tonal4": tonal(38, "--color-surface2"),
+    "--color-surface-tonal5": tonal(48, "--color-surface2"),
+  };
+};
+
+export const hslToHex = ({ h, s, l }: HslColor): string => {
+  const sn = s / 100;
+  const ln = l / 100;
+  const a = sn * Math.min(ln, 1 - ln);
+  const channel = (n: number) => {
+    const k = (n + h / 30) % 12;
+    const value = ln - a * Math.max(-1, Math.min(k - 3, 9 - k, 1));
+    return Math.round(value * 255).toString(16).padStart(2, "0");
+  };
+  return `#${channel(0)}${channel(8)}${channel(4)}`;
 };

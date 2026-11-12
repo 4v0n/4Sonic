@@ -1,3 +1,4 @@
+import useVisualizerColor from "../../hooks/useVisualizerColor";
 import { useEffect, useRef, useState } from "react";
 import { CloseIcon, PauseIcon, PlayArrowIcon, QueueMusicRoundedIcon, RepeatIcon, RepeatOneIcon, ShuffleIcon, SkipNextIcon, SkipPreviousIcon, VolumeDownIcon, VolumeMuteIcon, VolumeOffIcon, VolumeUpIcon } from "../../constants/icons";
 import Button from "../ui/Button";
@@ -228,7 +229,7 @@ const BottomBar = ({ isRightCompact = false }: BottomBarProps) => {
   const isScrubbing = usePlaybackStore((state) => state.isScrubbing);
   const volume = usePlaybackStore((state) => state.volume);
   const isMuted = usePlaybackStore((state) => state.isMuted);
-  const visualizerColor = useUiPreferencesStore((state) => state.visualizerColor);
+  const visualizerColor = useVisualizerColor();
   const visualizerOpacity = useUiPreferencesStore((state) => state.visualizerOpacity);
   const visualizerBlur = useUiPreferencesStore((state) => state.visualizerBlur);
   const visualizerHeight = useUiPreferencesStore((state) => state.visualizerHeight);

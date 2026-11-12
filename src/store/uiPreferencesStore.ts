@@ -5,29 +5,20 @@ import type { ToasterProps } from "sonner";
 export type ToastPosition = NonNullable<ToasterProps["position"]>;
 
 const DEFAULT_TOAST_POSITION: ToastPosition = "top-right";
-const DEFAULT_VISUALIZER_COLOR = "#12e09f";
 const DEFAULT_VISUALIZER_OPACITY = 0.1;
 const DEFAULT_VISUALIZER_BLUR = 2;
 const DEFAULT_VISUALIZER_HEIGHT = 1;
 const DEFAULT_VISUALIZER_RESPONSE = 0.38;
 const DEFAULT_VISUALIZER_FPS = 60;
 
-const getThemePrimaryColor = (): string => {
-  if (typeof window === "undefined") return DEFAULT_VISUALIZER_COLOR;
-  const primary = getComputedStyle(document.documentElement).getPropertyValue("--primary0").trim();
-  return primary || DEFAULT_VISUALIZER_COLOR;
-};
-
 type UiPreferencesState = {
   toastPosition: ToastPosition;
   setToastPosition: (position: ToastPosition) => void;
-  visualizerColor: string;
   visualizerOpacity: number;
   visualizerBlur: number;
   visualizerHeight: number;
   visualizerResponse: number;
   visualizerFps: number;
-  setVisualizerColor: (color: string) => void;
   setVisualizerOpacity: (opacity: number) => void;
   setVisualizerBlur: (blur: number) => void;
   setVisualizerHeight: (height: number) => void;
@@ -40,13 +31,11 @@ export const useUiPreferencesStore = create<UiPreferencesState>()(
     (set) => ({
       toastPosition: DEFAULT_TOAST_POSITION,
       setToastPosition: (position) => set({ toastPosition: position }),
-      visualizerColor: getThemePrimaryColor(),
       visualizerOpacity: DEFAULT_VISUALIZER_OPACITY,
       visualizerBlur: DEFAULT_VISUALIZER_BLUR,
       visualizerHeight: DEFAULT_VISUALIZER_HEIGHT,
       visualizerResponse: DEFAULT_VISUALIZER_RESPONSE,
       visualizerFps: DEFAULT_VISUALIZER_FPS,
-      setVisualizerColor: (color) => set({ visualizerColor: color }),
       setVisualizerOpacity: (opacity) => {
         const clamped = Math.max(0, Math.min(1, opacity));
         set({ visualizerOpacity: clamped });
