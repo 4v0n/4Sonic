@@ -73,6 +73,22 @@ export interface SubsonicAlbumSummary {
   year?: number;
   genre?: string;
   coverArt?: string;
+  genres?: SubsonicItemGenre[];
+  releaseTypes?: string[];
+  recordLabels?: { name: string }[];
+  originalReleaseDate?: SubsonicItemDate;
+  releaseDate?: SubsonicItemDate;
+  isCompilation?: boolean;
+}
+
+export interface SubsonicItemGenre {
+  name: string;
+}
+
+export interface SubsonicItemDate {
+  year?: number;
+  month?: number;
+  day?: number;
 }
 
 export interface SubsonicAlbumDetail extends SubsonicAlbumSummary {
@@ -100,6 +116,7 @@ export interface SubsonicSong {
   bitRate?: number;
   bitDepth?: number;
   samplingRate?: number;
+  channelCount?: number;
   year?: number;
   genre?: string;
   size?: number;

@@ -18,6 +18,17 @@ export interface AlbumEntity {
   year?: number;
   genre?: string;
   coverArt?: string;
+  genres?: string[];
+  releaseTypes?: string[];
+  recordLabels?: string[];
+  releaseDate?: LibraryDate;
+  isCompilation?: boolean;
+}
+
+export interface LibraryDate {
+  year?: number;
+  month?: number;
+  day?: number;
 }
 
 export interface TrackEntity {
@@ -33,6 +44,8 @@ export interface TrackEntity {
   bitRate?: number;
   bitDepth?: number;
   samplingRate?: number;
+  channelCount?: number;
+  size?: number;
   year?: number;
   genre?: string;
   coverArt?: string;

@@ -1,10 +1,11 @@
 import React from "react";
 import { SearchIcon } from "../../constants/icons";
-import TextInput from "./TextInput";
+import TextInput, { type TextInputProps } from "./TextInput";
 
-const SearchInput = ({ ...props }: React.InputHTMLAttributes<HTMLInputElement>) => {
+const SearchInput = React.forwardRef<HTMLInputElement, TextInputProps>((props, ref) => {
   return (
     <TextInput
+      ref={ref}
       type="search"
       startIcon={<SearchIcon />}
       placeholder="Search"
@@ -12,6 +13,8 @@ const SearchInput = ({ ...props }: React.InputHTMLAttributes<HTMLInputElement>) 
       {...props}
     />
   );
-};
+});
+
+SearchInput.displayName = "SearchInput";
 
 export default SearchInput;

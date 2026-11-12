@@ -9,7 +9,7 @@ export interface LibraryMetaRow {
   schemaVersion?: number;
 }
 
-export const LIBRARY_SCHEMA_VERSION = 2;
+export const LIBRARY_SCHEMA_VERSION = 3;
 
 class LibraryDatabase extends Dexie {
   public artists!: Table<ArtistEntity, string>;

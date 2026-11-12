@@ -15,6 +15,8 @@ export const trackToSong = (track: TrackEntity): SubsonicSong => ({
   bitRate: track.bitRate,
   bitDepth: track.bitDepth,
   samplingRate: track.samplingRate,
+  channelCount: track.channelCount,
+  size: track.size,
   year: track.year,
   genre: track.genre,
   coverArt: track.coverArt,

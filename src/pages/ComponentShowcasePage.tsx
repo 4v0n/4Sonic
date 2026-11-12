@@ -16,7 +16,7 @@ import TextInput from "../components/ui/TextInput";
 import { Popover, PopoverClose, PopoverContent, PopoverTrigger } from "../components/ui/Popover";
 import Select from "../components/ui/Select";
 import Switch from "../components/ui/Switch";
-import AlbumSongsTable from "../components/library/AlbumSongsTable";
+import TrackList from "../components/media/TrackList";
 import { useThemeContext } from "../context/ThemeContext";
 import { ToastPosition, useUiPreferencesStore } from "../store/uiPreferencesStore";
 import AlbumRow from "../components/media/AlbumRow";
@@ -651,7 +651,10 @@ const ComponentShowcasePage = () => {
           </Section>
 
           <Section title="Song Table" description="Songs table for Albums and Playlist">
-            <AlbumSongsTable album={mediaSamples.album} />
+            <TrackList
+              songs={albumSongs}
+              onPlay={(song) => (mediaSamples.album ? playAlbum(mediaSamples.album, { startSongId: song.id }) : playSongById(song.id))}
+            />
           </Section>
 
           <Section title="Squig Graph" description="IEM/Headphone FR squig">

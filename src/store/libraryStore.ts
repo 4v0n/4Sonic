@@ -1,7 +1,7 @@
 import { create } from "zustand";
 import { loadLibrarySnapshot, saveLibrarySnapshot } from "../db/libraryDb";
-import { AlbumEntity, ArtistEntity, TrackEntity } from "../types/library";
-import { SubsonicAlbumDetail, SubsonicAlbumSummary, SubsonicArtist, SubsonicArtistDetail, SubsonicArtistIndex, SubsonicSong } from "../types/subsonic";
+import { AlbumEntity, ArtistEntity, LibraryDate, TrackEntity } from "../types/library";
+import { SubsonicAlbumDetail, SubsonicAlbumSummary, SubsonicArtist, SubsonicArtistDetail, SubsonicArtistIndex, SubsonicItemDate, SubsonicSong } from "../types/subsonic";
 import { hashString } from "../utils/hash";
 import { SubsonicClient } from "../services/subsonic/client";
 
@@ -47,6 +47,10 @@ const mapArtist = (artist: SubsonicArtistDetail): ArtistEntity => ({
   starred: artist.starred,
 });
 
+const nonEmpty = <T>(values?: T[]): T[] | undefined => (values && values.length > 0 ? values : undefined);
+
+const pickDate = (date?: SubsonicItemDate): LibraryDate | undefined => (date?.year ? date : undefined);
+
 const mapAlbum = (album: SubsonicAlbumDetail): AlbumEntity => ({
   id: album.id,
   title: album.name,
@@ -58,6 +62,11 @@ const mapAlbum = (album: SubsonicAlbumDetail): AlbumEntity => ({
   year: album.year,
   genre: album.genre,
   coverArt: album.coverArt,
+  genres: nonEmpty(album.genres?.map((genre) => genre.name)),
+  releaseTypes: nonEmpty(album.releaseTypes),
+  recordLabels: nonEmpty(album.recordLabels?.map((label) => label.name)),
+  releaseDate: pickDate(album.originalReleaseDate) ?? pickDate(album.releaseDate),
+  isCompilation: album.isCompilation || undefined,
 });
 
 const mapTrack = (song: SubsonicSong): TrackEntity => ({
@@ -73,6 +82,8 @@ const mapTrack = (song: SubsonicSong): TrackEntity => ({
   bitRate: song.bitRate,
   bitDepth: song.bitDepth,
   samplingRate: song.samplingRate,
+  channelCount: song.channelCount,
+  size: song.size,
   year: song.year,
   genre: song.genre,
   coverArt: song.coverArt,

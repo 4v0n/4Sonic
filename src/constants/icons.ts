@@ -32,3 +32,5 @@ export { default as ListViewIcon } from "@mui/icons-material/ViewListRounded";
 export { default as ArrowUpIcon } from "@mui/icons-material/KeyboardArrowUpRounded";
 export { default as ClockIcon } from "@mui/icons-material/AccessTime";
 export { default as BugReportIcon } from "@mui/icons-material/BugReportRounded";
+export { default as QueuePlayNextIcon } from "@mui/icons-material/QueuePlayNextRounded";
+export { default as PlaylistAddIcon } from "@mui/icons-material/PlaylistAddRounded";
