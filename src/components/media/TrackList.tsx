@@ -142,7 +142,7 @@ const TrackList = ({
   );
 
   return (
-    <table className={cn("w-full table-fixed border-separate border-spacing-0", className)}>
+    <table className={cn("w-full table-fixed border-separate border-spacing-x-0 border-spacing-y-0.5", className)}>
       <thead>
         <tr className="text-left text-xs font-medium text-text-grey [&>th]:border-b [&>th]:border-surface3 [&>th]:pb-2 [&>th]:pr-4 [&>th]:font-medium [&>th:first-child]:pl-2 [&>th:last-child]:pr-2">
           <th scope="col" className="w-16 text-center">
@@ -158,7 +158,7 @@ const TrackList = ({
             <span className="sr-only">Duration</span>
           </th>
         </tr>
-        <tr aria-hidden className="h-2" />
+        <tr aria-hidden className="h-1" />
       </thead>
 
       <tbody>
