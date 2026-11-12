@@ -36,7 +36,7 @@ interface PlaybackState {
   regularQueuePosition: number;
   currentSource: QueueSource | null;
   getFrequencyData: () => Uint8Array | null;
-  getTimeDomainData: () => Float32Array | null;
+  getTimeDomainData: (preVolume?: boolean) => Float32Array | null;
   getSampleRate: () => number | null;
   playSong: (songId: string, options?: { queueItem?: QueueItem; source?: QueueSource }) => Promise<boolean>;
   togglePlayPause: () => Promise<void>;
@@ -407,7 +407,7 @@ export const usePlaybackStore = create<PlaybackState>()(
         regularQueuePosition: -1,
         currentSource: null,
         getFrequencyData: () => player.getFrequencyData(),
-        getTimeDomainData: () => player.getTimeDomainData(),
+        getTimeDomainData: (preVolume?: boolean) => player.getTimeDomainData(preVolume),
         getSampleRate: () => player.getSampleRate(),
 
         playSong: async (songId: string, options) => {

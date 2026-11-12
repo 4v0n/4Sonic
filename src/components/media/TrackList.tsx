@@ -1,11 +1,14 @@
 import React, { Fragment, useMemo } from "react";
 import { toast } from "sonner";
 import { AlbumIcon, ClockIcon, PauseIcon, PlayArrowIcon } from "../../constants/icons";
+import useAudioVisualizerData from "../../hooks/useAudioVisualizerData";
+import useVisualizerColor from "../../hooks/useVisualizerColor";
 import { usePlaybackStore } from "../../store/playbackStore";
 import type { SubsonicSong } from "../../types/subsonic";
 import cn from "../../utils/cn";
 import { addSongToQueue, queueSongNext } from "../../utils/playbackActions";
 import { formatTime } from "../../utils/time";
+import BackgroundAreaVisualizer from "../visualizer/BackgroundAreaVisualizer";
 import MediaContextMenu from "./MediaContextMenu";
 import type { MediaActions } from "./types";
 
@@ -39,6 +42,16 @@ const ROW_CELLS = cn(
   "[&>td]:transition-colors [&>td:first-child]:rounded-l-lg [&>td:last-child]:rounded-r-lg",
 );
 
+const RowVisualizer = () => {
+  const data = useAudioVisualizerData({ ignoreVolume: true });
+  const color = useVisualizerColor();
+  return (
+    <div aria-hidden className="pointer-events-none absolute inset-0 overflow-hidden rounded-md">
+      <BackgroundAreaVisualizer frequencyData={data} color={color} opacity={0.35} blur={1} />
+    </div>
+  );
+};
+
 interface TrackRowProps {
   song: SubsonicSong;
   number: number;
@@ -68,35 +81,36 @@ const TrackRow = React.memo(({ song, number, isCurrent, showArtist, showAlbum, o
         }}
         aria-current={isCurrent || undefined}
         className={cn(
-          "group cursor-pointer outline-none",
+          "group relative cursor-pointer outline-none",
           ROW_CELLS,
           "hover:[&>td]:bg-surface2 focus-visible:[&>td]:bg-surface2",
           isCurrent && "[&>td]:bg-surface-tonal1 hover:[&>td]:bg-surface-tonal2 focus-visible:[&>td]:bg-surface-tonal2",
         )}
       >
         <td className={cn("text-center text-sm tabular-nums", isCurrent ? "text-primary0" : "text-text-grey")}>
-          <span className="group-hover:hidden">{number}</span>
+          {isCurrent ? <RowVisualizer /> : null}
+          <span className="relative group-hover:hidden">{number}</span>
           {isCurrent ?
-            (<PauseIcon fontSize="small" className="hidden! align-middle text-text group-hover:inline-block!" />)
+            (<PauseIcon fontSize="small" className="relative hidden! align-middle text-text group-hover:inline-block!" />)
             : (<PlayArrowIcon fontSize="small" className="hidden! align-middle text-text group-hover:inline-block!" />)
           }
         </td>
 
         <td>
-          <span className={cn("block truncate text-sm", isCurrent ? "text-primary0" : "text-text")}>
+          <span className={cn("relative block truncate text-sm", isCurrent ? "text-primary0" : "text-text")}>
             {song.title}
           </span>
           {showArtist && song.artist ? (
-            <span className="block truncate text-xs text-text-grey">{song.artist}</span>
+            <span className="relative block truncate text-xs text-text-grey">{song.artist}</span>
           ) : null}
         </td>
 
         {showAlbum ? (
-          <td className="truncate text-sm text-text-grey">{song.album}</td>
+          <td className="text-sm text-text-grey"><span className="relative block truncate">{song.album}</span></td>
         ) : null}
 
         <td className="text-right text-sm tabular-nums text-text-grey">
-          {song.duration ? formatTime(song.duration) : "–"}
+          <span className="relative">{song.duration ? formatTime(song.duration) : "–"}</span>
         </td>
       </tr>
     </MediaContextMenu>

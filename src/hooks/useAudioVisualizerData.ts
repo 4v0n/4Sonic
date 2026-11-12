@@ -74,7 +74,11 @@ const mapBandsToBins = (bands: VisualizerBand[], sampleRate: number, fftSize: nu
   });
 };
 
-export const useAudioVisualizerData = (): VisualizerPoint[] => {
+interface AudioVisualizerOptions {
+  ignoreVolume?: boolean;
+}
+
+export const useAudioVisualizerData = ({ ignoreVolume = false }: AudioVisualizerOptions = {}): VisualizerPoint[] => {
   const isPlaying = usePlaybackStore((state) => state.isPlaying);
   const getTimeDomainData = usePlaybackStore((state) => state.getTimeDomainData);
   const getSampleRate = usePlaybackStore((state) => state.getSampleRate);
@@ -193,7 +197,7 @@ export const useAudioVisualizerData = (): VisualizerPoint[] => {
       }
       lastFrameTs = ts;
 
-      const timeDomainData = getTimeDomainData ? getTimeDomainData() : null;
+      const timeDomainData = getTimeDomainData ? getTimeDomainData(ignoreVolume) : null;
       const sampleRate = getSampleRate ? getSampleRate() : null;
 
       if (timeDomainData && timeDomainData.length > 0) {
@@ -228,7 +232,7 @@ export const useAudioVisualizerData = (): VisualizerPoint[] => {
         cancelAnimationFrame(raf);
       }
     };
-  }, [bands, getSampleRate, getTimeDomainData, isPlaying, visualizerFps, visualizerResponse]);
+  }, [bands, getSampleRate, getTimeDomainData, ignoreVolume, isPlaying, visualizerFps, visualizerResponse]);
 
   return data;
 };

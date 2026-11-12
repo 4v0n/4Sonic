@@ -32,6 +32,11 @@ interface AudioSlot {
   preloadFailed: boolean;
 }
 
+const createFloatBuffer = (length: number) => new Float32Array(length);
+const createByteBuffer = (length: number) => new Uint8Array(length);
+type FloatBuffer = ReturnType<typeof createFloatBuffer>;
+type ByteBuffer = ReturnType<typeof createByteBuffer>;
+
 export class HiResAudioPlayer {
   // ensures catch-up fades near track end blend smoothly rather than cut
   private static readonly MIN_FADE_SECONDS = 0.12;
@@ -42,12 +47,15 @@ export class HiResAudioPlayer {
   private preampNode: GainNode | null = null;
   private gainNode: GainNode | null = null;
   private analyserNode: AnalyserNode | null = null;
+  private preVolumeAnalyserNode: AnalyserNode | null = null;
+  private preVolumeSink: GainNode | null = null;
+  private preVolumeTimeDomainData: FloatBuffer | null = null;
   private filterNodes: BiquadFilterNode[] = [];
   private preampDb = 0;
   private callbacks: PlayerCallbacks;
   private progressRaf: number | null = null;
-  private frequencyData: Uint8Array | null = null;
-  private timeDomainData: Float32Array | null = null;
+  private frequencyData: ByteBuffer | null = null;
+  private timeDomainData: FloatBuffer | null = null;
   private needsGraphRebuild = false;
   private lastProgressEmit = 0;
   private readonly progressIntervalMs = 80;
@@ -311,8 +319,15 @@ export class HiResAudioPlayer {
       this.analyserNode.minDecibels = -90;
       this.analyserNode.maxDecibels = -10;
       this.analyserNode.smoothingTimeConstant = 0.85;
-      this.frequencyData = new Uint8Array(this.analyserNode.frequencyBinCount);
-      this.timeDomainData = new Float32Array(this.analyserNode.fftSize);
+      this.frequencyData = createByteBuffer(this.analyserNode.frequencyBinCount);
+      this.timeDomainData = createFloatBuffer(this.analyserNode.fftSize);
+      graphChanged = true;
+    }
+    if (!this.preVolumeAnalyserNode && this.audioContext) {
+      this.preVolumeAnalyserNode = this.audioContext.createAnalyser();
+      this.preVolumeAnalyserNode.fftSize = 2048;
+      this.preVolumeSink = this.audioContext.createGain();
+      this.preVolumeSink.gain.value = 0;
       graphChanged = true;
     }
     if (this.audioContext) {
@@ -351,6 +366,8 @@ export class HiResAudioPlayer {
     if (this.analyserNode) {
       this.analyserNode.disconnect();
     }
+    this.preVolumeAnalyserNode?.disconnect();
+    this.preVolumeSink?.disconnect();
 
     const chain: AudioNode[] = [...this.filterNodes, this.preampNode, this.gainNode];
     if (this.analyserNode) {
@@ -368,6 +385,12 @@ export class HiResAudioPlayer {
     });
     for (let i = 0; i < chain.length - 1; i += 1) {
       chain[i].connect(chain[i + 1]);
+    }
+
+    if (this.preVolumeAnalyserNode && this.preVolumeSink) {
+      this.preampNode.connect(this.preVolumeAnalyserNode);
+      this.preVolumeAnalyserNode.connect(this.preVolumeSink);
+      this.preVolumeSink.connect(this.audioContext.destination);
     }
   }
 
@@ -692,19 +715,28 @@ export class HiResAudioPlayer {
       return null;
     }
     if (!this.frequencyData || this.frequencyData.length !== this.analyserNode.frequencyBinCount) {
-      this.frequencyData = new Uint8Array(this.analyserNode.frequencyBinCount);
+      this.frequencyData = createByteBuffer(this.analyserNode.frequencyBinCount);
     }
     this.analyserNode.getByteFrequencyData(this.frequencyData);
     return this.frequencyData;
   }
 
-  public getTimeDomainData(): Float32Array | null {
+  public getTimeDomainData(preVolume = false): Float32Array | null {
     this.ensureContext();
+    if (preVolume) {
+      const analyser = this.preVolumeAnalyserNode;
+      if (!analyser) return null;
+      if (!this.preVolumeTimeDomainData || this.preVolumeTimeDomainData.length !== analyser.fftSize) {
+        this.preVolumeTimeDomainData = createFloatBuffer(analyser.fftSize);
+      }
+      analyser.getFloatTimeDomainData(this.preVolumeTimeDomainData);
+      return this.preVolumeTimeDomainData;
+    }
     if (!this.analyserNode) {
       return null;
     }
     if (!this.timeDomainData || this.timeDomainData.length !== this.analyserNode.fftSize) {
-      this.timeDomainData = new Float32Array(this.analyserNode.fftSize);
+      this.timeDomainData = createFloatBuffer(this.analyserNode.fftSize);
     }
     this.analyserNode.getFloatTimeDomainData(this.timeDomainData);
     return this.timeDomainData;
@@ -717,7 +749,7 @@ export class HiResAudioPlayer {
   /** RMS of the current mixed output — 0 means silence, ~0.3 is a typical music level. */
   public getOutputRms(): number {
     if (!this.analyserNode) return 0;
-    const data = new Float32Array(this.analyserNode.fftSize);
+    const data = createFloatBuffer(this.analyserNode.fftSize);
     this.analyserNode.getFloatTimeDomainData(data);
     let sum = 0;
     for (let i = 0; i < data.length; i++) {
