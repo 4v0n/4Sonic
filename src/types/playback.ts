@@ -4,6 +4,7 @@ export interface QueueItem {
   artist?: string;
   album?: string;
   albumId?: string;
+  artistId?: string;
   coverArt?: string;
   coverArtUrl?: string;
   duration?: number;

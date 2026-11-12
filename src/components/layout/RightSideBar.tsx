@@ -5,6 +5,7 @@ import type { RightSidebarView } from "../../store/rightSidebarStore";
 import { usePlaybackStore } from "../../store/playbackStore";
 import { formatTime } from "../../utils/time";
 import CoverImage from "../ui/CoverImage";
+import SongLinks, { AlbumCoverLink } from "../media/SongLinks";
 
 interface RightSideBarProps {
   width: number;
@@ -33,7 +34,7 @@ export const RightSidebarContent = ({ view }: { view: RightSidebarView }) => {
     <div className="space-y-2">
       <div className="text-xs font-extrabold tracking-wide text-text-grey">Now Playing</div>
       <div className="flex gap-3 rounded-xl bg-surface-tonal1 p-3">
-        <div className="h-14 w-14 flex-shrink-0 overflow-hidden rounded-lg   bg-surface2">
+        <AlbumCoverLink song={currentSong} className="block h-14 w-14 flex-shrink-0 overflow-hidden rounded-lg bg-surface2">
           <CoverImage
             src={coverArtUrl}
             alt={currentSong?.title ?? "Cover"}
@@ -41,10 +42,15 @@ export const RightSidebarContent = ({ view }: { view: RightSidebarView }) => {
             placeholder={<div className="h-full w-full bg-surface2" />}
             fallback={<div className="h-full w-full bg-surface2" />}
           />
-        </div>
+        </AlbumCoverLink>
         <div className="min-w-0 flex-1">
-          <p className="text-sm font-semibold truncate">{currentSong?.title ?? "Nothing playing"}</p>
-          <p className="text-xs text-text-grey truncate">{currentSong?.artist ?? "Start a song to see details"}</p>
+          <SongLinks
+            song={currentSong}
+            fallbackTitle="Nothing playing"
+            fallbackArtist="Start a song to see details"
+            titleClassName="text-sm font-semibold"
+            artistClassName="text-xs text-text-grey"
+          />
           <p className="text-[11px] text-text-grey">
             {formatTime(position)} / {formatTime(duration)}
           </p>
@@ -76,7 +82,7 @@ export const RightSidebarContent = ({ view }: { view: RightSidebarView }) => {
       <div className="space-y-3">
         {nowPlaying}
         {!hasUpcoming ? (
-          <div className="rounded-lg   p-4 text-text-grey">
+          <div className="rounded-lg p-4 text-text-grey">
             No more tracks in the queue.
           </div>
         ) : (
@@ -86,12 +92,13 @@ export const RightSidebarContent = ({ view }: { view: RightSidebarView }) => {
                 <p className="text-xs font-extrabold tracking-wide text-text-grey">Queue</p>
                 {priorityUpcoming.map(({ item, orderIndex }) => (
                   <button
+                    type="button"
                     key={`priority-${item.id}-${orderIndex}`}
-                    className="w-full rounded-lg   bg-surface0 px-3 py-2 text-left transition hover: hover:bg-surface1"
+                    className="w-full rounded-lg bg-surface0 px-3 py-2 text-left transition hover:bg-surface1"
                     onClick={() => playFromQueue(orderIndex)}
                   >
                     <div className="flex items-center gap-3">
-                      <div className="h-12 w-12 overflow-hidden rounded-md   bg-surface1">
+                      <div className="h-12 w-12 overflow-hidden rounded-md bg-surface1">
                         <CoverImage
                           src={item.coverArtUrl}
                           alt={item.title}
@@ -116,12 +123,13 @@ export const RightSidebarContent = ({ view }: { view: RightSidebarView }) => {
                 {playTarget && (<p className="text-xs font-extrabold tracking-wide text-text-grey">Next From: {playTarget}</p>)}
                 {regularUpcoming.map(({ item, orderIndex }) => (
                   <button
+                    type="button"
                     key={`regular-${item.id}-${orderIndex}`}
-                    className="w-full rounded-lg   bg-surface0 px-3 py-2 text-left transition hover: hover:bg-surface1"
+                    className="w-full rounded-lg bg-surface0 px-3 py-2 text-left transition hover:bg-surface1"
                     onClick={() => playFromRegularQueue(orderIndex)}
                   >
                     <div className="flex items-center gap-3">
-                      <div className="h-12 w-12 overflow-hidden rounded-md   bg-surface1">
+                      <div className="h-12 w-12 overflow-hidden rounded-md bg-surface1">
                         <CoverImage
                           src={item.coverArtUrl}
                           alt={item.title}

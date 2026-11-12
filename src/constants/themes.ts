@@ -1,4 +1,4 @@
-export type ThemeName = "dark" | "light" | "nord" | "sakura" | "sakura-dark" | "ocean";
+export type ThemeName = "dark" | "light" | "nord" | "sakura" | "sakura-dark";
 
 export type ThemeOption = {
   id: ThemeName;
@@ -13,5 +13,4 @@ export const THEME_OPTIONS: ThemeOption[] = [
   { id: "nord", label: "Nord" },
   { id: "sakura", label: "Sakura" },
   { id: "sakura-dark", label: "Sakura Dark" },
-  { id: "ocean", label: "Ocean Breeze" },
 ];

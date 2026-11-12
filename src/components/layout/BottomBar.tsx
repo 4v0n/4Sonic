@@ -12,6 +12,8 @@ import useAudioVisualizerData from "../../hooks/useAudioVisualizerData";
 import { formatTime } from "../../utils/time";
 import CoverImage from "../ui/CoverImage";
 import Slider from "../ui/Slider";
+import SongLinks, { AlbumCoverLink } from "../media/SongLinks";
+import { formatSampleRate } from "../../utils/audioQuality";
 
 type BottomBarProps = { isRightCompact?: boolean };
 
@@ -94,12 +96,27 @@ const ProgressSlider = ({ position, duration, disabled, onScrubStart, onScrub, o
       </span>
       <div
         ref={barRef}
-        className={`relative flex-grow h-2 rounded-full cursor-pointer bg-surface2 transition ${disabled ? "opacity-50 cursor-not-allowed" : "hover:bg-surface3"}`}
+        className={`relative flex-grow h-2 rounded-full cursor-pointer bg-surface2 transition ${disabled ? "opacity-50 cursor-not-allowed" : "outline-none hover:bg-surface3 focus-visible:ring-2 focus-visible:ring-primary0/40"}`}
         onPointerDown={handlePointerDown}
+        onKeyDown={(event) => {
+          if (disabled) return;
+          const steps: Record<string, number> = { ArrowLeft: -5, ArrowDown: -5, ArrowRight: 5, ArrowUp: 5 };
+          let target: number | undefined;
+          if (event.key in steps) target = Math.min(Math.max(position + steps[event.key], 0), duration);
+          else if (event.key === "Home") target = 0;
+          else if (event.key === "End") target = duration;
+          if (target === undefined) return;
+          event.preventDefault();
+          onScrub(target);
+        }}
         role="slider"
+        tabIndex={disabled ? -1 : 0}
+        aria-label="Seek"
+        aria-disabled={disabled || undefined}
         aria-valuemin={0}
         aria-valuemax={duration || 0}
         aria-valuenow={position}
+        aria-valuetext={`${formatTime(position)} of ${formatTime(duration)}`}
       >
         <div
           className="absolute left-0 top-0 h-full rounded-full bg-primary0"
@@ -188,7 +205,7 @@ const VolumeControl = ({ volume, isMuted, onChange, onToggleMute, onScroll }: Vo
           requestHide();
         }}
       >
-        <div className="flex h-28 w-10 items-center justify-center rounded-lg   bg-surface1 p-2 shadow-lg">
+        <div className="flex h-28 w-10 items-center justify-center rounded-lg bg-surface1 p-2 shadow-lg">
           <Slider
             orientation="vertical"
             min={0}
@@ -250,13 +267,7 @@ const BottomBar = ({ isRightCompact = false }: BottomBarProps) => {
   const samplingRate = currentSong?.samplingRate;
   const bitDepth = currentSong?.bitDepth;
   const qualityFormat = currentSong?.suffix ? currentSong.suffix.toUpperCase() : undefined;
-  const formattedSampleRate = samplingRate
-    ? (() => {
-      const khz = samplingRate / 1000;
-      const decimals = Number.isInteger(khz) ? 0 : 1;
-      return `${khz.toFixed(decimals)} kHz`;
-    })()
-    : undefined;
+  const formattedSampleRate = samplingRate ? formatSampleRate(samplingRate) : undefined;
   const qualityText = [qualityFormat, formattedSampleRate, bitDepth ? `${bitDepth}-bit` : null]
     .filter(Boolean)
     .join(" • ");
@@ -264,7 +275,7 @@ const BottomBar = ({ isRightCompact = false }: BottomBarProps) => {
   const queueButton = (
     <Button
       variant="ghost"
-      className={isQueueOpen ? "bg-surface-tonal2 text-primary0 hover:bg-surface-tonal3" : ""}
+      className={isQueueOpen ? "bg-primary0/15 text-primary0 hover:bg-primary0/25" : ""}
       onClick={isRightCompact ? undefined : () => toggleQueue("queue")}
       aria-label="Toggle queue sidebar"
     >
@@ -304,7 +315,7 @@ const BottomBar = ({ isRightCompact = false }: BottomBarProps) => {
       </div>
       <div className="relative z-10 flex h-full w-full items-center justify-between">
         <div className="flex items-center w-1/3 min-w-0 gap-3">
-          <div className="h-14 w-14 overflow-hidden rounded-lg   bg-surface1">
+          <AlbumCoverLink song={currentSong} className="block h-14 w-14 shrink-0 overflow-hidden rounded-lg bg-surface1">
             <CoverImage
               src={coverArtUrl}
               alt={currentSong?.title ?? "Cover"}
@@ -312,12 +323,15 @@ const BottomBar = ({ isRightCompact = false }: BottomBarProps) => {
               placeholder={<div className="h-full w-full bg-surface2" />}
               fallback={<div className="h-full w-full bg-surface2" />}
             />
-          </div>
+          </AlbumCoverLink>
           <div className="min-w-0">
-            <p className="text-sm font-semibold truncate">{currentSong?.title ?? "Nothing playing"}</p>
-            <p className="text-xs text-text-grey truncate">
-              {currentSong?.artist ?? "Select a song to start"}
-            </p>
+            <SongLinks
+              song={currentSong}
+              fallbackTitle="Nothing playing"
+              fallbackArtist="Select a song to start"
+              titleClassName="text-sm font-semibold"
+              artistClassName="text-xs text-text-grey"
+            />
             {qualityText ? (
               <div className="mt-1 flex items-center gap-2">
                 <p className="text-[11px] text-text-grey truncate">{qualityText}</p>
@@ -330,14 +344,14 @@ const BottomBar = ({ isRightCompact = false }: BottomBarProps) => {
           <div className="flex items-center space-x-3 mb-2">
             <Button
               variant="ghost"
-              className={shuffle ? "bg-surface-tonal2 text-primary0 hover:bg-surface-tonal3" : ""}
+              className={shuffle ? "bg-primary0/15 text-primary0 hover:bg-primary0/25" : ""}
               aria-label="Toggle shuffle"
               onClick={() => toggleShuffle()}
               disabled={!currentSong}
             >
               <ShuffleIcon fontSize="small" />
             </Button>
-            <Button variant="ghost" disabled={!playbackReady} onClick={handlePrevious}>
+            <Button variant="ghost" aria-label="Previous" title="Previous" disabled={!playbackReady} onClick={handlePrevious}>
               <SkipPreviousIcon fontSize="small" />
             </Button>
             <Button
@@ -353,12 +367,12 @@ const BottomBar = ({ isRightCompact = false }: BottomBarProps) => {
                 <PlayArrowIcon fontSize="small" className="text-text-inverted" />
               )}
             </Button>
-            <Button variant="ghost" disabled={!playbackReady} onClick={handleNext}>
+            <Button variant="ghost" aria-label="Next" title="Next" disabled={!playbackReady} onClick={handleNext}>
               <SkipNextIcon fontSize="small" />
             </Button>
             <Button
               variant="ghost"
-              className={repeat !== "off" ? "bg-surface-tonal2 text-primary0 hover:bg-surface-tonal3" : ""}
+              className={repeat !== "off" ? "bg-primary0/15 text-primary0 hover:bg-primary0/25" : ""}
               aria-label="Toggle repeat"
               onClick={() => cycleRepeat()}
               disabled={!currentSong}
