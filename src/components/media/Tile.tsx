@@ -122,7 +122,7 @@ export const TileSkeleton = ({ className }: { className?: string }) => (
       <TileStack depth={0} />
       <div className="aspect-square w-full rounded-md bg-surface2" />
     </div>
-    <div className="flex min-h-[60px] flex-col gap-1 pt-2">
+    <div className="flex h-[68px] flex-col gap-1 pt-2">
       <div className="my-0.5 h-4 w-3/4 rounded bg-surface2" />
       <div className="my-0.5 h-3 w-1/2 rounded bg-surface2" />
     </div>

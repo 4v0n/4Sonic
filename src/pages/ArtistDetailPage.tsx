@@ -140,7 +140,7 @@ const ArtistDetailPage = () => {
   }
 
   if (!artist) {
-    if (status === "checking" || status === "indexing") {
+    if (status === "idle" || status === "checking" || status === "indexing") {
       return (
         <div className="flex h-full items-center justify-center">
           <Spinner size="md" />

@@ -3,6 +3,9 @@ import { CachedImageRow, imageCacheDb } from "../../db/imageCacheDb";
 const MAX_CACHE_BYTES = 250 * 1024 * 1024;
 const MAX_IMAGE_BYTES = 12 * 1024 * 1024;
 const WEBP_QUALITY = 0.84;
+const MAX_OBJECT_URLS = 600;
+const MAX_CACHE_KEYS = 5000;
+const LAST_ACCESSED_GRANULARITY_MS = 60 * 60 * 1000;
 
 const VOLATILE_QUERY_PARAMS = new Set(["u", "t", "s", "v", "c"]);
 const WEBP_SOURCE_TYPES = new Set(["image/jpeg", "image/jpg", "image/png", "image/bmp"]);
@@ -10,7 +13,19 @@ const WEBP_SOURCE_TYPES = new Set(["image/jpeg", "image/jpg", "image/png", "imag
 interface ObjectUrlEntry {
   url: string;
   refCount: number;
+  pinned?: HTMLImageElement;
 }
+
+const createObjectUrlEntry = (blob: Blob, refCount: number): ObjectUrlEntry => {
+  const url = URL.createObjectURL(blob);
+  if (typeof Image === "undefined") {
+    return { url, refCount };
+  }
+  const pinned = new Image();
+  pinned.decoding = "async";
+  pinned.src = url;
+  return { url, refCount, pinned };
+};
 
 export interface CachedImageSource {
   url: string;
@@ -48,7 +63,15 @@ const isSubsonicCoverArtRequest = (url: URL): boolean => url.pathname.includes("
 
 class ImageCache {
   private objectUrls = new Map<string, ObjectUrlEntry>();
+  private cacheKeys = new Map<string, string>();
   private prefetchPromises = new Map<string, Promise<void>>();
+
+  public peekObjectUrl(sourceUrl: string): string | undefined {
+    if (!sourceUrl) {
+      return undefined;
+    }
+    return this.objectUrls.get(this.createCacheKey(sourceUrl))?.url;
+  }
 
   public async getImageSource(sourceUrl: string, options?: { allowPrefetch?: boolean }): Promise<CachedImageSource> {
     if (!sourceUrl || !isIndexedDbAvailable()) {
@@ -56,6 +79,17 @@ class ImageCache {
     }
 
     const key = this.createCacheKey(sourceUrl);
+    const inMemory = this.objectUrls.get(key);
+    if (inMemory) {
+      inMemory.refCount += 1;
+      this.touchObjectUrl(key, inMemory);
+      return {
+        url: inMemory.url,
+        fromCache: true,
+        cleanup: () => this.release(key),
+      };
+    }
+
     const cached = await this.readCached(key);
 
     if (cached) {
@@ -115,6 +149,19 @@ class ImageCache {
   }
 
   private createCacheKey(sourceUrl: string): string {
+    const known = this.cacheKeys.get(sourceUrl);
+    if (known !== undefined) {
+      return known;
+    }
+    const key = this.computeCacheKey(sourceUrl);
+    if (this.cacheKeys.size >= MAX_CACHE_KEYS) {
+      this.cacheKeys.clear();
+    }
+    this.cacheKeys.set(sourceUrl, key);
+    return key;
+  }
+
+  private computeCacheKey(sourceUrl: string): string {
     const parsed = parseUrl(sourceUrl);
     if (!parsed) {
       return sourceUrl;
@@ -139,7 +186,10 @@ class ImageCache {
   private async readCached(id: string): Promise<CachedImageRow | null> {
     const row = await imageCacheDb.images.get(id);
     if (row) {
-      void imageCacheDb.images.update(id, { lastAccessed: Date.now() });
+      const now = Date.now();
+      if (now - (row.lastAccessed ?? 0) > LAST_ACCESSED_GRANULARITY_MS) {
+        void imageCacheDb.images.update(id, { lastAccessed: now });
+      }
       return row;
     }
     return null;
@@ -149,12 +199,19 @@ class ImageCache {
     const existing = this.objectUrls.get(id);
     if (existing) {
       existing.refCount += 1;
+      this.touchObjectUrl(id, existing);
       return existing.url;
     }
 
-    const url = URL.createObjectURL(blob);
-    this.objectUrls.set(id, { url, refCount: 1 });
-    return url;
+    const entry = createObjectUrlEntry(blob, 1);
+    this.touchObjectUrl(id, entry);
+    this.evictIdleObjectUrls();
+    return entry.url;
+  }
+
+  private touchObjectUrl(id: string, entry: ObjectUrlEntry): void {
+    this.objectUrls.delete(id);
+    this.objectUrls.set(id, entry);
   }
 
   private release(id: string): void {
@@ -163,14 +220,24 @@ class ImageCache {
       return;
     }
 
-    const nextRefCount = entry.refCount - 1;
-    if (nextRefCount > 0) {
-      this.objectUrls.set(id, { url: entry.url, refCount: nextRefCount });
+    entry.refCount = Math.max(0, entry.refCount - 1);
+    this.evictIdleObjectUrls();
+  }
+
+  private evictIdleObjectUrls(): void {
+    if (this.objectUrls.size <= MAX_OBJECT_URLS) {
       return;
     }
-
-    URL.revokeObjectURL(entry.url);
-    this.objectUrls.delete(id);
+    for (const [id, entry] of this.objectUrls) {
+      if (this.objectUrls.size <= MAX_OBJECT_URLS) {
+        break;
+      }
+      if (entry.refCount > 0) {
+        continue;
+      }
+      URL.revokeObjectURL(entry.url);
+      this.objectUrls.delete(id);
+    }
   }
 
   private revokeObjectUrl(id: string): void {
@@ -241,6 +308,11 @@ class ImageCache {
       await imageCacheDb.images.put(row);
       await this.evictIfNeeded();
     });
+
+    if (!this.objectUrls.has(id)) {
+      this.touchObjectUrl(id, createObjectUrlEntry(normalizedBlob, 0));
+      this.evictIdleObjectUrls();
+    }
   }
 
   private async normalizeBlobForStorage(blob: Blob): Promise<Blob> {

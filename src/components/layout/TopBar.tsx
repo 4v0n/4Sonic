@@ -27,7 +27,7 @@ const TopBar = () => {
         <Button variant="ghost" onClick={() => navigate(-1)} aria-label="Go back" className="shadow-none">
           <ArrowBackIcon fontSize="small" />
         </Button>
-        <Button variant="ghost" onClick={() => navigate(1)} aria-label="Go back" className="shadow-none">
+        <Button variant="ghost" onClick={() => navigate(1)} aria-label="Go forward" className="shadow-none">
           <ArrowForwardIcon fontSize="small" />
         </Button>
       </div>

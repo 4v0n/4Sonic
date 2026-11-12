@@ -1,8 +1,23 @@
-import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import React, { useCallback, useEffect, useLayoutEffect, useRef, useState } from "react";
 import cn from "../../utils/cn";
 import { imageCache } from "../../services/image/imageCache";
+import { useScrollContainer } from "../layout/ScrollContainer";
 
 const loadedImages = new Set<string>();
+
+const failedImages = new Map<string, number>();
+const FAILED_RETRY_AFTER_MS = 5 * 60 * 1000;
+
+const hasFailedRecently = (src?: string): boolean => {
+  if (!src) return false;
+  const failedAt = failedImages.get(src);
+  if (failedAt === undefined) return false;
+  if (Date.now() - failedAt > FAILED_RETRY_AFTER_MS) {
+    failedImages.delete(src);
+    return false;
+  }
+  return true;
+};
 
 interface LazyImageProps extends Omit<React.ImgHTMLAttributes<HTMLImageElement>, "className"> {
   className?: string;
@@ -21,24 +36,33 @@ const LazyImage: React.FC<LazyImageProps> = ({
   ...props
 }) => {
   const containerRef = useRef<HTMLDivElement | null>(null);
+  const imgRef = useRef<HTMLImageElement | null>(null);
   const cleanupRef = useRef<(() => void) | null>(null);
   const cacheRetryRef = useRef(false);
-  const [isVisible, setIsVisible] = useState(false);
+  const scrollRoot = useScrollContainer();
+
+  const memoryUrl = src ? imageCache.peekObjectUrl(src) : undefined;
+  const shouldEagerLoad = Boolean(src) && (memoryUrl !== undefined || loadedImages.has(src as string));
+
+  const [isVisible, setIsVisible] = useState(shouldEagerLoad);
   const [isLoaded, setIsLoaded] = useState(false);
-  const [hasError, setHasError] = useState(false);
+  const [hasError, setHasError] = useState(() => hasFailedRecently(src));
   const [resolvedSrc, setResolvedSrc] = useState<string | undefined>();
 
-  const shouldEagerLoad = useMemo(() => (src ? loadedImages.has(src) : false), [src]);
-
+  const previousSrcRef = useRef(src);
   useEffect(() => {
+    if (previousSrcRef.current === src) {
+      return;
+    }
+    previousSrcRef.current = src;
     setIsLoaded(false);
-    setHasError(false);
+    setHasError(hasFailedRecently(src));
     setResolvedSrc(undefined);
-    setIsVisible(Boolean(src) && shouldEagerLoad);
+    setIsVisible(Boolean(src) && (loadedImages.has(src as string) || imageCache.peekObjectUrl(src as string) !== undefined));
     cacheRetryRef.current = false;
     cleanupRef.current?.();
     cleanupRef.current = null;
-  }, [shouldEagerLoad, src]);
+  }, [src]);
 
   useEffect(() => {
     const node = containerRef.current;
@@ -55,15 +79,15 @@ const LazyImage: React.FC<LazyImageProps> = ({
           observer.disconnect();
         }
       },
-      { rootMargin: "600px 0px" },
+      { root: scrollRoot, rootMargin: "600px 0px" },
     );
 
     observer.observe(node);
     return () => observer.disconnect();
-  }, [shouldEagerLoad, src]);
+  }, [scrollRoot, shouldEagerLoad, src]);
 
   useEffect(() => {
-    if (!isVisible || !src) {
+    if (!isVisible || !src || hasFailedRecently(src)) {
       return;
     }
 
@@ -106,7 +130,7 @@ const LazyImage: React.FC<LazyImageProps> = ({
   }, [src]);
 
   const handleError = useCallback(() => {
-    if (src && resolvedSrc && resolvedSrc !== src && !cacheRetryRef.current) {
+    if (src && resolvedSrc !== src && !cacheRetryRef.current) {
       cacheRetryRef.current = true;
       setIsLoaded(false);
       setHasError(false);
@@ -114,17 +138,30 @@ const LazyImage: React.FC<LazyImageProps> = ({
       void imageCache.invalidate(src);
       return;
     }
+    if (src) {
+      failedImages.set(src, Date.now());
+    }
     setHasError(true);
   }, [resolvedSrc, src]);
 
+  const displaySrc = resolvedSrc ?? memoryUrl;
+  const showImage = isVisible && Boolean(displaySrc) && !hasError;
+
+  useLayoutEffect(() => {
+    const img = imgRef.current;
+    if (!isLoaded && img && img.complete && img.naturalWidth > 0) {
+      handleLoad();
+    }
+  }, [displaySrc, handleLoad, isLoaded, showImage]);
+
   return (
     <div ref={containerRef} className={cn("relative h-full w-full", className)}>
-      {isVisible && resolvedSrc && !hasError ? (
+      {showImage ? (
         <img
-          src={resolvedSrc}
+          ref={imgRef}
+          src={displaySrc}
           alt={alt}
-          loading="lazy"
-          decoding="async"
+          decoding={memoryUrl !== undefined ? "sync" : "async"}
           onLoad={handleLoad}
           onError={handleError}
           className={cn("h-full w-full object-cover", imgClassName)}

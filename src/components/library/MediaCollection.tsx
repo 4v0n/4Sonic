@@ -1,11 +1,14 @@
-import { Fragment, ReactNode, useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { Fragment, ReactNode, useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 import { GridViewIcon, ListViewIcon } from "../../constants/icons";
 import { RowSkeleton } from "../media/Row";
 import { TileSkeleton } from "../media/Tile";
 import SearchInput from "../ui/SearchInput";
 import Select from "../ui/Select";
 import { ToggleGroup, ToggleGroupItem } from "../ui/ToggleGroup";
-import Spinner from "../ui/Spinner";
+import { useScrollContainer } from "../layout/ScrollContainer";
+import useHistoryEntryState, { useHistoryEntryRef } from "../../hooks/useHistoryEntryState";
+import { useRestoredScrollTop } from "../../hooks/useScrollRestoration";
+import useVirtualRows from "../../hooks/useVirtualRows";
 
 type ViewMode = "grid" | "list";
 
@@ -19,13 +22,9 @@ interface MediaCollectionProps<T> {
   title: string;
   description?: string;
   items: T[];
-  /** Stable, unique key for an item. */
   getKey: (item: T) => string;
-  /** Text matched against the filter input. */
   getSearchText: (item: T) => string;
-  /** Renders the item for the grid view. Should fill its grid cell. */
   renderTile: (item: T) => ReactNode;
-  /** Renders the item for the list view. */
   renderRow: (item: T) => ReactNode;
   sortOptions: MediaSortOption<T>[];
   defaultSort?: string;
@@ -33,15 +32,27 @@ interface MediaCollectionProps<T> {
   isLoading?: boolean;
   error?: string;
   emptyMessage?: string;
+  stateKey?: string;
 }
 
 const DEFAULT_EMPTY_MESSAGE = "Nothing matches your filters yet.";
-const GRID_PAGE_SIZE = 24;
-const LIST_PAGE_SIZE = 18;
 const GRID_CARD_MIN_WIDTH = 180;
-const GRID_ROW_HEIGHT = 260;
-const LIST_ROW_HEIGHT = 96;
-const INTERSECTION_ROOT_MARGIN = "2600px 0px";
+const GRID_GAP = 16;
+const LIST_GAP = 12;
+const GRID_TILE_EXTRA_HEIGHT = 80;
+const LIST_ROW_HEIGHT = 98;
+const OVERSCAN_PX = 500;
+
+const rowHeightCache = new Map<string, number>();
+const MAX_ROW_HEIGHT_ENTRIES = 200;
+let lastListWidth: number | undefined;
+
+const guessListWidth = (scrollRoot: HTMLElement | null) => {
+  if (lastListWidth !== undefined) return lastListWidth;
+  if (!scrollRoot) return window.innerWidth;
+  const style = getComputedStyle(scrollRoot);
+  return scrollRoot.clientWidth - parseFloat(style.paddingLeft) - parseFloat(style.paddingRight);
+};
 
 function MediaCollection<T>({
   title,
@@ -57,22 +68,12 @@ function MediaCollection<T>({
   isLoading = false,
   error,
   emptyMessage = DEFAULT_EMPTY_MESSAGE,
+  stateKey,
 }: MediaCollectionProps<T>) {
-  const [viewportSize, setViewportSize] = useState(() => ({
-    width: typeof window !== "undefined" ? window.innerWidth : 1280,
-    height: typeof window !== "undefined" ? window.innerHeight : 900,
-  }));
-  useEffect(() => {
-    const handleResize = () => {
-      setViewportSize({ width: window.innerWidth, height: window.innerHeight });
-    };
-    window.addEventListener("resize", handleResize);
-    return () => window.removeEventListener("resize", handleResize);
-  }, []);
-
-  const [viewMode, setViewMode] = useState<ViewMode>("grid");
-  const [searchQuery, setSearchQuery] = useState("");
-  const [sortValue, setSortValue] = useState<string>(() => {
+  const stateId = `media-collection:${stateKey ?? title}`;
+  const [viewMode, setViewMode] = useHistoryEntryState<ViewMode>(`${stateId}:view`, "grid");
+  const [searchQuery, setSearchQuery] = useHistoryEntryState(`${stateId}:search`, "");
+  const [sortValue, setSortValue] = useHistoryEntryState<string>(`${stateId}:sort`, () => {
     if (defaultSort && sortOptions.some((option) => option.value === defaultSort)) {
       return defaultSort;
     }
@@ -91,7 +92,7 @@ function MediaCollection<T>({
       const currentIsValid = sortOptions.some((option) => option.value === current);
       return currentIsValid ? current : fallback;
     });
-  }, [defaultSort, sortOptions]);
+  }, [defaultSort, setSortValue, sortOptions]);
 
   const activeSort = useMemo(
     () => sortOptions.find((option) => option.value === sortValue) ?? sortOptions[0],
@@ -107,90 +108,93 @@ function MediaCollection<T>({
     return copy;
   }, [activeSort, items]);
 
-  // Rendered elements are memoised so typing in the filter doesn't hand fresh
-  // props (and therefore re-renders) to every visible tile/row.
-  const normalizedItems = useMemo(() => {
-    const render = viewMode === "grid" ? renderTile : renderRow;
-    return sortedItems.map((item) => ({
+  const entries = useMemo(
+    () => sortedItems.map((item) => ({
+      item,
       key: getKey(item),
       searchText: getSearchText(item).toLowerCase(),
-      node: render(item),
-    }));
-  }, [getKey, getSearchText, renderRow, renderTile, sortedItems, viewMode]);
+    })),
+    [getKey, getSearchText, sortedItems],
+  );
 
-  const filteredItems = useMemo(() => {
+  const filteredEntries = useMemo(() => {
     const query = searchQuery.trim().toLowerCase();
     if (!query) {
-      return normalizedItems;
+      return entries;
     }
-    return normalizedItems.filter((item) => item.searchText.includes(query));
-  }, [normalizedItems, searchQuery]);
+    return entries.filter((entry) => entry.searchText.includes(query));
+  }, [entries, searchQuery]);
 
-  const pageSize = viewMode === "grid" ? GRID_PAGE_SIZE : LIST_PAGE_SIZE;
-  const [visibleCount, setVisibleCount] = useState(pageSize);
+  const renderItem = viewMode === "grid" ? renderTile : renderRow;
+  const nodeCache = useMemo(() => new Map<string, ReactNode>(), [items, renderItem]);
+  const getNode = (entry: { item: T; key: string }) => {
+    let node = nodeCache.get(entry.key);
+    if (node === undefined) {
+      node = renderItem(entry.item);
+      nodeCache.set(entry.key, node);
+    }
+    return node;
+  };
 
-  const [gridNode, setGridNode] = useState<HTMLDivElement | null>(null);
-  const [gridWidth, setGridWidth] = useState(0);
-  useEffect(() => {
-    if (!gridNode) return;
-    setGridWidth(gridNode.clientWidth);
-    const resizeObserver = new ResizeObserver(() => setGridWidth(gridNode.clientWidth));
-    resizeObserver.observe(gridNode);
+  const scrollRoot = useScrollContainer();
+  const [listNode, setListNode] = useState<HTMLDivElement | null>(null);
+  const [listWidth, setListWidth] = useState(() => guessListWidth(scrollRoot));
+  useLayoutEffect(() => {
+    if (!listNode) return;
+    const measure = () => {
+      const width = listNode.clientWidth;
+      if (width <= 0) return;
+      lastListWidth = width;
+      setListWidth(width);
+    };
+    measure();
+    const resizeObserver = new ResizeObserver(measure);
+    resizeObserver.observe(listNode);
     return () => resizeObserver.disconnect();
-  }, [gridNode]);
+  }, [listNode]);
 
-  const desiredVisible = useMemo(() => {
-    if (viewMode === "grid") {
-      const containerWidth = gridWidth || viewportSize.width;
-      const columns = Math.max(1, Math.floor(containerWidth / GRID_CARD_MIN_WIDTH));
-      const rows = Math.max(1, Math.ceil(viewportSize.height / GRID_ROW_HEIGHT));
-      return Math.max(pageSize, columns * rows + columns * 2);
-    }
-    const rows = Math.max(1, Math.ceil(viewportSize.height / LIST_ROW_HEIGHT));
-    return Math.max(pageSize, rows + 6);
-  }, [gridWidth, pageSize, viewportSize.height, viewportSize.width, viewMode]);
+  const isGrid = viewMode === "grid";
+  const gap = isGrid ? GRID_GAP : LIST_GAP;
+  const columns = isGrid
+    ? Math.max(1, Math.floor((listWidth + GRID_GAP) / (GRID_CARD_MIN_WIDTH + GRID_GAP)))
+    : 1;
+  const rowCount = Math.ceil(filteredEntries.length / columns);
 
-  useEffect(() => {
-    setVisibleCount(() => Math.max(desiredVisible, pageSize));
-  }, [desiredVisible, pageSize, searchQuery, activeSort]);
+  const sizeKey = `${stateId}:${viewMode}:${columns}:${Math.round(listWidth)}`;
+  const estimatedRowHeight = isGrid
+    ? (listWidth - (columns - 1) * GRID_GAP) / columns + GRID_TILE_EXTRA_HEIGHT
+    : LIST_ROW_HEIGHT;
+  const rowHeight = rowHeightCache.get(sizeKey) ?? estimatedRowHeight;
+  const [, setMeasureVersion] = useState(0);
 
-  useEffect(() => {
-    setVisibleCount((current) => Math.min(Math.max(current, desiredVisible), filteredItems.length || desiredVisible));
-  }, [desiredVisible, filteredItems.length, pageSize]);
-
-  const hasMore = !isLoading && filteredItems.length > visibleCount;
-  const loadMore = useCallback(() => {
-    if (!hasMore) return;
-    setVisibleCount((current) => {
-      const next = Math.max(current + pageSize, desiredVisible);
-      return Math.min(next, filteredItems.length);
-    });
-  }, [desiredVisible, filteredItems.length, hasMore, pageSize]);
-
-  const sentinelRef = useRef<HTMLDivElement | null>(null);
-  useEffect(() => {
-    const node = sentinelRef.current;
-    if (!node || !hasMore) return;
-    const observer = new IntersectionObserver((entries) => {
-      const [entry] = entries;
-      if (entry.isIntersecting) {
-        loadMore();
-      }
-    }, { rootMargin: INTERSECTION_ROOT_MARGIN });
-    observer.observe(node);
-    return () => observer.disconnect();
-  }, [hasMore, loadMore]);
+  const restoredScrollTop = useRestoredScrollTop();
+  const listOffsetRef = useHistoryEntryRef(`${stateId}:list-offset`, 0);
+  const { start, end, totalHeight, offsetTop } = useVirtualRows({
+    rowCount,
+    rowHeight,
+    gap,
+    overscan: Math.ceil(OVERSCAN_PX / (rowHeight + gap)),
+    scrollElement: scrollRoot,
+    listElement: listNode,
+    initialScrollTop: restoredScrollTop,
+    listOffsetRef,
+  });
 
   const shouldShowSkeletons = isLoading && items.length === 0;
-  const skeletonCount = viewMode === "grid" ? 12 : 6;
-  const itemsToRender = shouldShowSkeletons
-    ? Array.from({ length: skeletonCount }, (_, index) => ({
-      key: `skeleton-${index}`,
-      node: viewMode === "grid" ? <TileSkeleton className="w-full max-w-full" /> : <RowSkeleton className="w-full" />,
-    }))
-    : filteredItems.slice(0, visibleCount);
+  const showEmptyState = !isLoading && filteredEntries.length === 0;
+  const renderedRows = end - start;
 
-  const showEmptyState = !isLoading && filteredItems.length === 0;
+  const blockRef = useRef<HTMLDivElement | null>(null);
+  useLayoutEffect(() => {
+    const block = blockRef.current;
+    if (!block || renderedRows <= 0 || !listNode || listNode.clientWidth !== listWidth) return;
+    const measured = (block.getBoundingClientRect().height - (renderedRows - 1) * gap) / renderedRows;
+    if (measured > 0 && Math.abs(measured - rowHeight) > 0.25) {
+      if (rowHeightCache.size >= MAX_ROW_HEIGHT_ENTRIES) rowHeightCache.clear();
+      rowHeightCache.set(sizeKey, measured);
+      setMeasureVersion((version) => version + 1);
+    }
+  });
 
   const handleViewChange = (value: string) => {
     setViewMode(value === "list" ? "list" : "grid");
@@ -201,10 +205,12 @@ function MediaCollection<T>({
       return "Loading library...";
     }
     if (!searchQuery) {
-      return `${normalizedItems.length.toLocaleString()} item${normalizedItems.length === 1 ? "" : "s"}`;
+      return `${entries.length.toLocaleString()} item${entries.length === 1 ? "" : "s"}`;
     }
-    return `${filteredItems.length.toLocaleString()} of ${normalizedItems.length.toLocaleString()} shown`;
-  }, [filteredItems.length, isLoading, normalizedItems.length, searchQuery]);
+    return `${filteredEntries.length.toLocaleString()} of ${entries.length.toLocaleString()} shown`;
+  }, [entries.length, filteredEntries.length, isLoading, searchQuery]);
+
+  const skeletonCount = isGrid ? 12 : 6;
 
   return (
     <div className="space-y-6">
@@ -252,32 +258,39 @@ function MediaCollection<T>({
         {searchQuery ? <span className="truncate">Filtered by: {searchQuery}</span> : null}
       </div>
 
-      {showEmptyState ? (
-        <div className="flex min-h-[180px] items-center justify-center rounded-2xl border border-surface2 bg-surface1 text-sm text-text-grey">
-          {emptyMessage}
-        </div>
-      ) : viewMode === "grid" ? (
-        <div
-          ref={setGridNode}
-          className="grid grid-cols-[repeat(auto-fill,minmax(min(180px,100%),1fr))] gap-4"
-        >
-          {itemsToRender.map((item) => (
-            <Fragment key={item.key}>{item.node}</Fragment>
-          ))}
-        </div>
-      ) : (
-        <div className="space-y-3">
-          {itemsToRender.map((item) => (
-            <Fragment key={item.key}>{item.node}</Fragment>
-          ))}
-        </div>
-      )}
-
-      {!shouldShowSkeletons && filteredItems.length > 0 ? (
-        <div ref={sentinelRef} className="flex items-center justify-center py-4">
-          {hasMore ? <Spinner size="md" /> : null}
-        </div>
-      ) : null}
+      <div ref={setListNode}>
+        {showEmptyState ? (
+          <div className="flex min-h-[180px] items-center justify-center rounded-2xl border border-surface2 bg-surface1 text-sm text-text-grey">
+            {emptyMessage}
+          </div>
+        ) : shouldShowSkeletons ? (
+          <div
+            className={isGrid ? "grid gap-4" : "flex flex-col gap-3"}
+            style={isGrid ? { gridTemplateColumns: `repeat(${columns}, minmax(0, 1fr))` } : undefined}
+          >
+            {Array.from({ length: skeletonCount }, (_, index) => (
+              isGrid
+                ? <TileSkeleton key={index} className="w-full max-w-full" />
+                : <RowSkeleton key={index} className="w-full" />
+            ))}
+          </div>
+        ) : (
+          <div className="relative" style={{ height: totalHeight }}>
+            <div
+              ref={blockRef}
+              className={isGrid ? "absolute inset-x-0 grid gap-4" : "absolute inset-x-0 flex flex-col gap-3"}
+              style={{
+                top: offsetTop,
+                gridTemplateColumns: isGrid ? `repeat(${columns}, minmax(0, 1fr))` : undefined,
+              }}
+            >
+              {filteredEntries.slice(start * columns, end * columns).map((entry) => (
+                <Fragment key={entry.key}>{getNode(entry)}</Fragment>
+              ))}
+            </div>
+          </div>
+        )}
+      </div>
     </div>
   );
 };

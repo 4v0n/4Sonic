@@ -1,4 +1,4 @@
-import { useCallback, useMemo, useState } from "react";
+import { useCallback, useMemo } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { toast } from "sonner";
 import CollectionActionBar from "../components/media/CollectionActionBar";
@@ -14,6 +14,7 @@ import TrackList from "../components/media/TrackList";
 import Button from "../components/ui/Button";
 import Spinner from "../components/ui/Spinner";
 import { PersonIcon } from "../constants/icons";
+import useHistoryEntryState from "../hooks/useHistoryEntryState";
 import useImageAccentColor from "../hooks/useImageAccentColor";
 import { useAuthStore } from "../store/authStore";
 import { useLibraryStore } from "../store/libraryStore";
@@ -55,7 +56,7 @@ const AlbumDetailPage = () => {
   const tracks = useLibraryStore((state) => state.tracks);
   const artists = useLibraryStore((state) => state.artists);
   const album = useLibraryStore((state) => state.albums.find((entry) => entry.id === albumId));
-  const [searchQuery, setSearchQuery] = useState("");
+  const [searchQuery, setSearchQuery] = useHistoryEntryState("album-detail:search", "");
 
   const albumTracks = useMemo(
     () => tracks.filter((track) => track.albumId === albumId),

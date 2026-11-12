@@ -14,7 +14,7 @@ const ArtistTile = ({ name, albumCount, coverUrl, actions, ...props }: ArtistTil
   return (
     <TileFrame actions={actions} {...props}>
       <TileArtwork coverUrl={coverUrl} alt={name} onPlay={actions?.onPlay} />
-      <div className="flex min-h-[60px] flex-col gap-1 pt-2">
+      <div className="flex h-[68px] flex-col gap-1 pt-2">
         <p className="truncate text-sm font-semibold text-text">{name}</p>
         {subtitle ? (
           <p className="truncate text-xs text-text-grey">{subtitle}</p>

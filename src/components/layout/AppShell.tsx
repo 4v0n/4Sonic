@@ -1,5 +1,7 @@
-import { Outlet } from "react-router-dom";
-import { useEffect, useMemo, useRef, useState } from "react";
+import { Outlet, useLocation } from "react-router-dom";
+import { Fragment, useEffect, useMemo, useRef, useState } from "react";
+import { ScrollContainerContext } from "./ScrollContainer";
+import useScrollRestoration from "../../hooks/useScrollRestoration";
 import TopBar from "./TopBar";
 import LeftSideBar from "./LeftSideBar";
 import BottomBar from "./BottomBar";
@@ -31,6 +33,10 @@ const AppShell = () => {
   useLibraryBootstrap();
   useMediaSession();
   useEqPlaybackSync();
+
+  const location = useLocation();
+  const [mainNode, setMainNode] = useState<HTMLElement | null>(null);
+  useScrollRestoration(mainNode);
 
   const [viewportWidth, setViewportWidth] = useState(
     typeof window !== "undefined" ? window.innerWidth : MIN_MAIN_CONTENT + DEFAULT_WIDTH + RIGHT_DEFAULT_WIDTH,
@@ -218,8 +224,15 @@ const AppShell = () => {
           isResizing={isResizing}
           onResizeStart={handleResizeStart}
         />
-        <main className="min-w-0 flex-1 overflow-x-hidden overflow-y-auto p-4 sm:p-6 rounded-lg">
-          <Outlet />
+        <main
+          ref={setMainNode}
+          className="min-w-0 flex-1 overflow-x-hidden overflow-y-auto p-4 sm:p-6 rounded-lg"
+        >
+          <ScrollContainerContext.Provider value={mainNode}>
+            <Fragment key={`${location.key}:${location.pathname}`}>
+              <Outlet />
+            </Fragment>
+          </ScrollContainerContext.Provider>
         </main>
         {!isRightCompact && (
           <RightSideBar

@@ -34,7 +34,7 @@ const AlbumTile = ({
   return (
     <TileFrame actions={actions} {...props}>
       <TileArtwork coverUrl={coverUrl} alt={title} onPlay={actions?.onPlay} stack={2} stackColor={accentColor} />
-      <div className="flex min-h-[60px] flex-col gap-1 pt-2">
+      <div className="flex h-[68px] flex-col gap-1 pt-2">
         <div className="flex items-center gap-2">
           <p className="min-w-0 flex-1 truncate text-sm font-semibold text-text">{title}</p>
           {showTrackCount && songCount ? (
