@@ -1,7 +1,9 @@
+import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { ArrowBackIcon, ArrowForwardIcon, LogoutIcon, PersonIcon, SettingsIcon } from "../../constants/icons";
 import Dropdown, { MenuOption } from "../ui/Dropdown";
 import Button from "../ui/Button";
+import ExpandingSearch from "../ui/ExpandingSearch";
 import { useAuthStore } from "../../store/authStore";
 import cn from "../../utils/cn";
 import WindowControls, { IS_DESKTOP } from "./WindowControls";
@@ -9,6 +11,7 @@ import WindowControls, { IS_DESKTOP } from "./WindowControls";
 const TopBar = () => {
   const navigate = useNavigate();
   const logout = useAuthStore((state) => state.logout);
+  const [searchQuery, setSearchQuery] = useState("");
 
   const handleLogout = () => {
     void logout().then(() => {
@@ -35,6 +38,12 @@ const TopBar = () => {
         <Button variant="ghost" onClick={() => navigate(1)} aria-label="Go forward" className="shadow-none">
           <ArrowForwardIcon fontSize="small" />
         </Button>
+        <ExpandingSearch
+          value={searchQuery}
+          onValueChange={setSearchQuery}
+          placeholder="Search"
+          className="ml-1"
+        />
       </div>
       <div data-tauri-drag-region className="flex items-center gap-4 self-stretch">
         <Dropdown
