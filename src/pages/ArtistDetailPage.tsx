@@ -15,6 +15,7 @@ import { GridViewIcon, ListViewIcon } from "../constants/icons";
 import useHistoryEntryState from "../hooks/useHistoryEntryState";
 import useImageAccentColor from "../hooks/useImageAccentColor";
 import { useAuthStore } from "../store/authStore";
+import { useCollectionPreference } from "../store/collectionPreferencesStore";
 import { useLibraryStore } from "../store/libraryStore";
 import type { AlbumEntity } from "../types/library";
 import { accentThemeVars } from "../utils/imageColor";
@@ -96,8 +97,8 @@ const ArtistDetailPage = () => {
   const albums = useLibraryStore((state) => state.albums);
   const tracks = useLibraryStore((state) => state.tracks);
   const [tab, setTab] = useHistoryEntryState<ArtistTabValue | undefined>("artist-detail:tab", undefined);
-  const [viewMode, setViewMode] = useHistoryEntryState<ViewMode>("artist-detail:view", "grid");
-  const [sortValue, setSortValue] = useHistoryEntryState("artist-detail:sort", "newest");
+  const [viewMode, setViewMode] = useCollectionPreference("artist-detail", "view", "grid");
+  const [sortValue, setSortValue] = useCollectionPreference("artist-detail", "sort", "newest");
 
   const artistAlbums = useMemo(() => {
     if (!artist) return [];

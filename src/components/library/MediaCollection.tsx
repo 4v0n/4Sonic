@@ -1,4 +1,4 @@
-import { Fragment, ReactNode, useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
+import { Fragment, ReactNode, useLayoutEffect, useMemo, useRef, useState } from "react";
 import { GridViewIcon, ListViewIcon } from "../../constants/icons";
 import { RowSkeleton } from "../media/Row";
 import { TileSkeleton } from "../media/Tile";
@@ -6,11 +6,12 @@ import SearchInput from "../ui/SearchInput";
 import Select from "../ui/Select";
 import { ToggleGroup, ToggleGroupItem } from "../ui/ToggleGroup";
 import { useScrollContainer } from "../layout/ScrollContainer";
+import { useCollectionPreference, type CollectionViewMode } from "../../store/collectionPreferencesStore";
 import useHistoryEntryState, { useHistoryEntryRef } from "../../hooks/useHistoryEntryState";
 import { useRestoredScrollTop } from "../../hooks/useScrollRestoration";
 import useVirtualRows from "../../hooks/useVirtualRows";
 
-export type ViewMode = "grid" | "list";
+export type ViewMode = CollectionViewMode;
 
 export type MediaSortOption<T> = {
   value: string;
@@ -79,35 +80,19 @@ function MediaCollection<T>({
   sortValue: sortValueProp,
 }: MediaCollectionProps<T>) {
   const stateId = `media-collection:${stateKey ?? title}`;
-  const [internalViewMode, setViewMode] = useHistoryEntryState<ViewMode>(`${stateId}:view`, "grid");
+  const preferenceKey = stateKey ?? title;
+  const [internalViewMode, setViewMode] = useCollectionPreference(preferenceKey, "view", "grid");
+  const [internalSortValue, setSortValue] = useCollectionPreference(preferenceKey, "sort", defaultSort ?? sortOptions[0]?.value ?? "");
   const [searchQuery, setSearchQuery] = useHistoryEntryState(`${stateId}:search`, "");
-  const [internalSortValue, setSortValue] = useHistoryEntryState<string>(`${stateId}:sort`, () => {
-    if (defaultSort && sortOptions.some((option) => option.value === defaultSort)) {
-      return defaultSort;
-    }
-    return sortOptions[0]?.value ?? "";
-  });
 
   const viewMode = viewModeProp ?? internalViewMode;
   const sortValue = sortValueProp ?? internalSortValue;
 
-  useEffect(() => {
-    const fallback = defaultSort && sortOptions.some((option) => option.value === defaultSort)
-      ? defaultSort
-      : sortOptions[0]?.value ?? "";
-
-    setSortValue((current) => {
-      if (!fallback) {
-        return current;
-      }
-      const currentIsValid = sortOptions.some((option) => option.value === current);
-      return currentIsValid ? current : fallback;
-    });
-  }, [defaultSort, setSortValue, sortOptions]);
-
   const activeSort = useMemo(
-    () => sortOptions.find((option) => option.value === sortValue) ?? sortOptions[0],
-    [sortOptions, sortValue],
+    () => sortOptions.find((option) => option.value === sortValue)
+      ?? sortOptions.find((option) => option.value === defaultSort)
+      ?? sortOptions[0],
+    [defaultSort, sortOptions, sortValue],
   );
 
   const sortedItems = useMemo(() => {
