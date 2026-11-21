@@ -193,7 +193,7 @@ const RightSideBar = ({ width, view, isOpen, isResizing, onResizeStart, onClose 
         </Button>
       </div>
 
-      <div className="p-4 overflow-y-auto flex-1">
+      <div className="p-4 overflow-y-auto [scrollbar-gutter:stable] flex-1">
         <RightSidebarContent view={view} />
       </div>
     </aside>

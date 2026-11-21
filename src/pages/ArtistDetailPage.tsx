@@ -1,24 +1,33 @@
-import { useCallback, useMemo } from "react";
+import React, { useCallback, useMemo } from "react";
 import { useNavigate, useParams } from "react-router-dom";
-import { toast } from "sonner";
-import MediaCollection, { MediaSortOption } from "../components/library/MediaCollection";
-import { getAlbumActions } from "../components/media/actions";
-import AlbumRow from "../components/media/AlbumRow";
+import ArtistHero from "../components/artist/ArtistHero";
+import ArtistReleaseRow from "../components/artist/ArtistReleaseRow";
+import ArtistTabBar, { type ArtistTab } from "../components/artist/ArtistTabBar";
+import MediaCollection, { type MediaSortOption, type ViewMode } from "../components/library/MediaCollection";
+import { getAlbumActions, getArtistActions } from "../components/media/actions";
 import AlbumTile from "../components/media/AlbumTile";
+import { MetaList } from "../components/media/CollectionLayout";
 import Button from "../components/ui/Button";
+import Select from "../components/ui/Select";
 import Spinner from "../components/ui/Spinner";
-import CoverImage from "../components/ui/CoverImage";
-import { PlayArrowIcon } from "../constants/icons";
+import { ToggleGroup, ToggleGroupItem } from "../components/ui/ToggleGroup";
+import { GridViewIcon, ListViewIcon } from "../constants/icons";
+import useHistoryEntryState from "../hooks/useHistoryEntryState";
+import useImageAccentColor from "../hooks/useImageAccentColor";
 import { useAuthStore } from "../store/authStore";
 import { useLibraryStore } from "../store/libraryStore";
-import { AlbumEntity } from "../types/library";
-import { addArtistToQueue, playArtist, queueArtistNext } from "../utils/playbackActions";
+import type { AlbumEntity } from "../types/library";
+import { accentThemeVars } from "../utils/imageColor";
 import { getAlbumCoverUrl, getArtistImageUrl } from "../utils/mediaImages";
 
+type ReleaseTab = "albums" | "singles" | "compilations";
+type ArtistTabValue = "all" | ReleaseTab;
+
+const HERO_IMAGE_SIZE = 1200;
+
 const getAlbumYear = (album: AlbumEntity): number | undefined => {
-  if (typeof album.year === "number") {
-    return album.year;
-  }
+  if (typeof album.year === "number") return album.year;
+  if (album.releaseDate?.year) return album.releaseDate.year;
   if (album.created) {
     const parsed = Number.parseInt(album.created.slice(0, 4), 10);
     return Number.isFinite(parsed) ? parsed : undefined;
@@ -26,118 +35,126 @@ const getAlbumYear = (album: AlbumEntity): number | undefined => {
   return undefined;
 };
 
-const getAlbumKey = (album: AlbumEntity) => album.id;
-const getAlbumSearchText = (album: AlbumEntity) => {
+const getReleaseKey = (album: AlbumEntity): number | undefined => {
   const year = getAlbumYear(album);
-  return [album.title, album.artistName, album.genre, year ? String(year) : ""].filter(Boolean).join(" ");
+  if (year === undefined) return undefined;
+  const date = album.releaseDate?.year === year ? album.releaseDate : undefined;
+  return year * 10000 + (date?.month ?? 0) * 100 + (date?.day ?? 0);
 };
+
+const byTitle = (left: AlbumEntity, right: AlbumEntity) => left.title.localeCompare(right.title);
+
+const byDate = (direction: 1 | -1) => (left: AlbumEntity, right: AlbumEntity) => {
+  const leftKey = getReleaseKey(left);
+  const rightKey = getReleaseKey(right);
+  if (leftKey === undefined || rightKey === undefined) {
+    return (leftKey === undefined ? 1 : 0) - (rightKey === undefined ? 1 : 0) || byTitle(left, right);
+  }
+  return direction * (leftKey - rightKey) || byTitle(left, right);
+};
+
+const SORT_OPTIONS: MediaSortOption<AlbumEntity>[] = [
+  { value: "newest", label: "Newest", compare: byDate(-1) },
+  { value: "oldest", label: "Oldest", compare: byDate(1) },
+  { value: "az", label: "A-Z", compare: byTitle },
+  { value: "za", label: "Z-A", compare: (left, right) => byTitle(right, left) },
+  { value: "songs", label: "Most songs", compare: (left, right) => (right.songCount ?? 0) - (left.songCount ?? 0) || byTitle(left, right) },
+];
+
+const getReleaseTab = (album: AlbumEntity): ReleaseTab => {
+  const types = (album.releaseTypes ?? []).map((type) => type.toLowerCase());
+  if (album.isCompilation || types.includes("compilation")) return "compilations";
+  if (types.includes("single") || types.includes("ep")) return "singles";
+  return "albums";
+};
+
+const RELEASE_TABS: ArtistTab<ReleaseTab>[] = [
+  { value: "albums", label: "Albums" },
+  { value: "singles", label: "Singles and EPs" },
+  { value: "compilations", label: "Compilations" },
+];
+
+const EMPTY_MESSAGES: Record<ArtistTabValue, string> = {
+  all: "No releases found.",
+  albums: "No albums found.",
+  singles: "No singles or EPs.",
+  compilations: "No compilations.",
+};
+
+const getAlbumKey = (album: AlbumEntity) => album.id;
+const getAlbumSearchText = (album: AlbumEntity) =>
+  [album.title, getAlbumYear(album), album.genre, ...(album.genres ?? [])].filter(Boolean).join(" ");
+
+const pluralize = (count: number, noun: string) => `${count.toLocaleString()} ${noun}${count === 1 ? "" : "s"}`;
 
 const ArtistDetailPage = () => {
   const { artistId } = useParams<{ artistId: string }>();
   const navigate = useNavigate();
   const client = useAuthStore((state) => state.session?.client);
   const status = useLibraryStore((state) => state.status);
-  const artists = useLibraryStore((state) => state.artists);
+  const artist = useLibraryStore((state) => state.artists.find((entry) => entry.id === artistId));
   const albums = useLibraryStore((state) => state.albums);
-
-  const artist = useMemo(
-    () => artists.find((entry) => entry.id === artistId),
-    [artistId, artists],
-  );
+  const tracks = useLibraryStore((state) => state.tracks);
+  const [tab, setTab] = useHistoryEntryState<ArtistTabValue | undefined>("artist-detail:tab", undefined);
+  const [viewMode, setViewMode] = useHistoryEntryState<ViewMode>("artist-detail:view", "grid");
+  const [sortValue, setSortValue] = useHistoryEntryState("artist-detail:sort", "newest");
 
   const artistAlbums = useMemo(() => {
-    if (!artist || !artistId) {
-      return [];
-    }
-    return albums.filter((album) => {
-      if (album.artistId === artistId) {
-        return true;
-      }
-      if (!album.artistId) {
-        return album.artistName === artist.name;
-      }
-      return false;
-    });
-  }, [albums, artist, artistId]);
+    if (!artist) return [];
+    return albums
+      .filter((album) => album.artistId === artist.id || (!album.artistId && album.artistName === artist.name));
+  }, [albums, artist]);
 
-  const artistCover = useMemo(
-    () => getArtistImageUrl(artist, client),
-    [artist, client],
+  const releases = useMemo(() => {
+    const grouped: Record<ReleaseTab, AlbumEntity[]> = { albums: [], singles: [], compilations: [] };
+    artistAlbums.forEach((album) => grouped[getReleaseTab(album)].push(album));
+    return grouped;
+  }, [artistAlbums]);
+
+  const songCount = useMemo(
+    () => (artist ? tracks.filter((track) => track.artistId === artist.id).length : 0),
+    [artist, tracks],
   );
 
-  const albumSortOptions = useMemo<MediaSortOption<AlbumEntity>[]>(() => [
-    {
-      value: "az",
-      label: "A-Z",
-      compare: (left, right) => left.title.localeCompare(right.title),
-    },
-    {
-      value: "za",
-      label: "Z-A",
-      compare: (left, right) => right.title.localeCompare(left.title),
-    },
-    {
-      value: "newest",
-      label: "Newest",
-      compare: (left, right) => {
-        const leftYear = getAlbumYear(left);
-        const rightYear = getAlbumYear(right);
-        const hasLeftYear = typeof leftYear === "number";
-        const hasRightYear = typeof rightYear === "number";
-        if (hasLeftYear && hasRightYear && leftYear !== rightYear) {
-          return (rightYear as number) - (leftYear as number);
-        }
-        if (hasLeftYear && !hasRightYear) return -1;
-        if (!hasLeftYear && hasRightYear) return 1;
-        return left.title.localeCompare(right.title);
-      },
-    },
-    {
-      value: "oldest",
-      label: "Oldest",
-      compare: (left, right) => {
-        const leftYear = getAlbumYear(left);
-        const rightYear = getAlbumYear(right);
-        const hasLeftYear = typeof leftYear === "number";
-        const hasRightYear = typeof rightYear === "number";
-        if (hasLeftYear && hasRightYear && leftYear !== rightYear) {
-          return (leftYear as number) - (rightYear as number);
-        }
-        if (hasLeftYear && !hasRightYear) return -1;
-        if (!hasLeftYear && hasRightYear) return 1;
-        return left.title.localeCompare(right.title);
-      },
-    },
-  ], []);
+  const heroImageUrl = useMemo(() => getArtistImageUrl(artist, client, HERO_IMAGE_SIZE), [artist, client]);
+  const accentColor = useImageAccentColor(heroImageUrl);
+  const artistActions = useMemo(() => (artist ? getArtistActions(artist.id) : undefined), [artist]);
 
-  const getAlbumProps = useCallback((album: AlbumEntity) => ({
-    title: album.title,
-    artistName: album.artistName,
-    year: getAlbumYear(album),
-    songCount: album.songCount,
-    coverUrl: getAlbumCoverUrl(album, client),
-    actions: getAlbumActions(album.id),
-    onClick: () => navigate(`/albums/${album.id}`),
-    showArtist: false,
-  }), [client, navigate]);
+  const tabs = useMemo<ArtistTab<ArtistTabValue>[]>(() => {
+    const available = RELEASE_TABS.filter((entry) => releases[entry.value].length > 0);
+    const all: ArtistTab<ArtistTabValue> = { value: "all", label: "Releases" };
+    return available.length > 1 ? [all, ...available] : [all];
+  }, [releases]);
 
-  const renderTile = useCallback(
-    (album: AlbumEntity) => <AlbumTile {...getAlbumProps(album)} className="w-full max-w-full" />,
-    [getAlbumProps],
-  );
-  const renderRow = useCallback(
-    (album: AlbumEntity) => <AlbumRow {...getAlbumProps(album)} className="w-full" />,
-    [getAlbumProps],
-  );
+  const activeTab = tabs.find((entry) => entry.value === tab)?.value ?? tabs[0].value;
+  const visibleReleases = activeTab === "all" ? artistAlbums : releases[activeTab];
 
-  if (!artistId) {
-    return (
-      <div className="space-y-4">
-        <p className="text-lg font-semibold text-text">Artist not found</p>
-        <Button variant="secondary" onClick={() => navigate("/artists")}>Back to artists</Button>
-      </div>
-    );
-  }
+  const openAlbum = useCallback((albumId: string) => navigate(`/albums/${albumId}`), [navigate]);
+
+  const renderTile = useCallback((album: AlbumEntity) => (
+    <AlbumTile
+      title={album.title}
+      year={getAlbumYear(album)}
+      songCount={album.songCount}
+      coverUrl={getAlbumCoverUrl(album, client)}
+      actions={getAlbumActions(album.id)}
+      onClick={() => openAlbum(album.id)}
+      showArtist={false}
+      className="w-full max-w-full"
+    />
+  ), [client, openAlbum]);
+
+  const renderRow = useCallback((album: AlbumEntity) => (
+    <ArtistReleaseRow
+      title={album.title}
+      coverUrl={getAlbumCoverUrl(album, client)}
+      year={getAlbumYear(album)}
+      songCount={album.songCount}
+      duration={album.duration}
+      actions={getAlbumActions(album.id)}
+      onOpen={() => openAlbum(album.id)}
+    />
+  ), [client, openAlbum]);
 
   if (!artist) {
     if (status === "idle" || status === "checking" || status === "indexing") {
@@ -147,7 +164,6 @@ const ArtistDetailPage = () => {
         </div>
       );
     }
-
     return (
       <div className="space-y-4">
         <p className="text-lg font-semibold text-text">Artist not found</p>
@@ -156,80 +172,66 @@ const ArtistDetailPage = () => {
     );
   }
 
-  return (
-    <div className="space-y-6">
-      <section className="flex flex-col gap-5 rounded-2xl border border-surface2 bg-surface1 p-4 sm:flex-row sm:items-center">
-        <div className="h-28 w-28 overflow-hidden rounded-xl border border-surface2 bg-surface0 sm:h-32 sm:w-32">
-          <CoverImage
-            src={artistCover}
-            alt={artist.name}
-            className="h-full w-full"
-            placeholder={<div className="h-full w-full bg-surface2" />}
-            fallback={<div className="h-full w-full bg-surface2" />}
-          />
-        </div>
-        <div className="min-w-0 flex-1 space-y-2">
-          <p className="text-xs font-semibold uppercase tracking-wide text-text-grey">Artist</p>
-          <h1 className="truncate text-3xl font-extrabold text-text">{artist.name}</h1>
-          <p className="text-sm text-text-grey">
-            {artistAlbums.length.toLocaleString()} album{artistAlbums.length === 1 ? "" : "s"}
-          </p>
-          <div className="flex flex-wrap items-center gap-2">
-            <Button
-              variant="primary"
-              className="shadow-none"
-              onClick={() => {
-                void playArtist(artist.id).catch((error) => {
-                  const description = error instanceof Error ? error.message : undefined;
-                  toast.error("Unable to play artist", description ? { description } : undefined);
-                });
-              }}
-            >
-              <PlayArrowIcon />
-              <span>Play</span>
-            </Button>
-            <Button
-              variant="secondary"
-              className="shadow-none"
-              onClick={() => {
-                void queueArtistNext(artist.id).catch((error) => {
-                  const description = error instanceof Error ? error.message : undefined;
-                  toast.error("Unable to queue artist next", description ? { description } : undefined);
-                });
-              }}
-            >
-              Play next
-            </Button>
-            <Button
-              variant="secondary"
-              className="shadow-none"
-              onClick={() => {
-                void addArtistToQueue(artist.id).catch((error) => {
-                  const description = error instanceof Error ? error.message : undefined;
-                  toast.error("Unable to add artist to queue", description ? { description } : undefined);
-                });
-              }}
-            >
-              Add to queue
-            </Button>
-          </div>
-        </div>
-      </section>
-
-      <MediaCollection
-        title="Albums"
-        description={`${artistAlbums.length.toLocaleString()} album${artistAlbums.length === 1 ? "" : "s"}`}
-        items={artistAlbums}
-        getKey={getAlbumKey}
-        getSearchText={getAlbumSearchText}
-        renderTile={renderTile}
-        renderRow={renderRow}
-        sortOptions={albumSortOptions}
-        defaultSort="az"
-        searchPlaceholder="Search albums..."
-        isLoading={status === "idle" || status === "checking" || status === "indexing"}
-        emptyMessage={`No albums found for ${artist.name}.`}
+  const listControls = (
+    <div className="flex items-center gap-2">
+      <Select
+        size="small"
+        options={SORT_OPTIONS.map(({ value, label }) => ({ value, label }))}
+        value={sortValue}
+        onValueChange={setSortValue}
       />
+      <ToggleGroup
+        type="single"
+        value={viewMode}
+        onValueChange={(value) => {
+          if (value) setViewMode(value as ViewMode);
+        }}
+        aria-label="Change layout"
+      >
+        <ToggleGroupItem value="grid" aria-label="Grid view">
+          <GridViewIcon className="h-5 w-5" />
+        </ToggleGroupItem>
+        <ToggleGroupItem value="list" aria-label="List view">
+          <ListViewIcon className="h-5 w-5" />
+        </ToggleGroupItem>
+      </ToggleGroup>
+    </div>
+  );
+
+  return (
+    <div
+      className="@container relative isolate -mx-4 -mt-4 sm:-mx-6 sm:-mt-6"
+      style={accentColor ? (accentThemeVars(accentColor) as React.CSSProperties) : undefined}
+    >
+      <ArtistHero
+        name={artist.name}
+        imageUrl={heroImageUrl}
+        color={accentColor}
+        meta={<MetaList items={[pluralize(artistAlbums.length, "release"), songCount ? pluralize(songCount, "song") : null]} />}
+        {...artistActions}
+      />
+
+      <ArtistTabBar tabs={tabs} value={activeTab} onChange={setTab} trailing={listControls} />
+
+      <div className="px-4 py-8 sm:px-9">
+        <MediaCollection
+          title={artist.name}
+          hideHeading
+          hideControls
+          viewMode={viewMode}
+          sortValue={sortValue}
+          stateKey="artist-detail"
+          items={visibleReleases}
+          getKey={getAlbumKey}
+          getSearchText={getAlbumSearchText}
+          renderTile={renderTile}
+          renderRow={renderRow}
+          sortOptions={SORT_OPTIONS}
+          defaultSort="newest"
+          isLoading={status === "idle" || status === "checking" || status === "indexing"}
+          emptyMessage={EMPTY_MESSAGES[activeTab]}
+        />
+      </div>
     </div>
   );
 };

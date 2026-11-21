@@ -226,7 +226,7 @@ const AppShell = () => {
         />
         <main
           ref={setMainNode}
-          className="min-w-0 flex-1 overflow-x-hidden overflow-y-auto p-4 sm:p-6 rounded-lg"
+          className="min-w-0 flex-1 overflow-x-hidden overflow-y-auto [scrollbar-gutter:stable] p-4 sm:p-6 rounded-lg"
         >
           <ScrollContainerContext.Provider value={mainNode}>
             <Fragment key={`${location.key}:${location.pathname}`}>

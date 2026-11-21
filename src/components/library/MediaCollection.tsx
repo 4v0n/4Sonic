@@ -10,7 +10,7 @@ import useHistoryEntryState, { useHistoryEntryRef } from "../../hooks/useHistory
 import { useRestoredScrollTop } from "../../hooks/useScrollRestoration";
 import useVirtualRows from "../../hooks/useVirtualRows";
 
-type ViewMode = "grid" | "list";
+export type ViewMode = "grid" | "list";
 
 export type MediaSortOption<T> = {
   value: string;
@@ -33,6 +33,10 @@ interface MediaCollectionProps<T> {
   error?: string;
   emptyMessage?: string;
   stateKey?: string;
+  hideHeading?: boolean;
+  hideControls?: boolean;
+  viewMode?: ViewMode;
+  sortValue?: string;
 }
 
 const DEFAULT_EMPTY_MESSAGE = "Nothing matches your filters yet.";
@@ -69,16 +73,23 @@ function MediaCollection<T>({
   error,
   emptyMessage = DEFAULT_EMPTY_MESSAGE,
   stateKey,
+  hideHeading = false,
+  hideControls = false,
+  viewMode: viewModeProp,
+  sortValue: sortValueProp,
 }: MediaCollectionProps<T>) {
   const stateId = `media-collection:${stateKey ?? title}`;
-  const [viewMode, setViewMode] = useHistoryEntryState<ViewMode>(`${stateId}:view`, "grid");
+  const [internalViewMode, setViewMode] = useHistoryEntryState<ViewMode>(`${stateId}:view`, "grid");
   const [searchQuery, setSearchQuery] = useHistoryEntryState(`${stateId}:search`, "");
-  const [sortValue, setSortValue] = useHistoryEntryState<string>(`${stateId}:sort`, () => {
+  const [internalSortValue, setSortValue] = useHistoryEntryState<string>(`${stateId}:sort`, () => {
     if (defaultSort && sortOptions.some((option) => option.value === defaultSort)) {
       return defaultSort;
     }
     return sortOptions[0]?.value ?? "";
   });
+
+  const viewMode = viewModeProp ?? internalViewMode;
+  const sortValue = sortValueProp ?? internalSortValue;
 
   useEffect(() => {
     const fallback = defaultSort && sortOptions.some((option) => option.value === defaultSort)
@@ -214,49 +225,57 @@ function MediaCollection<T>({
 
   return (
     <div className="space-y-6">
-      <div className="space-y-1">
-        <h1 className="text-3xl font-extrabold text-text">{title}</h1>
-        {description ? <p className="text-sm text-text-grey">{description}</p> : null}
-        {error ? <p className="text-sm text-danger1">{error}</p> : null}
-      </div>
-
-      <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
-        <SearchInput
-          value={searchQuery}
-          onChange={(event) => setSearchQuery(event.target.value)}
-          placeholder={searchPlaceholder}
-          className="w-full md:max-w-sm"
-        />
-        <div className="flex flex-wrap items-center gap-3 md:justify-end">
-          {activeSort ? (
-            <Select
-              size="small"
-              value={activeSort.value}
-              onValueChange={setSortValue}
-              options={sortOptions.map((option) => ({ label: option.label, value: option.value }))}
-              placeholder="Sort"
-            />
-          ) : null}
-          <ToggleGroup
-            type="single"
-            value={viewMode}
-            onValueChange={handleViewChange}
-            aria-label="Change layout"
-          >
-            <ToggleGroupItem value="grid" aria-label="Grid view">
-              <GridViewIcon className="h-5 w-5" />
-            </ToggleGroupItem>
-            <ToggleGroupItem value="list" aria-label="List view">
-              <ListViewIcon className="h-5 w-5" />
-            </ToggleGroupItem>
-          </ToggleGroup>
+      {hideHeading ? (
+        error ? <p className="text-sm text-danger1">{error}</p> : null
+      ) : (
+        <div className="space-y-1">
+          <h1 className="text-3xl font-extrabold text-text">{title}</h1>
+          {description ? <p className="text-sm text-text-grey">{description}</p> : null}
+          {error ? <p className="text-sm text-danger1">{error}</p> : null}
         </div>
-      </div>
+      )}
 
-      <div className="flex items-center justify-between text-xs text-text-grey">
-        <span>{visibleCountLabel}</span>
-        {searchQuery ? <span className="truncate">Filtered by: {searchQuery}</span> : null}
-      </div>
+      {hideControls ? null : (
+        <>
+          <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
+            <SearchInput
+              value={searchQuery}
+              onChange={(event) => setSearchQuery(event.target.value)}
+              placeholder={searchPlaceholder}
+              className="w-full md:max-w-sm"
+            />
+            <div className="flex flex-wrap items-center gap-3 md:justify-end">
+              {activeSort ? (
+                <Select
+                  size="small"
+                  value={activeSort.value}
+                  onValueChange={setSortValue}
+                  options={sortOptions.map((option) => ({ label: option.label, value: option.value }))}
+                  placeholder="Sort"
+                />
+              ) : null}
+              <ToggleGroup
+                type="single"
+                value={viewMode}
+                onValueChange={handleViewChange}
+                aria-label="Change layout"
+              >
+                <ToggleGroupItem value="grid" aria-label="Grid view">
+                  <GridViewIcon className="h-5 w-5" />
+                </ToggleGroupItem>
+                <ToggleGroupItem value="list" aria-label="List view">
+                  <ListViewIcon className="h-5 w-5" />
+                </ToggleGroupItem>
+              </ToggleGroup>
+            </div>
+          </div>
+
+          <div className="flex items-center justify-between text-xs text-text-grey">
+            <span>{visibleCountLabel}</span>
+            {searchQuery ? <span className="truncate">Filtered by: {searchQuery}</span> : null}
+          </div>
+        </>
+      )}
 
       <div ref={setListNode}>
         {showEmptyState ? (
