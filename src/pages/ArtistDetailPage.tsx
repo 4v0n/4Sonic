@@ -1,10 +1,11 @@
 import React, { useCallback, useMemo } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import ArtistHero from "../components/artist/ArtistHero";
-import ArtistReleaseRow from "../components/artist/ArtistReleaseRow";
 import ArtistTabBar, { type ArtistTab } from "../components/artist/ArtistTabBar";
 import MediaCollection, { type MediaSortOption, type ViewMode } from "../components/library/MediaCollection";
 import { getAlbumActions, getArtistActions } from "../components/media/actions";
+import AlbumRow from "../components/media/AlbumRow";
+import { formatCount } from "../components/media/format";
 import AlbumTile from "../components/media/AlbumTile";
 import { MetaList } from "../components/media/CollectionLayout";
 import Button from "../components/ui/Button";
@@ -86,7 +87,6 @@ const getAlbumKey = (album: AlbumEntity) => album.id;
 const getAlbumSearchText = (album: AlbumEntity) =>
   [album.title, getAlbumYear(album), album.genre, ...(album.genres ?? [])].filter(Boolean).join(" ");
 
-const pluralize = (count: number, noun: string) => `${count.toLocaleString()} ${noun}${count === 1 ? "" : "s"}`;
 
 const ArtistDetailPage = () => {
   const { artistId } = useParams<{ artistId: string }>();
@@ -146,14 +146,15 @@ const ArtistDetailPage = () => {
   ), [client, openAlbum]);
 
   const renderRow = useCallback((album: AlbumEntity) => (
-    <ArtistReleaseRow
+    <AlbumRow
       title={album.title}
       coverUrl={getAlbumCoverUrl(album, client)}
       year={getAlbumYear(album)}
       songCount={album.songCount}
       duration={album.duration}
       actions={getAlbumActions(album.id)}
-      onOpen={() => openAlbum(album.id)}
+      onClick={() => openAlbum(album.id)}
+      showArtist={false}
     />
   ), [client, openAlbum]);
 
@@ -208,7 +209,7 @@ const ArtistDetailPage = () => {
         name={artist.name}
         imageUrl={heroImageUrl}
         color={accentColor}
-        meta={<MetaList items={[pluralize(artistAlbums.length, "release"), songCount ? pluralize(songCount, "song") : null]} />}
+        meta={<MetaList items={[formatCount(artistAlbums.length, "release"), songCount ? formatCount(songCount, "song") : null]} />}
         {...artistActions}
       />
 

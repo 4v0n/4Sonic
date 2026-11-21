@@ -1,10 +1,9 @@
 import React from "react";
-import { PersonIcon, PlayArrowIcon, PlaylistAddIcon, QueuePlayNextIcon } from "../../constants/icons";
+import { PersonIcon } from "../../constants/icons";
 import cn from "../../utils/cn";
 import { hsla, type HslColor } from "../../utils/imageColor";
-import Button from "../ui/Button";
 import CoverImage from "../ui/CoverImage";
-import Tooltip from "../ui/Tooltip";
+import MediaActionButtons from "../media/MediaActionButtons";
 
 export interface ArtistHeroProps {
   name: string;
@@ -54,7 +53,7 @@ const ArtistHero = ({ name, imageUrl, bannerUrl, color, meta, onPlay, onPlayNext
 
     <div className="flex flex-wrap items-end justify-between gap-x-6 gap-y-5 px-4 pb-6 pt-10 sm:px-9 @2xl:pt-14">
       <div className="flex min-w-0 items-end gap-6">
-        <div className="h-28 w-28 shrink-0 overflow-hidden rounded-full shadow-xl @2xl:h-44 @2xl:w-44">
+        <div className="h-28 w-28 shrink-0 overflow-hidden rounded-lg shadow-xl @2xl:h-44 @2xl:w-44">
           <CoverImage
             src={imageUrl}
             alt={name}
@@ -69,29 +68,14 @@ const ArtistHero = ({ name, imageUrl, bannerUrl, color, meta, onPlay, onPlayNext
         </div>
       </div>
 
-      <div className="flex items-center gap-3 pb-2">
-        {onPlay ? (
-          <Tooltip content="Play">
-            <Button variant="primary" size="large" aria-label={`Play ${name}`} className="shadow-lg" onClick={onPlay}>
-              <PlayArrowIcon />
-            </Button>
-          </Tooltip>
-        ) : null}
-        {onPlayNext ? (
-          <Tooltip content="Play next">
-            <Button variant="ghost" size="large" aria-label={`Play ${name} next`} onClick={onPlayNext}>
-              <QueuePlayNextIcon />
-            </Button>
-          </Tooltip>
-        ) : null}
-        {onAddToQueue ? (
-          <Tooltip content="Add to queue">
-            <Button variant="ghost" size="large" aria-label={`Add ${name} to queue`} onClick={onAddToQueue}>
-              <PlaylistAddIcon />
-            </Button>
-          </Tooltip>
-        ) : null}
-      </div>
+      <MediaActionButtons
+        title={name}
+        onPlay={onPlay}
+        onPlayNext={onPlayNext}
+        onAddToQueue={onAddToQueue}
+        size="large"
+        className="pb-2"
+      />
     </div>
   </header>
 );

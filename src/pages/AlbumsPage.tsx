@@ -102,7 +102,7 @@ const AlbumsPage = () => {
     [getAlbumProps],
   );
   const renderRow = useCallback(
-    (album: AlbumEntity) => <AlbumRow {...getAlbumProps(album)} className="w-full" />,
+    (album: AlbumEntity) => <AlbumRow {...getAlbumProps(album)} size="compact" actionsOnHover className="w-full" />,
     [getAlbumProps],
   );
 

@@ -70,7 +70,7 @@ const ArtistsPage = () => {
     [getArtistProps],
   );
   const renderRow = useCallback(
-    (artist: ArtistEntity) => <ArtistRow {...getArtistProps(artist)} className="w-full" />,
+    (artist: ArtistEntity) => <ArtistRow {...getArtistProps(artist)} size="compact" actionsOnHover className="w-full" />,
     [getArtistProps],
   );
 

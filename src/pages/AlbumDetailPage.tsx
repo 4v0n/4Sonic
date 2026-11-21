@@ -1,6 +1,7 @@
 import { useCallback, useMemo } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { toast } from "sonner";
+import { formatCount } from "../components/media/format";
 import CollectionActionBar from "../components/media/CollectionActionBar";
 import {
   ArtistList,
@@ -220,7 +221,7 @@ const AlbumDetailPage = () => {
               )
             ) : null,
             album.releaseDate?.year ?? album.year,
-            songCount ? `${songCount} song${songCount === 1 ? "" : "s"}` : null,
+            songCount ? formatCount(songCount, "song") : null,
             totalDuration ? formatTotalDuration(totalDuration) : null,
           ]}
         />

@@ -22,7 +22,6 @@ import { ToastPosition, useUiPreferencesStore } from "../store/uiPreferencesStor
 import AlbumRow from "../components/media/AlbumRow";
 import AlbumTile from "../components/media/AlbumTile";
 import ArtistTile from "../components/media/ArtistTile";
-import SongRow from "../components/media/SongRow";
 import SongTile from "../components/media/SongTile";
 import { RowSkeleton } from "../components/media/Row";
 import { TileSkeleton } from "../components/media/Tile";
@@ -359,14 +358,16 @@ const ComponentShowcasePage = () => {
               ) : (
                 <RowSkeleton className="w-full" />
               )}
-              {mediaSamples.song ? (
-                <SongRow
-                  title={mediaSamples.song.title}
-                  artistName={mediaSamples.song.artist ?? mediaSamples.album?.artist}
-                  albumName={mediaSamples.song.album ?? mediaSamples.album?.name}
-                  year={mediaSamples.song.year ?? mediaSamples.album?.year}
-                  coverUrl={songCover}
-                  actions={{ onPlay: handlePlaySampleSong }}
+              {mediaSamples.album ? (
+                <AlbumRow
+                  size="compact"
+                  actionsOnHover
+                  title={mediaSamples.album.name}
+                  artistName={mediaSamples.album.artist}
+                  year={mediaSamples.album.year}
+                  songCount={mediaSamples.album.songCount ?? mediaSamples.album.song?.length}
+                  coverUrl={albumCover}
+                  actions={{ onPlay: handlePlaySampleAlbum }}
                   className="w-full"
                 />
               ) : (

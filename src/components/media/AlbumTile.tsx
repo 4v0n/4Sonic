@@ -1,6 +1,7 @@
 import React from "react";
 import { AlbumIcon } from "../../constants/icons";
 import useImageAccentColor from "../../hooks/useImageAccentColor";
+import { formatCount } from "./format";
 import { TileArtwork, TileCountBadge, TileFrame, type TileFrameProps } from "./Tile";
 
 export interface AlbumDisplayOptions {
@@ -41,7 +42,7 @@ const AlbumTile = ({
             <TileCountBadge
               count={songCount}
               icon={<AlbumIcon fontSize="inherit" />}
-              label={`${songCount} track${songCount === 1 ? "" : "s"}`}
+              label={formatCount(songCount, "track")}
               color={accentColor}
             />
           ) : null}
