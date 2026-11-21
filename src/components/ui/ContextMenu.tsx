@@ -23,7 +23,7 @@ export const ContextMenuContent = React.forwardRef<
     <ContextMenuPrimitive.Content
       ref={ref}
       className={cn(
-        "min-w-[12rem] rounded-md shadow-lg border border-surface2",
+        "z-50 min-w-[12rem] rounded-md shadow-lg border border-surface2",
         "bg-surface1 py-1 text-text-grey",
         "animate-in fade-in-0 zoom-in-95 data-[side=bottom]:slide-in-from-top-2 data-[side=top]:slide-in-from-bottom-2",
         className,
@@ -99,12 +99,14 @@ export const ContextMenuSubContent = React.forwardRef<
   React.ElementRef<typeof ContextMenuPrimitive.SubContent>,
   React.ComponentPropsWithoutRef<typeof ContextMenuPrimitive.SubContent>
 >(({ className, sideOffset = 6, alignOffset = -4, ...props }, ref) => (
-  <ContextMenuPrimitive.SubContent
-    ref={ref}
-    sideOffset={sideOffset}
-    alignOffset={alignOffset}
-    className={cn("min-w-[12rem] rounded-md shadow-lg bg-surface1 py-1 border border-surface2", className)}
-    {...props}
-  />
+  <ContextMenuPortal>
+    <ContextMenuPrimitive.SubContent
+      ref={ref}
+      sideOffset={sideOffset}
+      alignOffset={alignOffset}
+      className={cn("z-50 min-w-[12rem] rounded-md shadow-lg bg-surface1 py-1 border border-surface2", className)}
+      {...props}
+    />
+  </ContextMenuPortal>
 ));
 ContextMenuSubContent.displayName = ContextMenuPrimitive.SubContent.displayName;

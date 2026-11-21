@@ -1,5 +1,6 @@
 import useVisualizerColor from "../../hooks/useVisualizerColor";
 import { useEffect, useRef, useState } from "react";
+import { useLocation } from "react-router-dom";
 import { CloseIcon, PauseIcon, PlayArrowIcon, QueueMusicRoundedIcon, RepeatIcon, RepeatOneIcon, ShuffleIcon, SkipNextIcon, SkipPreviousIcon, VolumeDownIcon, VolumeMuteIcon, VolumeOffIcon, VolumeUpIcon } from "../../constants/icons";
 import Button from "../ui/Button";
 import { Popover, PopoverContent, PopoverTrigger } from "../ui/Popover";
@@ -231,10 +232,16 @@ const VolumeControl = ({ volume, isMuted, onChange, onToggleMute, onScroll }: Vo
 
 const BottomBar = ({ isRightCompact = false }: BottomBarProps) => {
   const toggleQueue = useRightSidebarStore((state) => state.toggle);
-  const openQueue = useRightSidebarStore((state) => state.open);
-  const closeQueue = useRightSidebarStore((state) => state.close);
-  const isQueueOpen = useRightSidebarStore((state) => state.isOpen);
+  const isSidebarOpen = useRightSidebarStore((state) => state.isOpen);
   const rightView = useRightSidebarStore((state) => state.view);
+
+  const [isQueuePopoverOpen, setIsQueuePopoverOpen] = useState(false);
+  const isQueueOpen = isRightCompact ? isQueuePopoverOpen : isSidebarOpen;
+  const location = useLocation();
+
+  useEffect(() => {
+    setIsQueuePopoverOpen(false);
+  }, [location.key, isRightCompact]);
 
   const currentSong = usePlaybackStore((state) => state.currentSong);
   const coverArtUrl = usePlaybackStore((state) => state.coverArtUrl);
@@ -403,14 +410,8 @@ const BottomBar = ({ isRightCompact = false }: BottomBarProps) => {
         <div className="flex items-center justify-end space-x-3 w-1/3">
           {isRightCompact ? (
             <Popover
-              open={isQueueOpen}
-              onOpenChange={(open) => {
-                if (open) {
-                  openQueue("queue");
-                } else {
-                  closeQueue();
-                }
-              }}
+              open={isQueuePopoverOpen}
+              onOpenChange={setIsQueuePopoverOpen}
             >
               <Tooltip content="Queue">
                 <PopoverTrigger asChild>{queueButton}</PopoverTrigger>
@@ -426,7 +427,7 @@ const BottomBar = ({ isRightCompact = false }: BottomBarProps) => {
                     <QueueMusicRoundedIcon fontSize="small" />
                     <span className="capitalize">{rightView}</span>
                   </div>
-                  <Button variant="ghost" size="small" className="shadow-none" onClick={closeQueue} aria-label="Close queue popover">
+                  <Button variant="ghost" size="small" className="shadow-none" onClick={() => setIsQueuePopoverOpen(false)} aria-label="Close queue popover">
                     <CloseIcon fontSize="small" />
                   </Button>
                 </div>
